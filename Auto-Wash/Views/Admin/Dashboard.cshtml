@@ -4,6 +4,10 @@
     ViewBag.ActiveNav = "dashboard";
 }
 
+@section Styles {
+<link rel="stylesheet" href="~/css/admin/dashboard.css" asp-append-version="true" />
+}
+
 <header class="d-flex justify-content-between align-items-center mb-5 animate-up">
     <div>
         <h4 class="fw-bold mb-1" style="color:var(--navy-dark);">Overview Dashboard</h4>
@@ -126,24 +130,54 @@
                 </div>
             </div>
 
-            <div class="row g-3">
-                <!-- Point Rate -->
-                <div class="col-md-3">
+            <!-- Row 1: Base Rules -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
                     <div class="p-3 bg-light rounded-4 border border-light h-100 d-flex flex-column justify-content-between">
                         <div>
-                            <label class="form-label small fw-bold text-muted mb-2">TỶ LỆ TÍCH ĐIỂM</label>
-                            <p class="text-muted mb-3" style="font-size:0.7rem;line-height:1.3;">Tỷ số điểm thưởng nhận được trên mỗi 1.000đ chi tiêu.</p>
+                            <label class="form-label small fw-bold text-muted mb-2">TỶ LỆ TÍCH ĐIỂM CƠ BẢN</label>
+                            <p class="text-muted mb-3" style="font-size:0.7rem;line-height:1.3;">Điểm thưởng nhận được trên mỗi 1.000đ chi tiêu. Hệ số nhân theo hạng được cộng thêm.</p>
                         </div>
                         <div class="input-group mt-auto">
-                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">1k đ =</span>
+                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">1.000đ =</span>
                             <input type="number" id="cfg-point-rate" class="form-control border-0 px-2 text-center fw-bold" value="1" style="border-radius:0 10px 10px 0;outline:none;" />
                             <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">PTS</span>
                         </div>
                     </div>
                 </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded-4 border border-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <label class="form-label small fw-bold text-muted mb-2">THỜI HẠN ĐIỂM THƯỞNG</label>
+                            <p class="text-muted mb-3" style="font-size:0.7rem;line-height:1.3;">Điểm tích lũy sẽ tự động hết hạn sau số tháng cấu hình kể từ ngày giao dịch.</p>
+                        </div>
+                        <div class="input-group mt-auto">
+                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">Hết hạn sau</span>
+                            <input type="number" id="cfg-expiry-months" class="form-control border-0 px-2 text-center fw-bold" value="12" style="border-radius:0 10px 10px 0;outline:none;" />
+                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">tháng</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Tier Configs -->
+            <div class="row g-3">
+                <!-- Member Tier Config -->
+                <div class="col-6 col-md-3">
+                    <div class="p-3 bg-light rounded-4 border border-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge tier-badge tier-badge-member px-3 py-1 border-0" style="font-size:0.65rem;">MEMBER</span>
+                            <span class="small text-muted fw-bold">Mặc định</span>
+                        </div>
+                        <div>
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Số ngày đặt lịch trước</label>
+                            <input type="number" id="cfg-member-days" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="7" style="border-radius:8px;" />
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Silver Tier Config -->
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <div class="p-3 bg-light rounded-4 border border-light">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge tier-badge tier-badge-silver px-3 py-1 border-0" style="font-size:0.65rem;">SILVER</span>
@@ -161,7 +195,7 @@
                 </div>
 
                 <!-- Gold Tier Config -->
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <div class="p-3 bg-light rounded-4 border border-light">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge tier-badge tier-badge-gold px-3 py-1 border-0" style="font-size:0.65rem;">GOLD</span>
@@ -179,7 +213,7 @@
                 </div>
 
                 <!-- Platinum Tier Config -->
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <div class="p-3 bg-light rounded-4 border border-light">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge tier-badge tier-badge-platinum px-3 py-1 border-0" style="font-size:0.65rem;">PLATINUM</span>
@@ -206,43 +240,127 @@
     </div>
 </div>
 
+<!-- ── Monthly Tier Review ────────────────────────────────── -->
+<div class="row g-4 mt-2 animate-up" style="animation-delay:0.4s;">
+    <div class="col-12">
+        <div class="app-card p-4 border-0">
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="p-2 rounded-3 me-3 d-flex align-items-center justify-content-center"
+                         style="background:rgba(15,23,42,0.06);width:44px;height:44px;">
+                        <i class="fas fa-sync-alt fa-lg" style="color:var(--cyan-electric);"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">Monthly Tier Review</h5>
+                        <p class="text-muted small mb-0 fw-medium">
+                            Kỳ review tiếp theo: <strong id="next-review-date">01/06/2026</strong> —
+                            Danh sách khách hàng sắp được nâng / hạ hạng dựa trên điểm tích lũy hiện tại.
+                        </p>
+                    </div>
+                </div>
+                <button onclick="handleRunReview()"
+                        class="app-btn-primary py-2 px-4 w-auto shadow-none fw-bold"
+                        style="border-radius:12px;font-size:0.82rem;">
+                    <i class="fas fa-play me-1"></i> CHẠY REVIEW THỦ CÔNG
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" style="font-size:0.82rem;">
+                    <thead class="bg-light">
+                        <tr class="small text-uppercase text-muted" style="letter-spacing:0.5px;">
+                            <th class="ps-3 py-3">Khách hàng</th>
+                            <th>Hạng hiện tại</th>
+                            <th>Điểm tích lũy</th>
+                            <th>Dự báo thay đổi</th>
+                            <th class="pe-3">Lý do</th>
+                        </tr>
+                    </thead>
+                    <tbody class="fw-medium" id="tier-review-tbody">
+                        <!-- Rendered by admin-dashboard.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="~/js/admin-dashboard.js"></script>
 <script>
-    // Load config on startup
     document.addEventListener('DOMContentLoaded', function () {
         const config = JSON.parse(localStorage.getItem('loyalty_config') || '{}');
-        if (config.pointRate) document.getElementById('cfg-point-rate').value = config.pointRate;
-        if (config.silverMult) document.getElementById('cfg-silver-mult').value = config.silverMult;
-        if (config.silverDays) document.getElementById('cfg-silver-days').value = config.silverDays;
-        if (config.goldMult) document.getElementById('cfg-gold-mult').value = config.goldMult;
-        if (config.goldDays) document.getElementById('cfg-gold-days').value = config.goldDays;
-        if (config.platMult) document.getElementById('cfg-plat-mult').value = config.platMult;
-        if (config.platDays) document.getElementById('cfg-plat-days').value = config.platDays;
+        if (config.pointRate)    document.getElementById('cfg-point-rate').value    = config.pointRate;
+        if (config.expiryMonths) document.getElementById('cfg-expiry-months').value = config.expiryMonths;
+        if (config.memberDays)   document.getElementById('cfg-member-days').value   = config.memberDays;
+        if (config.silverMult)   document.getElementById('cfg-silver-mult').value   = config.silverMult;
+        if (config.silverDays)   document.getElementById('cfg-silver-days').value   = config.silverDays;
+        if (config.goldMult)     document.getElementById('cfg-gold-mult').value     = config.goldMult;
+        if (config.goldDays)     document.getElementById('cfg-gold-days').value     = config.goldDays;
+        if (config.platMult)     document.getElementById('cfg-plat-mult').value     = config.platMult;
+        if (config.platDays)     document.getElementById('cfg-plat-days').value     = config.platDays;
+        renderTierReview();
     });
 
     function handleSaveLoyaltyConfig() {
         const config = {
-            pointRate:  Number(document.getElementById('cfg-point-rate').value || 1),
-            silverMult: Number(document.getElementById('cfg-silver-mult').value || 1.1),
-            silverDays: Number(document.getElementById('cfg-silver-days').value || 10),
-            goldMult:   Number(document.getElementById('cfg-gold-mult').value || 1.2),
-            goldDays:   Number(document.getElementById('cfg-gold-days').value || 12),
-            platMult:   Number(document.getElementById('cfg-plat-mult').value || 1.5),
-            platDays:   Number(document.getElementById('cfg-plat-days').value || 14)
+            pointRate:    Number(document.getElementById('cfg-point-rate').value    || 1),
+            expiryMonths: Number(document.getElementById('cfg-expiry-months').value || 12),
+            memberDays:   Number(document.getElementById('cfg-member-days').value   || 7),
+            silverMult:   Number(document.getElementById('cfg-silver-mult').value   || 1.1),
+            silverDays:   Number(document.getElementById('cfg-silver-days').value   || 10),
+            goldMult:     Number(document.getElementById('cfg-gold-mult').value     || 1.2),
+            goldDays:     Number(document.getElementById('cfg-gold-days').value     || 12),
+            platMult:     Number(document.getElementById('cfg-plat-mult').value     || 1.5),
+            platDays:     Number(document.getElementById('cfg-plat-days').value     || 14)
         };
-
         localStorage.setItem('loyalty_config', JSON.stringify(config));
-        
-        // Dispatch event so other pages (like booking) can sync
         window.dispatchEvent(new Event('storage'));
+        if (window.showToast) showToast('Đã lưu cấu hình quy chế tích điểm và đặc quyền hạng VIP thành công!', 'success');
+        else alert('Đã lưu cấu hình thành công!');
+    }
 
-        if (window.showToast) {
-            showToast('Đã lưu cấu hình quy chế tích điểm và đặc quyền hạng VIP thành công!', 'success');
-        } else {
-            alert('Đã lưu cấu hình thành công!');
-        }
+    function handleRunReview() {
+        renderTierReview();
+        if (window.showToast) showToast('Đã chạy Monthly Tier Review thành công!', 'success');
+    }
+
+    function renderTierReview() {
+        const tierBadge = {
+            'Member':   '<span class="badge tier-badge tier-badge-member">MEMBER</span>',
+            'Silver':   '<span class="badge tier-badge tier-badge-silver">SILVER</span>',
+            'Gold':     '<span class="badge tier-badge tier-badge-gold">GOLD</span>',
+            'Platinum': '<span class="badge tier-badge tier-badge-platinum">PLATINUM</span>',
+        };
+        const changeBadge = (dir, label) => dir === 'up'
+            ? `<span class="tier-change-badge tier-change-up"><i class="fas fa-arrow-up me-1"></i>${label}</span>`
+            : dir === 'down'
+            ? `<span class="tier-change-badge tier-change-down"><i class="fas fa-arrow-down me-1"></i>${label}</span>`
+            : `<span class="tier-change-badge tier-change-stable">Giữ nguyên</span>`;
+
+        const reviews = [
+            { name: 'Nguyễn Văn An',  current: 'Silver',   pts: 1050, dir: 'up',   next: 'Gold',     reason: 'Đạt ngưỡng 1,000 PTS' },
+            { name: 'Trần Thị Bích',  current: 'Gold',     pts: 480,  dir: 'down', next: 'Silver',   reason: 'Giảm xuống dưới 500 PTS' },
+            { name: 'Lê Văn Cường',   current: 'Gold',     pts: 1980, dir: 'up',   next: 'Platinum', reason: 'Sắp đạt ngưỡng 2,000 PTS' },
+            { name: 'Phạm Thị Dung',  current: 'Platinum', pts: 1850, dir: 'down', next: 'Gold',     reason: 'Dưới ngưỡng 2,000 PTS' },
+            { name: 'Hoàng Văn Em',   current: 'Member',   pts: 510,  dir: 'up',   next: 'Silver',   reason: 'Đạt ngưỡng 500 PTS' },
+            { name: 'Vũ Thị Phương',  current: 'Silver',   pts: 990,  dir: 'stable', next: 'Silver', reason: 'Chưa đạt ngưỡng Gold' },
+        ];
+
+        const nextReview = new Date();
+        nextReview.setMonth(nextReview.getMonth() + 1, 1);
+        document.getElementById('next-review-date').textContent =
+            nextReview.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+        document.getElementById('tier-review-tbody').innerHTML = reviews.map(r => `
+            <tr>
+                <td class="ps-3 py-3 fw-bold" style="color:var(--navy-dark);">${r.name}</td>
+                <td>${tierBadge[r.current] ?? r.current}</td>
+                <td class="fw-bold">${r.pts.toLocaleString()} <span class="text-muted fw-normal">PTS</span></td>
+                <td>${changeBadge(r.dir, r.next)}</td>
+                <td class="pe-3 text-muted small">${r.reason}</td>
+            </tr>`).join('');
     }
 </script>
 }

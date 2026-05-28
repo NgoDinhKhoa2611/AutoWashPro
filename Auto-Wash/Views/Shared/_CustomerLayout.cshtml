@@ -18,217 +18,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/shared.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/customer.css" asp-append-version="true" />
-
-    <style>
-        /* Bulletproof bottom navbar styles injected directly to bypass browser CSS cache lag */
-        .mobile-bottom-nav {
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            height: calc(72px + env(safe-area-inset-bottom)) !important;
-            padding-bottom: env(safe-area-inset-bottom) !important;
-            background: transparent !important; /* SVG and side panels handle background! */
-            z-index: 2500 !important; /* Above everything */
-            display: flex !important;
-            transition: all 0.3s ease !important;
-        }
-
-        /* Premium Concave Cutout Background */
-        .mobile-nav-bg-container {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            z-index: 1 !important;
-            display: flex !important;
-            filter: drop-shadow(0 -10px 25px rgba(15, 23, 42, 0.04)) !important;
-            pointer-events: none !important;
-        }
-
-        .mobile-nav-bg-left {
-            flex: 1 !important;
-            height: 100% !important;
-            background: #ffffff !important;
-            border-top: 1.5px solid rgba(15, 23, 42, 0.06) !important;
-            border-top-left-radius: 24px !important;
-        }
-
-        .mobile-nav-bg-center {
-            width: 86px !important;
-            height: 100% !important;
-            flex-shrink: 0 !important;
-            background: transparent !important;
-        }
-
-        .mobile-nav-bg-center svg {
-            width: 100% !important;
-            height: 100% !important;
-            display: block !important;
-        }
-
-        .mobile-nav-bg-right {
-            flex: 1 !important;
-            height: 100% !important;
-            background: #ffffff !important;
-            border-top: 1.5px solid rgba(15, 23, 42, 0.06) !important;
-            border-top-right-radius: 24px !important;
-        }
-
-        /* Nav Links Container */
-        .mobile-nav-links-container {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            z-index: 5 !important;
-            display: flex !important;
-            justify-content: space-around !important;
-            align-items: center !important;
-        }
-
-        .mobile-bottom-nav-link {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
-            color: #94a3b8 !important;
-            text-decoration: none !important;
-            font-size: 0.65rem !important; /* Scaled down slightly for perfect mobile fit */
-            font-weight: 750 !important;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            flex: 1 !important;
-            height: 100% !important;
-            gap: 2px !important; /* Tighter gap to look clean and uncrowded */
-            position: relative !important;
-            padding-top: 8px !important;
-        }
-
-        .mobile-bottom-nav-link i {
-            font-size: 1.18rem !important; /* Balanced icon sizing */
-            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-            color: #94a3b8 !important;
-        }
-
-        .mobile-bottom-nav-link span {
-            font-family: 'Be Vietnam Pro', sans-serif !important;
-            letter-spacing: 0.2px !important;
-        }
-
-        .mobile-bottom-nav-link.active {
-            color: var(--cyan-electric) !important;
-        }
-
-        .mobile-bottom-nav-link.active i {
-            color: var(--cyan-electric) !important;
-            transform: translateY(-2px) scale(1.1) !important;
-            text-shadow: 0 0 12px rgba(14, 165, 233, 0.3) !important;
-        }
-
-        /* Center Floating Booking Action Wrapper */
-        .mobile-bottom-nav-center-wrapper {
-            flex: 1 !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
-            height: 100% !important;
-            position: relative !important;
-            z-index: 10 !important;
-        }
-
-        .mobile-bottom-nav-center-btn {
-            width: 56px !important; /* Perfect high-fidelity circular size */
-            height: 56px !important;
-            border-radius: 50% !important;
-            background: #0f172a !important; /* Premium rich slate dark */
-            color: #ffffff !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3) !important;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-            border: 3px solid #ffffff !important;
-            transform: translateY(-22px) !important; /* Floats perfectly in the center curve cutout */
-            margin-bottom: -22px !important;
-        }
-
-        .mobile-bottom-nav-center-btn i {
-            font-size: 1.3rem !important;
-            color: #ffffff !important;
-            transition: all 0.25s ease !important;
-        }
-
-        .mobile-bottom-nav-center-btn:hover {
-            transform: translateY(-23px) scale(1.08) !important;
-            background: var(--cyan-electric) !important;
-            box-shadow: 0 10px 24px rgba(14, 165, 233, 0.45) !important;
-        }
-
-        .mobile-bottom-nav-center-btn.active {
-            background: var(--cyan-electric) !important;
-            box-shadow: 0 0 16px rgba(14, 165, 233, 0.5) !important;
-        }
-
-        .mobile-bottom-nav-center-label {
-            font-size: 0.65rem !important;
-            font-weight: 750 !important;
-            color: #94a3b8 !important;
-            margin-top: 3px !important;
-            font-family: 'Be Vietnam Pro', sans-serif !important;
-            letter-spacing: 0.2px !important;
-            transition: all 0.25s ease !important;
-        }
-
-        .mobile-bottom-nav-center-btn.active + .mobile-bottom-nav-center-label {
-               /* Dynamically add notch-safe margin to the main customer container on mobile */
-        @@media (max-width: 991.98px) {
-            .customer-main {
-                padding-bottom: calc(85px + env(safe-area-inset-bottom)) !important;
-            }
-        }
-
-        @@media (min-width: 992px) {
-            .mobile-bottom-nav {
-                left: 50% !important;
-                right: auto !important;
-                width: 550px !important;
-                transform: translateX(-50%) !important;
-                bottom: 24px !important; /* macOS-style capsule floating dock */
-                height: 72px !important;
-                padding-bottom: 0 !important;
-            }
-            
-            .mobile-nav-bg-left {
-                border-radius: 24px 0 0 24px !important;
-                border: 1.5px solid rgba(15, 23, 42, 0.07) !important;
-                border-right: none !important;
-            }
-            
-            .mobile-nav-bg-right {
-                border-radius: 0 24px 24px 0 !important;
-                border: 1.5px solid rgba(15, 23, 42, 0.07) !important;
-                border-left: none !important;
-            }
-
-            .mobile-bottom-nav-link {
-                padding-top: 0 !important;
-            }
-
-            .mobile-bottom-nav-center-btn {
-                border: 3px solid #ffffff !important;
-                box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25) !important;
-            }
-
-            /* Add padding at the bottom of the main content area to prevent overlap with the floating dock */
-            .customer-main {
-                padding-bottom: 120px !important;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/customer/customer.css" asp-append-version="true" />
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -281,27 +71,25 @@
         </div>
 
         <!-- Brand Logo (full) -->
-        <a href="/Customer/Dashboard" class="text-decoration-none d-flex align-items-center mb-4 px-2 hover-opacity" style="transition: opacity 0.2s; cursor: pointer;">
+        <a href="/Customer/Dashboard" class="text-decoration-none d-flex align-items-center mb-4 px-2 hover-opacity sidebar-brand-link">
             <div class="brand-full d-flex align-items-center">
-                <div class="p-2 rounded-3 me-3 d-flex align-items-center justify-content-center"
-                     style="background:var(--cyan-electric);width:40px;height:40px;border-radius:10px;">
+                <div class="p-2 me-3 d-flex align-items-center justify-content-center sidebar-brand-icon">
                     <i class="fas fa-hands-wash fa-lg text-dark"></i>
                 </div>
                 <div>
-                    <h5 class="fw-bold mb-0 text-dark" style="letter-spacing:-0.5px;">
+                    <h5 class="fw-bold mb-0 text-dark sidebar-brand-name">
                         AutoWash <span class="text-cyan">Pro</span>
                     </h5>
-                    <small class="text-secondary" style="font-size:0.65rem;">SWP391 FPT University</small>
+                    <small class="text-secondary sidebar-brand-sub">SWP391 FPT University</small>
                 </div>
             </div>
             <!-- Brand Logo (mini — khi thu gọn) -->
-            <div class="brand-mini d-none"
-                 style="background:var(--cyan-electric);width:40px;height:40px;border-radius:10px;">
+            <div class="brand-mini d-none sidebar-brand-icon">
                 <i class="fas fa-hands-wash fa-lg text-dark"></i>
             </div>
         </a>
 
-        <hr style="border-color:rgba(14, 165, 233, 0.15);margin:10px 0 20px 0;" />
+        <hr class="sidebar-divider" />
 
         <!-- Nav Links -->
         <nav class="customer-sidebar-links">
@@ -363,20 +151,18 @@
                     <div class="notif-icon-btn">
                         <i class="far fa-bell fa-lg"></i>
                     </div>
-                    <span class="position-absolute bg-cyan rounded-circle"
-                          style="width:8px;height:8px;top:-2px;right:-2px;background:var(--cyan-electric);display:none;"
-                          id="notif-dot"></span>
+                    <span class="position-absolute bg-cyan rounded-circle" id="notif-dot"></span>
 
                     <!-- Notification Dropdown -->
                     <div class="notif-dropdown" id="notif-dropdown" style="display:none;">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold mb-0" style="color:var(--navy-dark);">Thông báo</h6>
-                            <button class="btn btn-link p-0 text-cyan small text-decoration-none fw-bold"
-                                    style="font-size:0.72rem;" onclick="markAllRead()">
+                            <h6 class="fw-bold mb-0 notif-dropdown-title">Thông báo</h6>
+                            <button class="btn btn-link p-0 text-cyan small text-decoration-none fw-bold notif-dropdown-btn"
+                                    onclick="markAllRead()">
                                 Đánh dấu đã đọc
                             </button>
                         </div>
-                        <div id="notif-list" class="d-flex flex-column gap-2" style="max-height:250px;overflow-y:auto;">
+                        <div id="notif-list" class="d-flex flex-column gap-2 notif-list-scroll">
                             <div class="text-center py-4 text-muted small">Không có thông báo nào</div>
                         </div>
                     </div>
@@ -386,26 +172,22 @@
                 <div class="position-relative" id="profile-trigger" onclick="toggleProfileDropdown()">
                     <div class="header-profile-trigger">
                         <img src="@(ViewBag.UserAvatar ?? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200")"
-                             class="avatar-circle" alt="Avatar"
-                             style="width:40px;height:40px;border:2px solid var(--cyan-electric);" />
+                             class="avatar-circle header-avatar" alt="Avatar" />
                         <div class="d-none d-md-block text-start">
-                            <small class="text-muted d-block" style="font-size:0.65rem;font-weight:600;">TÀI KHOẢN</small>
-                            <h6 class="fw-bold mb-0" style="font-size:0.85rem;color:var(--navy-dark);">
+                            <small class="text-muted d-block header-account-label">TÀI KHOẢN</small>
+                            <h6 class="fw-bold mb-0 header-username-text">
                                 @(ViewBag.UserName ?? "Người dùng")
                             </h6>
                         </div>
                         <i class="fas fa-chevron-down text-muted small d-none d-md-block"></i>
                     </div>
 
-                    <div id="profile-dropdown"
-                         style="position:absolute;right:0;top:calc(100% + 8px);background:white;border-radius:18px;
-                                box-shadow:0 10px 25px rgba(15,23,42,0.08);border:1px solid #e2e8f0;
-                                padding:8px;min-width:220px;z-index:1100;display:none;">
+                    <div id="profile-dropdown">
                         <div class="px-3 py-2 border-bottom mb-2 text-start">
-                            <div class="fw-bold text-truncate" style="font-size:0.88rem;color:var(--navy-dark);">
+                            <div class="fw-bold text-truncate dropdown-profile-name">
                                 @(ViewBag.UserName ?? "Người dùng")
                             </div>
-                            <div class="text-muted text-truncate" style="font-size:0.75rem;">
+                            <div class="text-muted text-truncate dropdown-profile-tier">
                                 @(ViewBag.UserTier ?? "Member")
                             </div>
                         </div>
@@ -452,7 +234,7 @@
             <i class="fas fa-history"></i>
             <span>Lịch sử</span>
         </a>
-        
+
         <!-- Center Floating Circular Booking Button -->
         <div class="mobile-bottom-nav-center-wrapper">
             <a href="/Customer/Booking" class="mobile-bottom-nav-center-btn @(ViewBag.ActiveNav == "booking" ? "active" : "")">

@@ -64,12 +64,14 @@ document.addEventListener('DOMContentLoaded', function () {
     loadTierData();
     renderMemberCard();
     renderRewardsGrid();
+    renderExpiryBatches();
 
     window.addEventListener('storage', function () {
         currentTier = localStorage.getItem('user_tier') || 'Gold Member';
         loadTierData();
         renderMemberCard();
         renderRewardsGrid();
+        renderExpiryBatches();
     });
 });
 
@@ -272,6 +274,44 @@ function confirmRedeem() {
     window.dispatchEvent(new Event('storage'));
     closeRedeemModal();
     showToast(`Đổi thưởng thành công! Trừ ${pendingRedeem.pts} PTS.`, 'success');
+}
+
+// ── Points Expiry Batches ────────────────────────────────
+function renderExpiryBatches() {
+    const container = document.getElementById('expiry-batches');
+    if (!container) return;
+
+    const config = JSON.parse(localStorage.getItem('loyalty_config') || '{}');
+    const expiryMonths = config.expiryMonths || 12;
+    const now = new Date();
+
+    // Simulated earned-point batches (oldest first)
+    const earnedDaysAgo = [305, 210, 95];
+    const ptsAmounts    = [150, 220, 180];
+
+    const batches = earnedDaysAgo.map((daysAgo, i) => {
+        const earned = new Date(now);
+        earned.setDate(earned.getDate() - daysAgo);
+        const expiry = new Date(earned);
+        expiry.setMonth(expiry.getMonth() + expiryMonths);
+        const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+        return { pts: ptsAmounts[i], expiry, daysLeft };
+    });
+
+    container.innerHTML = batches.map(b => {
+        const isWarn  = b.daysLeft <= 60;
+        const expiryStr = b.expiry.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        return `
+        <div class="expiry-item">
+            <div>
+                <div class="fw-bold" style="color:var(--navy-dark);font-size:0.8rem;">${b.pts} PTS</div>
+                <small class="text-muted" style="font-size:0.67rem;">Hết hạn: ${expiryStr}</small>
+            </div>
+            <span class="expiry-badge ${isWarn ? 'expiry-badge-warn' : 'expiry-badge-ok'}">
+                ${isWarn ? `Còn ${b.daysLeft} ngày` : 'Còn hạn'}
+            </span>
+        </div>`;
+    }).join('');
 }
 
 // ── Loyalty Rules ────────────────────────────────────────

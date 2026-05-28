@@ -133,8 +133,10 @@ function handleVerifyOtp() {
     localStorage.setItem('user_role', 'customer');
     localStorage.setItem('user_display_name', name);
     localStorage.setItem('user_phone', phone);
-    localStorage.setItem('user_points', '0');
-    localStorage.setItem('user_tier', 'Standard Member');
+    localStorage.setItem('user_points', '550');
+    localStorage.setItem('user_tier', 'Gold Member');
+    localStorage.setItem('user_next_tier', 'Platinum');
+    localStorage.setItem('user_remaining_spend', '250k');
     localStorage.removeItem('reg_name_temp');
     localStorage.removeItem('reg_phone_temp');
     window.dispatchEvent(new Event('storage'));

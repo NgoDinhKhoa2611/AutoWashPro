@@ -42,6 +42,17 @@ function loadProfileData() {
         tierBadge.className   = 'badge fw-bold px-2 py-1 profile-tier-badge ' + getTierBgClass(tier);
     }
 
+    // Sync profile header banner gradient to match the membership tier card
+    const headerBanner = document.getElementById('profile-header-banner');
+    if (headerBanner) {
+        headerBanner.classList.remove('tier-gold', 'tier-silver', 'tier-platinum', 'tier-standard');
+        const tUp = tier.toUpperCase();
+        if (tUp.includes('PLATINUM')) headerBanner.classList.add('tier-platinum');
+        else if (tUp.includes('GOLD')) headerBanner.classList.add('tier-gold');
+        else if (tUp.includes('SILVER')) headerBanner.classList.add('tier-silver');
+        else headerBanner.classList.add('tier-standard');
+    }
+
     const avatarImg = document.getElementById('profile-avatar-img');
     if (avatarImg) avatarImg.src = avatar;
 
