@@ -3,6 +3,72 @@
  * Toast notifications + Confirm modal system
  */
 
+// ── Storage Access Polyfill (Handling Tracking Prevention) ──
+(function () {
+    let storageAvailable = false;
+    try {
+        if (window.localStorage) {
+            const testKey = '__storage_test__';
+            window.localStorage.setItem(testKey, testKey);
+            window.localStorage.removeItem(testKey);
+            storageAvailable = true;
+        }
+    } catch (e) {
+        storageAvailable = false;
+    }
+
+    if (!storageAvailable) {
+        console.warn('Storage access is blocked by Tracking Prevention or browser settings. Falling back to in-memory storage.');
+
+        const createMockStorage = () => {
+            const inMemoryStore = {};
+            return {
+                getItem: function (key) {
+                    return key in inMemoryStore ? inMemoryStore[key] : null;
+                },
+                setItem: function (key, value) {
+                    inMemoryStore[key] = String(value);
+                },
+                removeItem: function (key) {
+                    delete inMemoryStore[key];
+                },
+                clear: function () {
+                    for (const key in inMemoryStore) {
+                        delete inMemoryStore[key];
+                    }
+                },
+                key: function (index) {
+                    const keys = Object.keys(inMemoryStore);
+                    return keys[index] || null;
+                },
+                get length() {
+                    return Object.keys(inMemoryStore).length;
+                }
+            };
+        };
+
+        try {
+            Object.defineProperty(window, 'localStorage', {
+                value: createMockStorage(),
+                writable: true,
+                configurable: true
+            });
+        } catch (e) {
+            console.error('Failed to redefine localStorage:', e);
+        }
+
+        try {
+            Object.defineProperty(window, 'sessionStorage', {
+                value: createMockStorage(),
+                writable: true,
+                configurable: true
+            });
+        } catch (e) {
+            console.error('Failed to redefine sessionStorage:', e);
+        }
+    }
+})();
+
 // ── Toast System ─────────────────────────────────────────
 const TOAST_ICONS = {
     success: 'fa-check-circle',
@@ -60,6 +126,11 @@ window.showConfirm = function(title, message, onConfirm) {
     document.getElementById('confirm-modal-title').textContent = title;
     document.getElementById('confirm-modal-body').textContent = message;
 
+    const okBtn = document.getElementById('confirm-ok-btn');
+    if (okBtn) {
+        okBtn.onclick = window.handleConfirmOk;
+    }
+
     overlay.style.display = 'flex';
     requestAnimationFrame(() => overlay.classList.add('show'));
 };
@@ -70,6 +141,10 @@ window.closeConfirmModal = function() {
     overlay.classList.remove('show');
     setTimeout(() => { overlay.style.display = 'none'; }, 300);
     _confirmCallback = null;
+};
+
+window.closeConfirm = function() {
+    window.closeConfirmModal();
 };
 
 window.handleConfirmOk = function() {

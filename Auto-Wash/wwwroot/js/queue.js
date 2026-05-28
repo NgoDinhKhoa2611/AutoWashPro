@@ -66,10 +66,11 @@ function loadQueue() {
 function normalizeplate(p) { return (p || '').replace(/[\s-]/g, '').toUpperCase(); }
 
 function buildQueueItem(booking) {
+    const defaultName = (localStorage.getItem('user_display_name') || localStorage.getItem('user_name') || 'Lê Tuấn Kiệt') + ' (Bạn)';
     return {
         id: booking.id || 'book_' + Date.now(),
-        customerName: booking.name || 'Lê Tuấn Kiệt (Bạn)',
-        name:         booking.name || 'Lê Tuấn Kiệt (Bạn)',
+        customerName: booking.name || defaultName,
+        name:         booking.name || defaultName,
         bookingTime:  booking.bookingTime || 'Vừa xong',
         vehiclePlate: booking.plate || '',
         plate:        booking.plate || '',

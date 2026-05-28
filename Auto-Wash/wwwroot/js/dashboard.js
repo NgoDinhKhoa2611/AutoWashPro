@@ -23,8 +23,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function updateConciergeGreeting() {
     const greetingEl = document.getElementById('concierge-greeting');
+    const greetingMobileEl = document.getElementById('concierge-greeting-mobile');
     const weatherEl = document.getElementById('concierge-weather');
-    if (!greetingEl) return;
+    if (!greetingEl && !greetingMobileEl) return;
 
     // 1. Time of day greeting
     const hour = new Date().getHours();
@@ -33,8 +34,14 @@ function updateConciergeGreeting() {
     else if (hour >= 12 && hour < 18) prefix = 'Chào buổi chiều 🌤️';
     else prefix = 'Chào buổi tối 🌙';
 
-    const savedName = localStorage.getItem('user_name') || 'Lê Tuấn Kiệt';
-    greetingEl.textContent = `${prefix}, ${savedName}!`;
+    const savedName = localStorage.getItem('user_display_name') || localStorage.getItem('user_name') || 'Lê Tuấn Kiệt';
+    
+    if (greetingEl) {
+        greetingEl.textContent = `${prefix}, ${savedName}!`;
+    }
+    if (greetingMobileEl) {
+        greetingMobileEl.textContent = savedName;
+    }
 
     // 2. Weather suitability status
     if (weatherEl) {

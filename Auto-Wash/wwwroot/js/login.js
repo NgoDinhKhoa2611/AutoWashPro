@@ -181,7 +181,98 @@ function startOtpTimer() {
     }, 1000);
 }
 
+// ── Google Sign-In Integration ───────────────────────────
+function initGoogleSignIn() {
+    if (typeof google === 'undefined') {
+        // Retry in 100ms if GIS library is not loaded yet
+        setTimeout(initGoogleSignIn, 100);
+        return;
+    }
+
+    google.accounts.id.initialize({
+        client_id: "40329422268-s3m1sqlniabg1f8o7roo5pmfckb4j3te.apps.googleusercontent.com",
+        callback: handleCredentialResponse
+    });
+
+    // Render Google button for Login Panel
+    const loginBtnContainer = document.getElementById("google-login-btn-login");
+    if (loginBtnContainer) {
+        google.accounts.id.renderButton(loginBtnContainer, {
+            theme: "outline",
+            size: "large",
+            width: 360,
+            text: "signin_with",
+            shape: "pill",
+            logo_alignment: "left"
+        });
+    }
+
+    // Render Google button for Register Panel
+    const registerBtnContainer = document.getElementById("google-login-btn-register");
+    if (registerBtnContainer) {
+        google.accounts.id.renderButton(registerBtnContainer, {
+            theme: "outline",
+            size: "large",
+            width: 360,
+            text: "signup_with",
+            shape: "pill",
+            logo_alignment: "left"
+        });
+    }
+}
+
+function handleCredentialResponse(response) {
+    try {
+        const payload = decodeJwtResponse(response.credential);
+        
+        console.log("Google Login Success! User Data:", payload);
+
+        const email = payload.email;
+        const name  = payload.name || "Người dùng Google";
+        const avatar = payload.picture || "";
+
+        // Store into localStorage to match AutoWash's custom mock authentication layer
+        localStorage.setItem('user_role', 'customer');
+        localStorage.setItem('user_display_name', name);
+        localStorage.setItem('user_phone', email); // Use email as the identifier
+        localStorage.setItem('user_avatar', avatar);
+        
+        // Retain existing points or initialize new standard customer points
+        if (!localStorage.getItem('user_points')) {
+            localStorage.setItem('user_points', '100'); // Give 100 points for first Google signup!
+        }
+        if (!localStorage.getItem('user_tier')) {
+            localStorage.setItem('user_tier', 'Standard Member');
+        }
+
+        window.dispatchEvent(new Event('storage'));
+
+        // Show toast and redirect
+        showToast(`Đăng nhập Google thành công! Chào mừng ${name}`, 'success');
+
+        setTimeout(() => {
+            window.location.href = '/Customer/Dashboard';
+        }, 1200);
+
+    } catch (error) {
+        console.error("Google authentication error:", error);
+        showToast("Có lỗi xảy ra khi đăng nhập bằng Google!", "error");
+    }
+}
+
+// Pure JS function to decode Google JWT Token
+function decodeJwtResponse(token) {
+    let base64Url = token.split('.')[1];
+    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    let jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+}
+
 // Init
 document.addEventListener('DOMContentLoaded', function () {
     showPanel('login');
+    initGoogleSignIn();
 });
+

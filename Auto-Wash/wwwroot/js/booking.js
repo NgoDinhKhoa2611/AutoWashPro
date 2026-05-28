@@ -401,6 +401,7 @@ function handleConfirmBooking() {
 
     const booking = {
         id:          'book_' + Date.now(),
+        name:        localStorage.getItem('user_display_name') || localStorage.getItem('user_name') || 'Lê Tuấn Kiệt',
         plate:       selectedVehicle,
         service:     svc.name,
         addons:      addonEntries.map(a => a.name),
