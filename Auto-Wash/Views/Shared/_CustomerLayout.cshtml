@@ -252,6 +252,19 @@
         </div>
     </div>
 </div>
+<script>
+    window.closeConfirm = function() {
+        if (typeof window.closeConfirmModal === 'function') {
+            window.closeConfirmModal();
+        } else {
+            const overlay = document.getElementById('confirm-modal-backdrop');
+            if (overlay) {
+                overlay.classList.remove('show');
+                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+            }
+        }
+    };
+</script>
 
 <div class="customer-layout-wrapper">
 
@@ -316,9 +329,9 @@
 
         <!-- Sidebar Footer -->
         <div class="mt-auto pt-4 d-flex flex-column gap-2">
-            <a href="/Account/Logout"
+            <a href="javascript:void(0)"
                class="customer-sidebar-link text-danger"
-               onclick="return confirm('Bạn có chắc muốn đăng xuất?')"
+               onclick="handleLogoutFromLayout()"
                style="border-radius:12px;">
                 <i class="fas fa-sign-out-alt text-danger"></i>
                 <span>Đăng xuất</span>
@@ -399,9 +412,9 @@
                         <a href="/Customer/Profile" class="profile-dropdown-item">
                             <i class="fas fa-user-circle"></i> Trang cá nhân
                         </a>
-                        <a href="/Account/Logout"
+                        <a href="javascript:void(0)"
                            class="profile-dropdown-item text-danger"
-                           onclick="return confirm('Bạn có chắc muốn đăng xuất?')">
+                           onclick="handleLogoutFromLayout()">
                             <i class="fas fa-sign-out-alt text-danger"></i> Đăng xuất
                         </a>
                     </div>
@@ -460,8 +473,8 @@
 </nav>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="~/js/app.js"></script>
-<script src="~/js/customer-layout.js"></script>
+<script src="~/js/app.js" asp-append-version="true"></script>
+<script src="~/js/customer-layout.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
