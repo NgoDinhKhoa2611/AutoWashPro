@@ -1,0 +1,205 @@
+@{
+    Layout = "~/Views/Shared/_CustomerLayout.cshtml";
+    ViewBag.PageTitle = "Lịch sử rửa xe";
+    ViewBag.ActiveNav = "history";
+}
+
+<div class="container-fluid p-0 animate-up">
+    <div class="row g-4">
+
+        <!-- ── Left Column: Active + Past bookings ──────────── -->
+        <div class="col-lg-8">
+
+            <!-- Active wash block (hidden by default, shown by history.js) -->
+            <div id="history-active-block" style="display:none;" class="mb-4">
+                <h6 class="fw-bold text-muted text-uppercase mb-2 px-1" style="letter-spacing:1px;font-size:0.72rem;">Lượt rửa xe hiện tại</h6>
+                <div class="app-card border-0 shadow-sm p-4 bg-white" style="border-radius:24px;">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-4 p-3 me-3 d-flex align-items-center justify-content-center"
+                                 style="background:rgba(15,23,42,0.06);width:52px;height:52px;">
+                                <i class="fas fa-car fa-lg" style="color:var(--navy-dark);"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5" style="color:var(--navy-dark);letter-spacing:0.5px;" id="active-plate">—</div>
+                                <small class="text-muted d-block" id="active-service">—</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill small fw-bold d-flex align-items-center gap-2">
+                                <span class="pulse-dot-washing"></span>
+                                <span id="active-step-badge">Đang chờ phục vụ</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-3 rounded-4 mt-3 row g-3">
+                        <div class="col-sm-6">
+                            <small class="text-muted d-block fw-bold" style="font-size:0.68rem;">GIỜ ĐẶT HẸN</small>
+                            <span class="fw-bold" style="font-size:0.85rem;color:var(--navy-dark);" id="active-time">—</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted d-block fw-bold" style="font-size:0.68rem;">ƯU TIÊN PHỤC VỤ</small>
+                            <span class="badge fw-bold px-2 py-1 rounded" style="font-size:0.7rem;background:var(--navy-dark);color:var(--cyan-electric);"
+                                  id="active-tier-badge">PRIORITY</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Past booking history -->
+            <div>
+                <h6 class="fw-bold text-muted text-uppercase mb-2 px-1" style="letter-spacing:1px;font-size:0.72rem;">
+                    Lịch sử rửa xe tích điểm (<span id="history-count">0</span>)
+                </h6>
+                <div class="d-flex flex-column gap-3" id="history-list">
+                    <!-- Rendered by history.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Right Column: Stats + Promotion ──────────────── -->
+        <div class="col-lg-4">
+            <div class="position-sticky" style="top:100px;">
+
+                <!-- Spending stats -->
+                <div class="app-card border-0 shadow-sm p-4 bg-white mb-4" style="border-radius:24px;">
+                    <h5 class="fw-bold pb-2 border-bottom mb-3" style="color:var(--navy-dark);">
+                        <i class="fas fa-chart-line text-cyan me-2"></i>Tổng quan chi tiêu
+                    </h5>
+                    <div class="d-flex flex-column gap-3">
+                        <div>
+                            <small class="text-muted d-block fw-bold" style="font-size:0.68rem;">TỔNG SỐ LẦN RỬA XE</small>
+                            <h4 class="fw-bold mb-0" style="color:var(--navy-dark);" id="stat-wash-count">0 lần</h4>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block fw-bold" style="font-size:0.68rem;">TỔNG SỐ TIỀN ĐÃ CHI</small>
+                            <h4 class="fw-bold mb-0 text-cyan" id="stat-total-spent">0đ</h4>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block fw-bold" style="font-size:0.68rem;">ĐIỂM THƯỞNG ĐÃ TÍCH LŨY</small>
+                            <h4 class="fw-bold mb-0 text-warning" id="stat-total-pts">+0 PTS</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Survey promo card -->
+                <div class="app-card border-0 shadow-sm p-4 text-white"
+                     style="background:linear-gradient(135deg,var(--navy-dark) 0%,var(--navy-light) 100%);border-radius:24px;">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-gift text-cyan fa-2x me-3"></i>
+                        <h6 class="fw-bold mb-0 text-white">Đóng góp ý kiến của bạn!</h6>
+                    </div>
+                    <p class="small mb-0" style="color:rgba(255,255,255,0.5);line-height:1.4;">
+                        Mỗi đánh giá dịch vụ hoàn thành sẽ giúp AutoWash Pro cải thiện dịch vụ, đồng thời tặng ngay
+                        <strong class="text-cyan">+50 PTS</strong> điểm thành viên trực tiếp vào ví của bạn.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Survey / Rating Modal ─────────────────────────────── -->
+<div id="survey-modal-backdrop" class="confirm-modal-backdrop" style="display:none;">
+    <div class="confirm-modal-card animate-confirm-in" style="max-width:480px;"
+         onclick="event.stopPropagation()">
+
+        <!-- Survey form (default view) -->
+        <div id="survey-form-view">
+            <h5 class="fw-bold text-center mb-1" style="color:var(--navy-dark);">Khảo sát & Đánh giá dịch vụ</h5>
+            <p class="text-muted small text-center mb-4">Ý kiến của bạn giúp chúng tôi cải thiện chất lượng phục vụ!</p>
+
+            <!-- Star rating -->
+            <div class="mb-4 text-center">
+                <label class="form-label small fw-bold text-muted d-block mb-2">ĐÁNH GIÁ CHẤT LƯỢNG CHUNG</label>
+                <div class="d-flex justify-content-center gap-2" id="star-row">
+                    <i class="fas fa-star fa-2x survey-star" data-star="1" onclick="setSurveyStars(1)"></i>
+                    <i class="fas fa-star fa-2x survey-star" data-star="2" onclick="setSurveyStars(2)"></i>
+                    <i class="fas fa-star fa-2x survey-star" data-star="3" onclick="setSurveyStars(3)"></i>
+                    <i class="fas fa-star fa-2x survey-star" data-star="4" onclick="setSurveyStars(4)"></i>
+                    <i class="fas fa-star fa-2x survey-star" data-star="5" onclick="setSurveyStars(5)"></i>
+                </div>
+            </div>
+
+            <!-- Emoji reactions -->
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted d-block text-center mb-3">BẠN CẢM THẤY THẾ NÀO?</label>
+                <div class="d-flex justify-content-between px-2" id="emoji-row">
+                    <div class="text-center survey-emoji-item" data-val="1" onclick="setSurveyEmoji(1)" style="cursor:pointer;width:55px;">
+                        <span class="survey-emoji d-inline-block" style="font-size:1.75rem;">😠</span>
+                        <small class="d-block mt-1 text-muted survey-emoji-label" style="font-size:0.62rem;text-transform:uppercase;">Rất tệ</small>
+                    </div>
+                    <div class="text-center survey-emoji-item" data-val="2" onclick="setSurveyEmoji(2)" style="cursor:pointer;width:55px;">
+                        <span class="survey-emoji d-inline-block" style="font-size:1.75rem;">😐</span>
+                        <small class="d-block mt-1 text-muted survey-emoji-label" style="font-size:0.62rem;text-transform:uppercase;">Tạm ổn</small>
+                    </div>
+                    <div class="text-center survey-emoji-item" data-val="3" onclick="setSurveyEmoji(3)" style="cursor:pointer;width:55px;">
+                        <span class="survey-emoji d-inline-block" style="font-size:1.75rem;">🙂</span>
+                        <small class="d-block mt-1 text-muted survey-emoji-label" style="font-size:0.62rem;text-transform:uppercase;">Hài lòng</small>
+                    </div>
+                    <div class="text-center survey-emoji-item" data-val="4" onclick="setSurveyEmoji(4)" style="cursor:pointer;width:55px;">
+                        <span class="survey-emoji d-inline-block" style="font-size:1.75rem;">😄</span>
+                        <small class="d-block mt-1 text-muted survey-emoji-label" style="font-size:0.62rem;text-transform:uppercase;">Rất tốt</small>
+                    </div>
+                    <div class="text-center survey-emoji-item" data-val="5" onclick="setSurveyEmoji(5)" style="cursor:pointer;width:55px;">
+                        <span class="survey-emoji d-inline-block" style="font-size:1.75rem;">🤩</span>
+                        <small class="d-block mt-1 text-muted survey-emoji-label" style="font-size:0.62rem;text-transform:uppercase;">Tuyệt hảo</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick tags -->
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted">Ý KIẾN NHANH (BẤM CHỌN)</label>
+                <div class="d-flex flex-wrap gap-2" id="survey-tags-row">
+                    <span class="survey-tag badge rounded-pill px-3 py-2 border fw-medium" data-tag="Rửa siêu sạch"
+                          onclick="toggleSurveyTag(this)" style="cursor:pointer;font-size:0.75rem;">Rửa siêu sạch</span>
+                    <span class="survey-tag badge rounded-pill px-3 py-2 border fw-medium" data-tag="Dịch vụ nhanh"
+                          onclick="toggleSurveyTag(this)" style="cursor:pointer;font-size:0.75rem;">Dịch vụ nhanh</span>
+                    <span class="survey-tag badge rounded-pill px-3 py-2 border fw-medium" data-tag="Nhân viên thân thiện"
+                          onclick="toggleSurveyTag(this)" style="cursor:pointer;font-size:0.75rem;">Nhân viên thân thiện</span>
+                    <span class="survey-tag badge rounded-pill px-3 py-2 border fw-medium" data-tag="Giá hợp lý"
+                          onclick="toggleSurveyTag(this)" style="cursor:pointer;font-size:0.75rem;">Giá hợp lý</span>
+                    <span class="survey-tag badge rounded-pill px-3 py-2 border fw-medium" data-tag="Sấy chưa khô hẳn"
+                          onclick="toggleSurveyTag(this)" style="cursor:pointer;font-size:0.75rem;">Sấy chưa khô hẳn</span>
+                    <span class="survey-tag badge rounded-pill px-3 py-2 border fw-medium" data-tag="Đợi hơi lâu"
+                          onclick="toggleSurveyTag(this)" style="cursor:pointer;font-size:0.75rem;">Đợi hơi lâu</span>
+                </div>
+            </div>
+
+            <!-- Custom review textarea -->
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">GÓP Ý CHI TIẾT</label>
+                <textarea id="survey-review-text" class="form-control bg-light border-0 rounded-3 small"
+                          rows="3" style="font-size:0.82rem;border:1px solid #e2e8f0 !important;"
+                          placeholder="Hãy để lại ý kiến đóng góp của bạn về dịch vụ tại đây..."></textarea>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="d-flex gap-2">
+                <button type="button" class="app-btn-secondary w-50 py-2" style="border-radius:12px;"
+                        onclick="closeSurveyModal()">HỦY BỎ</button>
+                <button type="button" id="survey-submit-btn" class="app-btn-primary w-50 py-2" style="border-radius:12px;"
+                        onclick="submitSurvey()">GỬI ĐÁNH GIÁ</button>
+            </div>
+        </div>
+
+        <!-- Survey success view -->
+        <div id="survey-success-view" class="text-center py-4 animate-up" style="display:none;">
+            <div class="success-checkmark-wrapper mb-3">
+                <i class="fas fa-check-circle fa-4x text-success" style="text-shadow:0 0 15px rgba(40,167,69,0.3);"></i>
+            </div>
+            <h4 class="fw-bold text-success mb-2">Đánh Giá Thành Công!</h4>
+            <p class="text-muted small mb-3">Cảm ơn bạn đã phản hồi, hệ thống ghi nhận tích lũy:</p>
+            <div class="text-cyan fw-bold fs-4">+50 SMEMBER PTS</div>
+            <small class="text-muted d-block mt-3" style="font-size:0.68rem;">
+                * Điểm số đã được tự động cộng vào thẻ thành viên của bạn
+            </small>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/history.js"></script>
+}

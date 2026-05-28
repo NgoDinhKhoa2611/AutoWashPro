@@ -1,0 +1,200 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Đăng nhập";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập — AutoWash Pro</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/shared.css" />
+    <link rel="stylesheet" href="~/css/login.css" />
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="login-page-wrapper" id="login-page">
+
+    <!-- Ambient Blobs -->
+    <div class="login-bg-glow-1"></div>
+    <div class="login-bg-glow-2"></div>
+
+    <!-- ── Success Screen (hiển thị khi đăng ký xong) ─────── -->
+    <div class="login-success-screen animate-up" id="success-screen" style="display:none;">
+        <div class="success-checkmark-wrapper mb-4">
+            <i class="fas fa-check-circle fa-5x text-success"
+               style="text-shadow:0 4px 15px rgba(16,185,129,0.2);"></i>
+        </div>
+        <h3 class="fw-bold text-success text-center">ĐĂNG KÝ THÀNH CÔNG!</h3>
+        <p class="text-secondary text-center small mt-2" id="success-msg">Chào mừng bạn gia nhập AutoWash Pro</p>
+    </div>
+
+    <!-- ── Brand Header (ẩn ở OTP view) ──────────────────── -->
+    <div class="text-center mb-4 animate-up" id="brand-header" style="z-index:10;">
+        <div class="login-brand-icon">
+            <i class="fas fa-car-side text-cyan fa-2x"></i>
+        </div>
+        <h3 class="fw-bold text-dark mb-0">AutoWash <span class="text-cyan">Pro</span></h3>
+        <p class="text-secondary small" style="font-size:0.75rem;">Hệ Thống Quản Lý Rửa Xe Thông Minh</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         PANEL: ĐĂNG NHẬP
+         ══════════════════════════════════════════════════════ -->
+    <div id="panel-login" class="glass-card animate-up" style="width:100%;max-width:420px;z-index:10;">
+        <h4 class="mb-4 text-center fw-bold" style="letter-spacing:1px;font-size:1.15rem;">
+            ĐĂNG NHẬP HỆ THỐNG
+        </h4>
+
+        <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">TÀI KHOẢN / SỐ ĐIỆN THOẠI</label>
+                <div class="input-group glass-input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input type="text" id="login-phone" class="form-control"
+                           placeholder="Nhập tài khoản hoặc SĐT" required />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">MẬT KHẨU</label>
+                <div class="input-group glass-input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" id="login-password" class="form-control"
+                           placeholder="********" required />
+                </div>
+            </div>
+
+            <div class="text-center mb-3">
+                <small class="text-secondary" style="font-size:0.75rem;">
+                    <i class="fas fa-info-circle text-cyan me-1"></i>
+                    Hệ thống sẽ tự nhận diện vai trò tài khoản
+                </small>
+            </div>
+
+            <button type="submit" class="app-btn-primary mb-3 py-3" style="font-size:0.85rem;">
+                ĐĂNG NHẬP <i class="fas fa-sign-in-alt ms-2"></i>
+            </button>
+        </form>
+
+        <div class="text-center mt-3">
+            <p class="text-secondary small mb-0">
+                Chưa có tài khoản?
+                <a href="#" onclick="showPanel('register');return false;"
+                   class="text-cyan text-decoration-none fw-bold">Đăng ký ngay</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         PANEL: ĐĂNG KÝ
+         ══════════════════════════════════════════════════════ -->
+    <div id="panel-register" class="glass-card animate-up" style="width:100%;max-width:420px;z-index:10;display:none;">
+        <h4 class="mb-4 text-center fw-bold" style="letter-spacing:1px;font-size:1.15rem;">
+            ĐĂNG KÝ TÀI KHOẢN
+        </h4>
+
+        <form id="register-form" onsubmit="handleRegister(event)">
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">HỌ VÀ TÊN</label>
+                <div class="input-group glass-input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input type="text" id="reg-name" class="form-control"
+                           placeholder="Nhập họ và tên đầy đủ" required />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">SỐ ĐIỆN THOẠI</label>
+                <div class="input-group glass-input-group">
+                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                    <input type="tel" id="reg-phone" class="form-control"
+                           placeholder="Nhập số điện thoại đăng ký" required />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">MẬT KHẨU</label>
+                <div class="input-group glass-input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" id="reg-password" class="form-control"
+                           placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)" required />
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-secondary">XÁC NHẬN MẬT KHẨU</label>
+                <div class="input-group glass-input-group">
+                    <span class="input-group-text"><i class="fas fa-shield-alt"></i></span>
+                    <input type="password" id="reg-confirm" class="form-control"
+                           placeholder="Nhập lại mật khẩu mới" required />
+                </div>
+            </div>
+            <button type="submit" class="app-btn-primary mb-3 py-3" style="font-size:0.85rem;">
+                ĐĂNG KÝ NGAY <i class="fas fa-user-plus ms-2"></i>
+            </button>
+        </form>
+
+        <div class="text-center mt-2">
+            <a href="#" onclick="showPanel('login');return false;"
+               class="text-cyan text-decoration-none small fw-bold">
+                <i class="fas fa-arrow-left me-2"></i> Quay lại Đăng nhập
+            </a>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         PANEL: OTP VERIFICATION
+         ══════════════════════════════════════════════════════ -->
+    <div id="panel-otp" class="glass-card animate-up" style="width:100%;max-width:420px;z-index:10;display:none;">
+        <div class="text-center mb-4">
+            <div class="login-brand-icon d-inline-flex align-items-center justify-content-center"
+                 style="width:65px;height:65px;">
+                <i class="fas fa-mobile-alt text-cyan fa-lg"></i>
+            </div>
+            <h4 class="fw-bold mt-2">Xác Thực Mã OTP</h4>
+            <p class="text-secondary small px-2 mt-2">
+                Chúng tôi đã gửi mã xác thực 4 chữ số tới số điện thoại
+                <span class="text-cyan fw-bold" id="otp-phone-display"></span>
+            </p>
+        </div>
+
+        <div class="d-flex justify-content-center gap-3 mb-4">
+            <input type="text" maxlength="1" class="otp-input" id="otp-0"
+                   oninput="handleOtpInput(0,this)" onkeydown="handleOtpKeydown(0,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-1"
+                   oninput="handleOtpInput(1,this)" onkeydown="handleOtpKeydown(1,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-2"
+                   oninput="handleOtpInput(2,this)" onkeydown="handleOtpKeydown(2,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-3"
+                   oninput="handleOtpInput(3,this)" onkeydown="handleOtpKeydown(3,event)" />
+        </div>
+
+        <button onclick="handleVerifyOtp()"
+                class="app-btn-primary mb-3 py-3" style="font-size:0.85rem;">
+            XÁC NHẬN MÃ <i class="fas fa-check-circle ms-2"></i>
+        </button>
+
+        <div class="text-center mt-3">
+            <p class="text-secondary small" id="otp-resend-msg">
+                Gửi lại mã sau <span class="text-cyan fw-bold" id="otp-timer">59</span>s
+            </p>
+            <button id="otp-resend-btn" class="btn btn-link text-cyan text-decoration-none small fw-bold p-0"
+                    onclick="handleResendOtp()" style="display:none;">
+                Gửi lại mã OTP
+            </button>
+            <br />
+            <button onclick="showPanel('register')" class="btn btn-link text-secondary text-decoration-none small mt-2 p-0">
+                <i class="fas fa-edit me-1"></i> Thay đổi số điện thoại
+            </button>
+        </div>
+    </div>
+
+</div><!-- /.login-page-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/app.js"></script>
+<script src="~/js/login.js"></script>
+</body>
+</html>

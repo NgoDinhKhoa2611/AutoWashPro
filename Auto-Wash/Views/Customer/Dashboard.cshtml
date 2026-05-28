@@ -1,0 +1,257 @@
+@{
+    Layout = "~/Views/Shared/_CustomerLayout.cshtml";
+    ViewBag.PageTitle = "Tổng quan hoạt động";
+    ViewBag.ActiveNav = "dashboard";
+    /* Demo data — sau này thay bằng @Model hoặc @ViewBag từ Controller */
+    var userName   = ViewBag.UserName   ?? "Lê Tuấn Kiệt";
+    var points     = ViewBag.UserPoints ?? 550;
+    var tier       = ViewBag.UserTier   ?? "Gold Member";
+    var nextTier   = ViewBag.NextTier   ?? "Platinum";
+    var remaining  = ViewBag.RemainingSpend ?? "250k";
+    var vehicles   = 2;
+}
+
+<div class="container-fluid p-0">
+
+    <!-- ── Greeting & Weather Concierge ───────────────────────── -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3 animate-up">
+        <!-- Desktop-only Greeting -->
+        <div class="d-none d-md-block">
+            <h3 class="fw-bold mb-1" style="color:var(--navy-dark);" id="concierge-greeting">Xin chào, @userName!</h3>
+            <p class="text-muted mb-0 small" style="font-size:0.8rem;">Theo dõi tiến trình rửa xe, điểm tích lũy và đặc quyền thành viên của bạn.</p>
+        </div>
+        <!-- Mobile compact greeting -->
+        <div class="d-block d-md-none w-100">
+            <div class="d-flex align-items-center justify-content-between gap-2">
+                <h4 class="fw-bold mb-0 text-dark" style="font-size: 1.25rem;">Xin chào, @userName! 👋</h4>
+                <div class="d-flex align-items-center gap-1 px-2.5 py-1 rounded-pill bg-white border" style="font-size:0.65rem; box-shadow:0 2px 8px rgba(0,0,0,0.015);">
+                    <span class="text-warning"><i class="fas fa-sun animate-spin-slow"></i></span>
+                    <span class="fw-bold text-secondary">Rửa xe tốt!</span>
+                </div>
+            </div>
+        </div>
+        <!-- Wash Suitability Index Chip (Desktop only) -->
+        <div class="d-none d-md-flex align-items-center gap-2 px-3 py-2 rounded-pill bg-white border shadow-sm" style="font-size:0.75rem;">
+            <span class="d-flex align-items-center justify-content-center text-warning" style="font-size:1rem;"><i class="fas fa-sun animate-spin-slow"></i></span>
+            <span class="fw-bold text-dark" id="concierge-weather">Thời tiết hôm nay lý tưởng để rửa xe! ☀️✨</span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- ── Left Column ─────────────────────────────────── -->
+        <div class="col-lg-8">
+
+            <!-- Membership Card (Giao diện kim loại phản chiếu 3D sang trọng) -->
+            <div class="member-card tier-gold mb-4 member-card-3d" id="member-card" style="border-radius:24px;">
+                <div class="card-gloss-overlay"></div>
+                <div class="d-flex justify-content-between align-items-start mb-2" style="position:relative;z-index:2;">
+                    <span class="tier-label m-0 fw-bold"><i class="fas fa-crown me-2"></i>@tier</span>
+                    <div class="card-chip-icon">
+                        <div class="chip-line"></div>
+                        <div class="chip-line"></div>
+                        <div class="chip-line"></div>
+                    </div>
+                </div>
+                <div class="my-3" style="position:relative;z-index:2;">
+                    <h2 class="fw-bold text-white mb-0 fs-1 d-inline-block" id="dashboard-points">@points</h2>
+                    <span class="ms-2 fw-bold text-cyan" style="font-size:0.85rem;letter-spacing:1px;text-transform:uppercase;">PTS</span>
+                    <p class="text-white opacity-50 mb-0" style="font-size:0.65rem;letter-spacing:0.5px;">S-MEMBER LOYALTY POINTS</p>
+                </div>
+                
+                <!-- Virtual scan-ready barcode! -->
+                <div class="barcode-wrapper mb-3" style="position:relative;z-index:2;">
+                    <div class="virtual-barcode"></div>
+                    <span class="barcode-number">AW-2026-GOLD</span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3" style="position:relative;z-index:2;border-top:1px solid rgba(255,255,255,0.08);padding-top:12px;">
+                    <div>
+                        <small style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">
+                            HẠNG TIẾP THEO
+                        </small>
+                        <div class="fw-bold text-cyan mt-0.5" style="font-size:0.8rem;" id="dashboard-next-tier">@nextTier — còn @remaining</div>
+                    </div>
+                    <div class="text-end">
+                        <small style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">
+                            MÃ THÀNH VIÊN
+                        </small>
+                        <div class="fw-bold text-white mt-0.5" style="font-size:0.75rem;letter-spacing:1.5px;" id="dashboard-card-code">AW-2026-GOLD</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Quick Action Capsules Carousel ────────────────────── -->
+            <div class="mb-4 animate-up" style="animation-delay:0.05s;">
+                <div class="d-flex gap-2 overflow-auto pb-2 no-scrollbar" style="white-space:nowrap;">
+                    <a href="/Customer/Booking" class="btn btn-sm px-4 py-2.5 rounded-pill border-0 shadow-sm d-inline-flex align-items-center gap-2 bg-white" style="color:var(--navy-dark);font-weight:700;font-size:0.78rem;transition:all 0.2s;">
+                        <div class="d-flex align-items-center justify-content-center rounded-circle text-white bg-primary" style="width:24px;height:24px;background:var(--cyan-electric) !important;"><i class="fas fa-calendar-alt small"></i></div>
+                        Đặt lịch rửa xe
+                    </a>
+                    <a href="/Customer/Loyalty" class="btn btn-sm px-4 py-2.5 rounded-pill border-0 shadow-sm d-inline-flex align-items-center gap-2 bg-white" style="color:var(--navy-dark);font-weight:700;font-size:0.78rem;transition:all 0.2s;">
+                        <div class="d-flex align-items-center justify-content-center rounded-circle text-white bg-warning" style="width:24px;height:24px;background:#f59e0b !important;"><i class="fas fa-gift small"></i></div>
+                        Đổi quà ưu đãi
+                    </a>
+                    <a href="/Customer/History" class="btn btn-sm px-4 py-2.5 rounded-pill border-0 shadow-sm d-inline-flex align-items-center gap-2 bg-white" style="color:var(--navy-dark);font-weight:700;font-size:0.78rem;transition:all 0.2s;">
+                        <div class="d-flex align-items-center justify-content-center rounded-circle text-white bg-success" style="width:24px;height:24px;background:#10b981 !important;"><i class="fas fa-history small"></i></div>
+                        Lịch sử của tôi
+                    </a>
+                    <a href="/Customer/Profile" class="btn btn-sm px-4 py-2.5 rounded-pill border-0 shadow-sm d-inline-flex align-items-center gap-2 bg-white" style="color:var(--navy-dark);font-weight:700;font-size:0.78rem;transition:all 0.2s;">
+                        <div class="d-flex align-items-center justify-content-center rounded-circle text-white bg-info" style="width:24px;height:24px;background:#06b6d4 !important;"><i class="fas fa-user small"></i></div>
+                        Cài đặt tài khoản
+                    </a>
+                </div>
+            </div>
+
+            <!-- Active Booking / Empty State (điều khiển bằng JS đọc localStorage) -->
+            <div id="empty-state-block" class="empty-state-container mb-4 animate-up" style="display:none;">
+                <div class="empty-state-icon">
+                    <i class="fas fa-shower fa-2x"></i>
+                </div>
+                <h5 class="fw-bold mb-2" style="color:var(--navy-dark);">Bạn chưa sử dụng dịch vụ nào</h5>
+                <p class="text-muted small mb-4" style="max-width:280px;">
+                    Đăng ký đặt lịch rửa xe ngay để được xếp vào hàng đợi phục vụ tự động thông minh.
+                </p>
+                <a href="/Customer/Booking"
+                   class="app-btn-primary py-3 px-5 w-auto shadow-none text-decoration-none d-inline-flex align-items-center gap-2"
+                   style="border-radius:14px;font-size:0.9rem;">
+                    ĐẶT LỊCH NGAY <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Active Booking Block -->
+            <div id="active-booking-block" class="app-card border-0 p-4 shadow-sm bg-white mb-4 animate-up" style="border-radius:24px; display:none;">
+                <!-- Rendered dynamically by dashboard.js -->
+            </div>
+
+            <!-- Telemetry Stats Grid -->
+            <div class="row g-2 g-md-3 mb-4 animate-up" style="animation-delay:0.1s;">
+                <!-- Stats 1: My Garage with Plate Tags -->
+                <div class="col-4 col-sm-4">
+                    <div class="app-card border-0 p-3 shadow-sm bg-white h-100 d-flex flex-column justify-content-between" style="border-radius:20px;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <i class="fas fa-motorcycle text-cyan mb-2 fa-lg"></i>
+                                <div class="text-muted small fw-bold d-none d-md-block" style="font-size:0.65rem;letter-spacing:0.5px;">XE CỦA TÔI</div>
+                            </div>
+                            <span class="badge rounded bg-light text-dark fw-bold px-2 py-1" style="font-size:0.65rem;" id="stat-vehicles-count">@vehicles xe</span>
+                        </div>
+                        <div class="mt-2">
+                            <div class="d-none d-md-flex flex-wrap gap-1" id="stat-garage-plates">
+                                <!-- Rendered dynamically by dashboard.js as small glass plates -->
+                            </div>
+                            <div class="d-block d-md-none text-dark fw-bold" style="font-size:0.75rem; letter-spacing: -0.2px;" id="stat-garage-plates-mobile">
+                                <!-- Mobile compact plate placeholder -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stats 2: Reward Points with Progress bar -->
+                <div class="col-4 col-sm-4">
+                    <div class="app-card border-0 p-3 shadow-sm bg-white h-100 d-flex flex-column justify-content-between" style="border-radius:20px;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <i class="fas fa-coins text-warning mb-2 fa-lg"></i>
+                                <div class="text-muted small fw-bold d-none d-md-block" style="font-size:0.65rem;letter-spacing:0.5px;">ĐIỂM THƯỞNG</div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <h4 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem; line-height: 1.1;" id="stat-points">@points <span class="d-none d-md-inline" style="font-size:0.65rem;">PTS</span></h4>
+                            <div class="progress rounded-pill bg-light mt-2 d-none d-md-flex" style="height:5px;">
+                                <div class="progress-bar bg-warning rounded-pill" role="progressbar" style="width: 65%;" id="stat-points-progress"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats 3: VIP Tier Medal Card -->
+                <div class="col-4 col-sm-4">
+                    <div class="app-card border-0 p-3 shadow-sm bg-white h-100 d-flex flex-column justify-content-between" style="border-radius:20px;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-crown text-primary mb-2 fa-lg" style="color:#a855f7 !important;"></i>
+                                <div class="text-muted small fw-bold d-none d-md-block" style="font-size:0.65rem;letter-spacing:0.5px;">VIP TIER</div>
+                            </div>
+                            <div class="d-none d-md-flex align-items-center justify-content-center rounded-circle bg-warning bg-opacity-10 text-warning" style="width:36px;height:36px;" id="stat-tier-medal">
+                                <i class="fas fa-medal"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <h4 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem; line-height: 1.1;" id="stat-tier">
+                                @tier.Replace(" Member", "")
+                            </h4>
+                            <small class="text-muted d-none d-md-block" style="font-size:0.65rem;" id="stat-tier-desc">Đặc quyền đặt lịch ưu tiên</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Right Column ────────────────────────────────── -->
+        <div class="col-lg-4">
+            <!-- Booking CTA Banner -->
+            <div class="mb-4 animate-up" style="animation-delay:0.1s;">
+                <div class="app-card border-0 d-flex flex-column justify-content-between p-4 shadow-lg"
+                     style="background:linear-gradient(135deg,var(--navy-dark) 0%,var(--navy-light) 100%);
+                            color:white;border-radius:24px;min-height:180px;">
+                    <div>
+                        <h4 class="fw-bold mb-1 text-cyan">Rửa Xe Đặt Lịch Ngay</h4>
+                        <p class="small mb-0" style="color:rgba(255,255,255,0.5);">
+                            Đặt chỗ trước chỉ mất 30 giây để được sắp xếp vào hàng đợi ưu tiên VIP của AutoWash Pro.
+                        </p>
+                    </div>
+                    <a href="/Customer/Booking"
+                       class="app-btn-primary py-3 w-100 shadow-none mt-3 text-decoration-none d-flex align-items-center justify-content-center gap-2"
+                       style="border-radius:14px;">
+                        ĐẶT LỊCH NGAY <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Categories -->
+            <div class="mb-4 animate-up" style="animation-delay:0.2s;">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="/Customer/History"
+                           class="app-card text-center p-3 h-100 border-0 shadow-sm d-flex flex-column align-items-center justify-content-center text-decoration-none"
+                           style="border-radius:16px;cursor:pointer;">
+                            <i class="fas fa-history text-cyan mb-2 fa-lg"></i>
+                            <div class="small fw-bold text-dark">Lịch sử</div>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="/Customer/Loyalty"
+                           class="app-card text-center p-3 h-100 border-0 shadow-sm d-flex flex-column align-items-center justify-content-center text-decoration-none"
+                           style="border-radius:16px;cursor:pointer;">
+                            <i class="fas fa-gift text-warning mb-2 fa-lg"></i>
+                            <div class="small fw-bold text-dark">Ưu đãi VIP</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Concierge Notifications Timeline -->
+            <div class="app-card border-0 shadow-sm p-4 bg-white animate-up mb-4" style="border-radius:24px;animation-delay:0.3s;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0" style="color:var(--navy-dark);">
+                        <i class="far fa-bell text-cyan me-2"></i>Dòng thời gian hoạt động
+                    </h6>
+                    <button class="btn btn-link p-0 text-cyan small text-decoration-none fw-bold"
+                            style="font-size:0.7rem;" onclick="markAllRead()">
+                        Đọc hết
+                    </button>
+                </div>
+                <!-- Timeline stream -->
+                <div class="concierge-feed d-flex flex-column gap-3" id="notif-widget-list" style="max-height:360px;overflow-y:auto;padding-left:12px;position:relative;">
+                    <div class="feed-timeline-line"></div>
+                    <!-- Feed items dynamically rendered by dashboard.js as timeline concierge dots -->
+                    <div class="text-center py-4 text-muted small">Không có thông báo hoạt động nào</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/dashboard.js"></script>
+}

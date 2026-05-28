@@ -1,0 +1,75 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.PageTitle = "Customer Relationship";
+    ViewBag.ActiveNav = "customers";
+}
+
+<header class="d-flex justify-content-between align-items-center mb-5 animate-up">
+    <div>
+        <h4 class="fw-bold mb-1" style="color:var(--navy-dark);">Customer Relationship</h4>
+        <p class="text-muted small mb-0 fw-medium">Manage loyalty tiers and customer data.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <div class="input-group" style="width:300px;">
+            <span class="input-group-text bg-white border-0 shadow-sm"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" id="customer-search" class="form-control border-0 shadow-sm px-3 py-2"
+                   placeholder="Tìm theo tên hoặc số điện thoại..."
+                   style="border-radius:0 12px 12px 0;" oninput="filterCustomers()" />
+        </div>
+        <button class="app-btn-primary py-2 px-4 w-auto shadow-none" style="font-size:0.8rem;border-radius:12px;"
+                onclick="handleExportCustomers()">
+            <i class="fas fa-file-export me-1"></i> EXPORT DATA
+        </button>
+    </div>
+</header>
+
+<!-- ── Customer Table ────────────────────────────────────── -->
+<div class="app-card p-0 overflow-hidden border-0 shadow-lg animate-up" style="animation-delay:0.1s;border-radius:24px;">
+    <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0" style="color:var(--navy-dark);">Customer Directory</h6>
+        <span class="badge bg-light text-muted border-0 fw-bold" id="customer-total-badge"
+              style="font-size:0.7rem;">TOTAL: 0 CUSTOMERS</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr class="small text-uppercase text-muted" style="letter-spacing:0.5px;">
+                    <th class="ps-4 py-3">Customer</th>
+                    <th>Phone Number</th>
+                    <th>Loyalty Tier</th>
+                    <th>Points</th>
+                    <th>Monthly Spend</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="small fw-medium" id="customers-tbody">
+                <!-- Rendered by customers.js -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Point Adjustment Modal ────────────────────────────── -->
+<div class="modal fade" id="pointModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 overflow-hidden" style="border-radius:24px;">
+            <div class="modal-header text-white border-0 px-4 pt-4" style="background:var(--navy-dark);">
+                <h6 class="fw-bold mb-0" style="color:var(--cyan-electric);">ĐIỀU CHỈNH ĐIỂM THÀNH VIÊN</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="point-modal-body">
+                <!-- Rendered by customers.js -->
+            </div>
+            <div class="p-4 pt-0">
+                <button type="button" class="app-btn-primary shadow-none py-3"
+                        onclick="applyPointAdjustment()" data-bs-dismiss="modal">CẬP NHẬT ĐIỂM</button>
+                <button type="button" class="btn btn-link text-muted w-100 mt-2 text-decoration-none small fw-bold"
+                        data-bs-dismiss="modal">HỦY BỎ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/customers.js"></script>
+}

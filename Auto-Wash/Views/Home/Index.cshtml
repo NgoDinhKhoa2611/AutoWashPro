@@ -1,0 +1,454 @@
+@{
+    Layout = null; /* Landing page dùng layout riêng, không wrap CustomerLayout */
+    ViewData["Title"] = "Trang chủ";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AutoWash Pro — Hệ thống rửa xe thông minh</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/shared.css" />
+    <link rel="stylesheet" href="~/css/landing.css" />
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="landing-wrapper">
+    <!-- Ambient Background Blobs -->
+    <div class="landing-bg-glow-1"></div>
+    <div class="landing-bg-glow-2"></div>
+    <div class="landing-bg-glow-3"></div>
+
+    <!-- ══════════════════════════════════════════════════════
+         NAVBAR
+         ══════════════════════════════════════════════════════ -->
+    <nav class="navbar navbar-expand-lg fixed-top landing-nav py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center text-dark fw-bold" href="#"
+               onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+                <div class="brand-logo-icon me-2 d-flex align-items-center justify-content-center">
+                    <i class="fas fa-car-side text-dark"></i>
+                </div>
+                <span style="font-size:1.2rem;letter-spacing:-0.5px;">
+                    AutoWash <span class="text-cyan">Pro</span>
+                </span>
+            </a>
+
+            <button class="navbar-toggler border-0 text-dark" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#landingNavbar">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="landingNavbar">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-1 gap-lg-4 text-center mt-3 mt-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary fw-bold" href="#technology"
+                           onclick="scrollToSection('technology');return false;">Công nghệ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary fw-bold" href="#loyalty"
+                           onclick="scrollToSection('loyalty');return false;">Tích điểm</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary fw-bold" href="#services"
+                           onclick="scrollToSection('services');return false;">Dịch vụ</a>
+                    </li>
+                </ul>
+                <div class="d-flex justify-content-center">
+                    <a href="/Account/Login"
+                       class="app-btn-primary w-auto px-4 py-2 text-dark fw-bold"
+                       style="font-size:0.85rem;border-radius:12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                        Đăng nhập / Đăng ký <i class="fas fa-sign-in-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ══════════════════════════════════════════════════════
+         HERO SECTION
+         ══════════════════════════════════════════════════════ -->
+    <header class="container landing-hero">
+        <div class="row align-items-center g-5">
+            <!-- Left: Promo text -->
+            <div class="col-lg-6 text-start animate-up">
+                <div class="d-inline-flex align-items-center px-3 py-2 rounded-pill mb-4"
+                     style="font-size:0.72rem;letter-spacing:0.5px;background:rgba(16,185,129,0.1);border:1.5px solid rgba(16,185,129,0.2);">
+                    <span class="text-dark fw-bold">
+                        <i class="fas fa-robot me-2 text-cyan"></i> Công nghệ nhận diện thông minh LPR
+                    </span>
+                </div>
+
+                <h1 class="fw-bold text-dark mb-3" style="font-size:3.2rem;line-height:1.15;letter-spacing:-1px;">
+                    Hệ Thống Rửa Xe <br />
+                    <span class="text-cyan" style="text-shadow:0 0 30px rgba(16,185,129,0.15);">
+                        Thế Hệ Mới Siêu Tốc
+                    </span>
+                </h1>
+
+                <p class="text-secondary fs-5 mb-4 fw-light" style="max-width:520px;line-height:1.6;">
+                    Tiết kiệm 90% thời gian chờ đợi với quy trình nhận diện biển số AI tự động,
+                    thanh toán thông minh và theo dõi tiến trình thực tế ngay trên thiết bị của bạn.
+                </p>
+
+                <div class="d-flex flex-wrap gap-3">
+                    <button onclick="startDemoSimulation()"
+                            id="demo-btn"
+                            class="app-btn-secondary w-auto px-5 py-3 fw-bold"
+                            style="border-radius:16px;border:1.5px solid #cbd5e1;font-size:0.9rem;">
+                        <i class="fas fa-play me-2 text-cyan"></i>
+                        <span id="demo-btn-text">Xem demo tính năng</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Interactive LPR Scanner Mockup -->
+            <div class="col-lg-6 animate-up" style="animation-delay:0.15s;">
+                <div class="lpr-mockup-card p-4 mx-auto" style="max-width:500px;">
+                    <!-- Scanner Viewport -->
+                    <div class="scanner-viewport-landing" id="scanner-viewport">
+                        <div class="scanner-grid"></div>
+                        <div class="scanner-line" id="scanner-line" style="display:none;"></div>
+
+                        <!-- Corner Reticles -->
+                        <div class="scanner-reticle reticle-tl"></div>
+                        <div class="scanner-reticle reticle-tr"></div>
+                        <div class="scanner-reticle reticle-bl"></div>
+                        <div class="scanner-reticle reticle-br"></div>
+
+                        <!-- Camera idle / plate display -->
+                        <div class="w-100 h-100 d-flex align-items-center justify-content-center flex-column"
+                             id="scanner-content">
+                            <div class="text-center" style="opacity:0.4;">
+                                <i class="fas fa-camera text-white fa-3x mb-3"></i>
+                                <div class="text-white small fw-bold"
+                                     style="font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;">
+                                    Bấm nút "Xem demo" để kích hoạt
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="scanner-overlay-text" id="scanner-status">HỆ THỐNG OFFLINE</div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mt-4 text-start border-top pt-3 lpr-status-bar">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary small fw-bold"
+                                  style="font-size:0.65rem;letter-spacing:0.5px;text-transform:uppercase;">
+                                Trạng thái xe đang rửa
+                            </span>
+                            <span class="text-cyan small fw-bold" id="progress-label"
+                                  style="font-size:0.8rem;">Chưa bắt đầu</span>
+                        </div>
+                        <div class="progress" style="height:8px;border-radius:10px;overflow:hidden;background:#e2e8f0;">
+                            <div class="progress-bar" id="demo-progress" role="progressbar"
+                                 style="width:0%;background:linear-gradient(90deg,#0ea5e9,#0284c7);
+                                        box-shadow:var(--cyan-glow);transition:width 0.8s ease;"
+                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════
+         TECHNOLOGY / FEATURES SECTION
+         ══════════════════════════════════════════════════════ -->
+    <section id="technology" class="container py-6">
+        <div class="text-center mb-5">
+            <small class="text-cyan fw-bold" style="letter-spacing:1.5px;font-size:0.8rem;text-transform:uppercase;">
+                Tính năng đột phá
+            </small>
+            <h2 class="fw-bold text-dark mt-1 mb-3 fs-1">Tại Sao Chọn AutoWash Pro?</h2>
+            <p class="text-secondary mx-auto" style="max-width:560px;font-size:0.95rem;">
+                Ứng dụng các giải pháp tự động hóa thông minh nhằm kiến tạo quy trình chăm sóc xe
+                nhanh gọn, tối ưu và minh bạch nhất.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-neon-card p-4">
+                    <div class="feature-neon-icon mb-4"><i class="fas fa-calendar-check text-cyan"></i></div>
+                    <h5 class="fw-bold text-dark mb-2">Đặt lịch rửa xe</h5>
+                    <p class="text-secondary small mb-0" style="line-height:1.6;">
+                        Đặt chỗ trước nhanh chóng chỉ với 3 bước, lựa chọn khung giờ và nhân viên phục vụ tùy thích.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-neon-card p-4">
+                    <div class="feature-neon-icon mb-4"><i class="fas fa-robot text-cyan"></i></div>
+                    <h5 class="fw-bold text-dark mb-2">AI nhận diện biển số</h5>
+                    <p class="text-secondary small mb-0" style="line-height:1.6;">
+                        Camera AI quét biển số xe LPR tự động khi vào tiệm, đưa ngay xe vào hàng chờ không cần khai báo.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-neon-card p-4">
+                    <div class="feature-neon-icon mb-4"><i class="fas fa-eye text-cyan"></i></div>
+                    <h5 class="fw-bold text-dark mb-2">Theo dõi trạng thái xe</h5>
+                    <p class="text-secondary small mb-0" style="line-height:1.6;">
+                        Giám sát tiến độ rửa trực quan theo thời gian thực (Đang quét → Rửa vỏ → Sấy khô → Hoàn tất).
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-neon-card p-4">
+                    <div class="feature-neon-icon mb-4"><i class="fas fa-crown text-cyan"></i></div>
+                    <h5 class="fw-bold text-dark mb-2">Tích điểm VIP & Loyalty</h5>
+                    <p class="text-secondary small mb-0" style="line-height:1.6;">
+                        Quy chế tích lũy điểm thưởng Smember đa phân hạng với hơn 12 loại quà tặng, voucher cao cấp.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-neon-card p-4">
+                    <div class="feature-neon-icon mb-4"><i class="fas fa-credit-card text-cyan"></i></div>
+                    <h5 class="fw-bold text-dark mb-2">Thanh toán thông minh</h5>
+                    <p class="text-secondary small mb-0" style="line-height:1.6;">
+                        Hỗ trợ đa dạng phương thức thanh toán trực tuyến bảo mật cao, nhận hóa đơn điện tử tức thì.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-neon-card p-4">
+                    <div class="feature-neon-icon mb-4"><i class="fas fa-history text-cyan"></i></div>
+                    <h5 class="fw-bold text-dark mb-2">Lịch sử & Đánh giá</h5>
+                    <p class="text-secondary small mb-0" style="line-height:1.6;">
+                        Tra cứu đầy đủ nhật ký rửa xe, đánh giá chất lượng dịch vụ để nhận thêm các ưu đãi bất ngờ.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         LOYALTY SECTION
+         ══════════════════════════════════════════════════════ -->
+    <section id="loyalty" class="py-6"
+             style="background:#ffffff;border-top:1px solid rgba(16,185,129,0.12);border-bottom:1px solid rgba(16,185,129,0.12);">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-5 text-start animate-up">
+                    <small class="text-cyan fw-bold"
+                           style="letter-spacing:1.5px;font-size:0.8rem;text-transform:uppercase;">
+                        VIP Loyalty Program
+                    </small>
+                    <h2 class="fw-bold text-dark mt-1 mb-3 fs-1">Tích Điểm VIP Smember</h2>
+                    <p class="text-secondary mb-4" style="line-height:1.6;font-size:0.95rem;">
+                        Trở thành thành viên thân thiết AutoWash Pro để nhận các đặc quyền ưu đãi vượt trội.
+                        Hệ thống tự động nâng hạng dựa trên mức chi tiêu thực tế của bạn.
+                    </p>
+
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="d-flex align-items-center justify-content-center text-cyan flex-shrink-0"
+                                 style="width:42px;height:42px;background:rgba(16,185,129,0.08);
+                                        border:1px solid rgba(16,185,129,0.25);border-radius:10px;">
+                                <i class="fas fa-award"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">Hạng vàng & Platinum được ưu tiên</h6>
+                                <p class="text-secondary small mb-0">Không cần xếp hàng rửa vỏ, được dẫn thẳng vào phòng VIP chờ.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="d-flex align-items-center justify-content-center text-cyan flex-shrink-0"
+                                 style="width:42px;height:42px;background:rgba(16,185,129,0.08);
+                                        border:1px solid rgba(16,185,129,0.25);border-radius:10px;">
+                                <i class="fas fa-percent"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">Hệ số nhân điểm thưởng tới x1.5</h6>
+                                <p class="text-secondary small mb-0">Tích lũy điểm thưởng nhanh chóng để đổi voucher và quà tặng giá trị.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="d-flex align-items-center justify-content-center text-cyan flex-shrink-0"
+                                 style="width:42px;height:42px;background:rgba(16,185,129,0.08);
+                                        border:1px solid rgba(16,185,129,0.25);border-radius:10px;">
+                                <i class="fas fa-birthday-cake"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">Quà tặng sinh nhật độc quyền</h6>
+                                <p class="text-secondary small mb-0">Nhận lượt chăm sóc xe chuyên sâu miễn phí vào tháng sinh nhật.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tier Cards Preview -->
+                <div class="col-lg-7 text-center">
+                    <div class="row justify-content-center g-3">
+                        <div class="col-sm-6">
+                            <div class="p-4 text-start text-white rounded-4 shadow-lg position-relative overflow-hidden h-100"
+                                 style="background:linear-gradient(135deg,#0f172a 0%,#854d0e 50%,#ffc107 100%);">
+                                <div class="d-flex justify-content-between align-items-start mb-4">
+                                    <div>
+                                        <span class="small fw-bold"
+                                              style="color:#ffc107;letter-spacing:1.5px;font-size:0.68rem;text-transform:uppercase;">
+                                            GOLD MEMBER
+                                        </span>
+                                        <h4 class="fw-bold mt-1 text-white">550 PTS</h4>
+                                    </div>
+                                    <i class="fas fa-crown fa-lg" style="color:#ffc107;"></i>
+                                </div>
+                                <div class="mt-5 pt-3 d-flex justify-content-between align-items-center">
+                                    <div class="small fw-bold" style="opacity:0.75;">AutoWash Pro VIP</div>
+                                    <span class="badge bg-white text-dark small" style="font-size:0.6rem;">ACTIVE</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-4 text-start text-white rounded-4 shadow-lg position-relative overflow-hidden h-100"
+                                 style="background:linear-gradient(135deg,#0f172a 0%,#0369a1 50%,#0ea5e9 100%);">
+                                <div class="d-flex justify-content-between align-items-start mb-4">
+                                    <div>
+                                        <span class="small fw-bold"
+                                              style="color:#0ea5e9;letter-spacing:1.5px;font-size:0.68rem;text-transform:uppercase;">
+                                            PLATINUM MEMBER
+                                        </span>
+                                        <h4 class="fw-bold mt-1 text-white">1,250 PTS</h4>
+                                    </div>
+                                    <i class="fas fa-crown fa-lg" style="color:#0ea5e9;"></i>
+                                </div>
+                                <div class="mt-5 pt-3 d-flex justify-content-between align-items-center">
+                                    <div class="small fw-bold" style="opacity:0.75;">AutoWash Pro VIP</div>
+                                    <span class="badge bg-white text-dark small" style="font-size:0.6rem;">ACTIVE</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SERVICES / BENEFITS SECTION
+         ══════════════════════════════════════════════════════ -->
+    <section id="services" class="container py-6">
+        <div class="text-center mb-5">
+            <small class="text-cyan fw-bold"
+                   style="letter-spacing:1.5px;font-size:0.8rem;text-transform:uppercase;">
+                Lợi ích mang lại
+            </small>
+            <h2 class="fw-bold text-dark mt-1 mb-3 fs-1">Trải Nghiệm Rửa Xe Đẳng Cấp</h2>
+            <p class="text-secondary mx-auto" style="max-width:560px;font-size:0.95rem;">
+                Chúng tôi thay đổi hoàn toàn cách thức chăm sóc xe truyền thống, mang lại trải nghiệm tiện nghi tuyệt đối cho chủ xe.
+            </p>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            <div class="col-sm-6 col-lg-3">
+                <div class="feature-neon-card p-4 text-center d-flex flex-column align-items-center h-100">
+                    <div class="feature-neon-icon mb-4" style="width:56px;height:56px;">
+                        <i class="fas fa-clock text-cyan"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Tiết kiệm thời gian</h6>
+                    <p class="text-secondary small mb-0" style="font-size:0.78rem;line-height:1.5;">
+                        Không còn phải đứng chờ vô ích. Quy trình AI tự động tối ưu hóa công suất hoạt động tại trạm.
+                    </p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="feature-neon-card p-4 text-center d-flex flex-column align-items-center h-100">
+                    <div class="feature-neon-icon mb-4" style="width:56px;height:56px;">
+                        <i class="fas fa-ban text-cyan"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Không cần xếp hàng</h6>
+                    <p class="text-secondary small mb-0" style="font-size:0.78rem;line-height:1.5;">
+                        Đặt trước khung giờ tiện lợi và được hệ thống phân làn vào ô rửa trống tự động khi nhận diện LPR.
+                    </p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="feature-neon-card p-4 text-center d-flex flex-column align-items-center h-100">
+                    <div class="feature-neon-icon mb-4" style="width:56px;height:56px;">
+                        <i class="fas fa-broadcast-tower text-cyan"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Theo dõi realtime</h6>
+                    <p class="text-secondary small mb-0" style="font-size:0.78rem;line-height:1.5;">
+                        Nhận thông báo tiến trình rửa xe trực tiếp trên điện thoại qua hệ thống Toast và Live Progress Bar.
+                    </p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="feature-neon-card p-4 text-center d-flex flex-column align-items-center h-100">
+                    <div class="feature-neon-icon mb-4" style="width:56px;height:56px;">
+                        <i class="fas fa-percent text-cyan"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Nhận ưu đãi thành viên</h6>
+                    <p class="text-secondary small mb-0" style="font-size:0.78rem;line-height:1.5;">
+                        Được tích lũy chi tiêu đổi voucher giảm giá, dịch vụ bổ sung và các phần quà giá trị từ đối tác.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         CALL TO ACTION
+         ══════════════════════════════════════════════════════ -->
+    <section class="container py-5 mb-5">
+        <div class="p-5 text-center rounded-4 position-relative overflow-hidden"
+             style="background:linear-gradient(135deg,#ffffff 0%,#e6f7ee 100%);
+                    border:1.5px solid rgba(16,185,129,0.25);
+                    box-shadow:var(--premium-shadow);">
+            <div class="position-relative py-3" style="z-index:3;">
+                <h2 class="fw-bold text-dark mb-3 fs-2">Sẵn sàng trải nghiệm dịch vụ thế hệ mới?</h2>
+                <p class="text-secondary mb-4 mx-auto" style="max-width:520px;font-size:0.92rem;">
+                    Đăng nhập tài khoản của bạn ngay để trải nghiệm đặt lịch và hệ thống quản trị rửa xe thông minh!
+                </p>
+                <a href="/Account/Login"
+                   class="app-btn-primary w-auto px-5 py-3 text-dark fw-bold shadow-lg"
+                   style="border-radius:16px;font-size:0.9rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
+                    Bắt đầu Trải nghiệm ngay <i class="fas fa-sign-in-alt"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         FOOTER
+         ══════════════════════════════════════════════════════ -->
+    <footer class="py-5" style="background:#ffffff;border-top:1px solid rgba(16,185,129,0.15);">
+        <div class="container">
+            <div class="row g-4 align-items-center justify-content-between">
+                <div class="col-md-6 text-start">
+                    <h5 class="fw-bold text-dark mb-1">AutoWash <span class="text-cyan">Pro</span></h5>
+                    <p class="text-secondary small mb-0">Hệ thống quản lý rửa xe thông minh tích hợp công nghệ AI</p>
+                    <p class="text-muted small mt-1" style="font-size:0.7rem;">SWP391 Project — FPT University</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="d-flex justify-content-end gap-3 mb-2">
+                        <a href="#" class="text-secondary hover-text-cyan text-decoration-none">
+                            <i class="fab fa-facebook fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-secondary hover-text-cyan text-decoration-none">
+                            <i class="fas fa-envelope fa-lg"></i>
+                        </a>
+                    </div>
+                    <small class="text-secondary" style="font-size:0.72rem;">
+                        &copy; @DateTime.Now.Year AutoWash Pro. All rights reserved.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/app.js"></script>
+<script src="~/js/landing.js"></script>
+</body>
+</html>

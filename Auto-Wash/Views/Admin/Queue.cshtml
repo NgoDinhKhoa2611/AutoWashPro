@@ -1,0 +1,192 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.PageTitle = "Live Queue Management";
+    ViewBag.ActiveNav = "queue";
+}
+
+<header class="d-flex justify-content-between align-items-center mb-5 animate-up">
+    <div>
+        <h4 class="fw-bold mb-1" style="color:var(--navy-dark);">Live Queue Management</h4>
+        <p class="text-muted small mb-0 fw-medium">Theo dõi hàng đợi xe, cập nhật trạng thái hoạt động và thanh toán check-out.</p>
+    </div>
+    <button class="app-btn-primary py-2 px-4 w-auto shadow-none"
+            style="font-size:0.82rem;border-radius:12px;"
+            data-bs-toggle="modal" data-bs-target="#lprScannerModal"
+            onclick="startScanner()">
+        <i class="fas fa-camera me-1"></i>MÔ PHỎNG QUÉT LPR
+    </button>
+</header>
+
+<!-- Priority Info Banner -->
+<div class="alert d-flex align-items-center mb-4 border-0 py-3 animate-up"
+     style="background:var(--navy-dark);color:white;border-radius:16px;animation-delay:0.05s;">
+    <i class="fas fa-info-circle fa-lg me-3" style="color:var(--cyan-electric);"></i>
+    <div class="small fw-medium">
+        Hàng đợi AutoWash Pro tự động sắp xếp theo thứ tự ưu tiên:
+        <span class="fw-bold" style="color:var(--cyan-electric);">PLATINUM</span> &gt;
+        <span class="fw-bold text-warning">GOLD</span> &gt;
+        <span class="fw-bold text-secondary">SILVER</span>.
+        Các xe cùng hạng được sắp xếp theo thời gian đặt lịch.
+    </div>
+</div>
+
+<!-- ── Filters ───────────────────────────────────────────── -->
+<div class="row g-3 mb-5 animate-up" style="animation-delay:0.1s;">
+    <div class="col-md-7">
+        <div class="input-group shadow-sm" style="border-radius:14px;overflow:hidden;">
+            <span class="input-group-text bg-white border-0 ps-3 text-muted"><i class="fas fa-search"></i></span>
+            <input type="text" id="queue-search" class="form-control bg-white border-0 py-3 ps-2"
+                   placeholder="Tìm theo tên khách hàng, biển số xe, tên gói..."
+                   oninput="filterQueue()" style="outline:none;box-shadow:none;" />
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="bg-white p-1 shadow-sm d-flex justify-content-between text-center" style="border-radius:14px;">
+            <button onclick="setQueueFilter('ALL')" id="qf-ALL"
+                    class="btn border-0 py-2 px-3 fw-bold flex-fill rounded-3 queue-filter-btn active"
+                    style="font-size:0.78rem;">Tất cả (<span id="cnt-ALL">0</span>)</button>
+            <button onclick="setQueueFilter('Waiting')" id="qf-Waiting"
+                    class="btn border-0 py-2 px-3 fw-bold flex-fill rounded-3 queue-filter-btn text-muted"
+                    style="font-size:0.78rem;">Đang chờ (<span id="cnt-Waiting">0</span>)</button>
+            <button onclick="setQueueFilter('In Progress')" id="qf-InProgress"
+                    class="btn border-0 py-2 px-3 fw-bold flex-fill rounded-3 queue-filter-btn text-muted"
+                    style="font-size:0.78rem;">Đang làm (<span id="cnt-InProgress">0</span>)</button>
+            <button onclick="setQueueFilter('Ready')" id="qf-Ready"
+                    class="btn border-0 py-2 px-3 fw-bold flex-fill rounded-3 queue-filter-btn text-muted"
+                    style="font-size:0.78rem;">Sẵn sàng (<span id="cnt-Ready">0</span>)</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Queue Table ───────────────────────────────────────── -->
+<div class="app-card p-0 overflow-hidden border-0 shadow-lg animate-up" style="animation-delay:0.15s;border-radius:24px;">
+    <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0" style="color:var(--navy-dark);">Danh sách xe trong hàng đợi</h6>
+        <span class="badge rounded-pill px-3 py-2 fw-bold" id="queue-count-badge"
+              style="background:var(--navy-dark);color:var(--cyan-electric);font-size:0.7rem;">
+            Đang tải...
+        </span>
+    </div>
+
+    <!-- Empty state -->
+    <div id="queue-empty-state" class="p-5 text-center text-muted" style="display:none;">
+        <i class="fas fa-car-side fa-3x mb-3 opacity-25"></i>
+        <div class="fw-bold fs-6">Hàng đợi đang trống</div>
+        <small class="d-block text-muted mt-1">Không tìm thấy phương tiện nào khớp với bộ lọc hiện tại.</small>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive" id="queue-table-wrapper">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr class="small text-uppercase text-muted" style="letter-spacing:0.5px;">
+                    <th class="ps-4 py-3">Thứ tự</th>
+                    <th>Khách hàng</th>
+                    <th>Biển số xe</th>
+                    <th>Hạng thành viên</th>
+                    <th>Trạng thái xe</th>
+                    <th>Gói dịch vụ</th>
+                    <th>Dịch vụ hiện tại</th>
+                    <th class="text-end pe-4">Hành động</th>
+                </tr>
+            </thead>
+            <tbody class="small fw-medium" id="queue-tbody">
+                <!-- Rendered by queue.js -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── LPR Scanner Modal ─────────────────────────────────── -->
+<div class="modal fade" id="lprScannerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 overflow-hidden text-white" style="border-radius:24px;background:var(--navy-dark);">
+            <div class="modal-header border-0 px-4 pt-4">
+                <h6 class="fw-bold mb-0" style="color:var(--cyan-electric);">
+                    <i class="fas fa-camera me-2"></i>MÔ PHỎNG CAMERA QUÉT LPR
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        onclick="resetScanner()"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="scanner-viewport" id="lpr-viewport">
+                    <div class="scanner-grid"></div>
+                    <div class="scanner-reticle reticle-tl"></div>
+                    <div class="scanner-reticle reticle-tr"></div>
+                    <div class="scanner-reticle reticle-bl"></div>
+                    <div class="scanner-reticle reticle-br"></div>
+                    <div class="scanner-line" id="lpr-scan-line" style="display:none;"></div>
+                    <div class="scanner-overlay-text" id="lpr-scanning-text" style="display:none;">
+                        <i class="fas fa-spinner fa-spin me-2"></i>ĐANG QUÉT LPR BIỂN SỐ...
+                    </div>
+                    <div class="scanner-plate-box" id="lpr-plate-result" style="display:none;"></div>
+                    <div class="scanner-overlay-text text-success" id="lpr-success-text"
+                         style="display:none;background:rgba(6,78,59,0.9);border-color:#10b981;">
+                        <i class="fas fa-check-circle me-2"></i>NHẬN DIỆN THÀNH CÔNG!
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 pt-0">
+                <button type="button" id="lpr-add-btn" class="app-btn-primary shadow-none py-3" style="display:none;"
+                        onclick="addScannedToQueue()" data-bs-dismiss="modal">
+                    ĐƯA VÀO HÀNG ĐỢI
+                </button>
+                <button type="button" id="lpr-waiting-btn"
+                        class="btn btn-secondary w-100 py-3 text-white border-0 fw-bold" disabled
+                        style="border-radius:14px;opacity:0.5;">
+                    ĐANG QUÉT LPR VUI LÒNG ĐỢI...
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Manage Services Modal ─────────────────────────────── -->
+<div class="modal fade" id="manageServicesModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 overflow-hidden" style="border-radius:24px;">
+            <div class="modal-header text-white border-0 px-4 pt-4" style="background:var(--navy-dark);">
+                <h6 class="fw-bold mb-0" style="color:var(--cyan-electric);">
+                    <i class="fas fa-tasks me-2"></i>CHI TIẾT VÀ TIẾN TRÌNH DỊCH VỤ XE
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="manage-modal-body">
+                <!-- Rendered by queue.js -->
+            </div>
+            <div class="p-4 pt-0 d-flex gap-2">
+                <button type="button" class="app-btn-primary shadow-none py-3"
+                        onclick="saveServices()" data-bs-dismiss="modal">LƯU THAY ĐỔI</button>
+                <button type="button" class="btn btn-light w-100 py-3 text-muted border-0 fw-bold"
+                        style="border-radius:14px;" data-bs-dismiss="modal">HỦY BỎ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Checkout Modal ────────────────────────────────────── -->
+<div class="modal fade" id="checkoutModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 overflow-hidden" style="border-radius:24px;">
+            <div class="modal-header text-white border-0 px-4 pt-4" style="background:var(--navy-dark);">
+                <h6 class="fw-bold mb-0" style="color:var(--cyan-electric);">XÁC NHẬN THANH TOÁN & CHECK-OUT</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="checkout-modal-body">
+                <!-- Rendered by queue.js -->
+            </div>
+            <div class="p-4 pt-0">
+                <button type="button" class="app-btn-primary shadow-none py-3"
+                        onclick="checkoutComplete()" data-bs-dismiss="modal">
+                    HOÀN TẤT & CHECK-OUT
+                </button>
+                <button type="button" class="btn btn-link text-muted w-100 mt-2 text-decoration-none small fw-bold"
+                        data-bs-dismiss="modal">HỦY BỎ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/queue.js"></script>
+}

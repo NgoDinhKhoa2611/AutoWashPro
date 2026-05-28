@@ -1,0 +1,167 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.PageTitle = "Services Catalog";
+    ViewBag.ActiveNav = "services";
+}
+
+<header class="d-flex justify-content-between align-items-center mb-5 animate-up">
+    <div>
+        <h4 class="fw-bold mb-1" style="color:var(--navy-dark);">Services Catalog Management</h4>
+        <p class="text-muted small mb-0 fw-medium">Quản lý danh mục sản phẩm, gói rửa xe và các dịch vụ giá trị gia tăng.</p>
+    </div>
+    <button class="app-btn-primary py-2 px-4 w-auto shadow-none"
+            style="font-size:0.82rem;border-radius:12px;" onclick="openAddServiceModal()">
+        <i class="fas fa-plus me-1"></i>THÊM DỊCH VỤ
+    </button>
+</header>
+
+<!-- ── Filters ───────────────────────────────────────────── -->
+<div class="row g-3 mb-5 animate-up" style="animation-delay:0.05s;">
+    <div class="col-md-5">
+        <div class="input-group shadow-sm" style="border-radius:14px;overflow:hidden;">
+            <span class="input-group-text bg-white border-0 ps-3 text-muted"><i class="fas fa-search"></i></span>
+            <input type="text" id="service-search" class="form-control bg-white border-0 py-3 ps-2"
+                   placeholder="Tìm dịch vụ theo tên, mô tả..."
+                   oninput="filterServices()" style="outline:none;box-shadow:none;" />
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+        <select id="category-filter" class="form-select bg-white border-0 py-3 shadow-sm fw-semibold"
+                onchange="filterServices()"
+                style="border-radius:14px;outline:none;box-shadow:none;cursor:pointer;color:var(--navy-dark);">
+            <option value="ALL">Tất cả loại dịch vụ</option>
+            <option value="Rửa xe cơ bản">Rửa xe cơ bản</option>
+            <option value="Rửa xe cao cấp">Rửa xe cao cấp</option>
+            <option value="Dịch vụ đi kèm">Dịch vụ đi kèm (Add-ons)</option>
+            <option value="Chăm sóc nội thất">Chăm sóc nội thất</option>
+            <option value="Phủ bóng / Wax">Phủ bóng / Wax</option>
+        </select>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <select id="status-filter" class="form-select bg-white border-0 py-3 shadow-sm fw-semibold"
+                onchange="filterServices()"
+                style="border-radius:14px;outline:none;box-shadow:none;cursor:pointer;color:var(--navy-dark);">
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="ACTIVE">Đang hoạt động (Active)</option>
+            <option value="INACTIVE">Tạm ẩn (Inactive)</option>
+        </select>
+    </div>
+</div>
+
+<!-- ── Services Table ────────────────────────────────────── -->
+<div id="services-empty-state" class="app-card border-0 shadow-lg p-5 text-center text-muted animate-up"
+     style="border-radius:24px;display:none;">
+    <i class="fas fa-box-open fa-3x mb-3 text-muted opacity-25"></i>
+    <h5 class="fw-bold mb-2" style="color:var(--navy-dark);">Không tìm thấy dịch vụ nào</h5>
+    <p class="text-muted small mb-0">Hãy thử đổi từ khóa tìm kiếm hoặc điều chỉnh lại các bộ lọc ở trên.</p>
+</div>
+
+<div id="services-table-wrapper" class="app-card p-0 overflow-hidden border-0 shadow-lg animate-up"
+     style="animation-delay:0.1s;border-radius:24px;">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr class="small text-uppercase text-muted" style="letter-spacing:0.5px;">
+                    <th class="ps-4 py-3">Tên dịch vụ</th>
+                    <th>Loại dịch vụ</th>
+                    <th>Giá tiền</th>
+                    <th>Thời gian ước tính</th>
+                    <th>Nổi bật</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end pe-4">Hành động</th>
+                </tr>
+            </thead>
+            <tbody class="small fw-medium" id="services-tbody">
+                <!-- Rendered by services.js -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Add / Edit Service Modal ──────────────────────────── -->
+<div id="service-modal-overlay" class="confirm-modal-backdrop" style="display:none;">
+    <div class="confirm-modal-card animate-confirm-in" style="max-width:600px;width:90%;"
+         onclick="event.stopPropagation()">
+        <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom">
+            <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">
+                <i class="fas fa-box me-2" style="color:var(--cyan-electric);"></i>
+                <span id="service-modal-title">THÊM DỊCH VỤ MỚI</span>
+            </h5>
+            <button class="btn btn-link text-muted p-0" onclick="closeServiceModal()">&times;</button>
+        </div>
+
+        <form id="service-form" onsubmit="saveService(event)">
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <label class="form-label small fw-bold mb-1" style="color:var(--navy-dark);">
+                        Tên dịch vụ <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="svc-name" name="name"
+                           class="form-control border rounded-4 py-2 px-3 fw-semibold bg-light"
+                           placeholder="Ví dụ: Combo Rửa xe siêu cấp" required />
+                </div>
+                <div class="col-12">
+                    <label class="form-label small fw-bold mb-1" style="color:var(--navy-dark);">Mô tả chi tiết</label>
+                    <textarea id="svc-desc" name="description" rows="3"
+                              class="form-control border rounded-4 py-2 px-3 bg-light"
+                              placeholder="Mô tả các công đoạn thực hiện hoặc lợi ích..."></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold mb-1" style="color:var(--navy-dark);">Loại dịch vụ</label>
+                    <select id="svc-category" name="category"
+                            class="form-select border rounded-4 py-2 px-3 bg-light fw-semibold" style="color:var(--navy-dark);">
+                        <option value="Rửa xe cơ bản">Rửa xe cơ bản</option>
+                        <option value="Rửa xe cao cấp">Rửa xe cao cấp</option>
+                        <option value="Dịch vụ đi kèm">Dịch vụ đi kèm (Add-on)</option>
+                        <option value="Chăm sóc nội thất">Chăm sóc nội thất</option>
+                        <option value="Phủ bóng / Wax">Phủ bóng / Wax</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold mb-1" style="color:var(--navy-dark);">
+                        Giá tiền (VND) <span class="text-danger">*</span>
+                    </label>
+                    <input type="number" id="svc-price" name="price" min="0" step="1000"
+                           class="form-control border rounded-4 py-2 px-3 fw-semibold bg-light"
+                           required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold mb-1" style="color:var(--navy-dark);">
+                        Thời gian ước tính (phút) <span class="text-danger">*</span>
+                    </label>
+                    <input type="number" id="svc-minutes" name="estimatedMinutes" min="1"
+                           class="form-control border rounded-4 py-2 px-3 fw-semibold bg-light"
+                           required />
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="p-3 bg-light rounded-4 w-100 d-flex flex-column gap-2 border border-light">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="svc-active" name="isActive"
+                                   checked style="cursor:pointer;" />
+                            <label class="form-check-label small fw-bold" for="svc-active"
+                                   style="color:var(--navy-dark);cursor:pointer;">Trạng thái: Hoạt động</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="svc-featured" name="isFeatured"
+                                   style="cursor:pointer;" />
+                            <label class="form-check-label small fw-bold" for="svc-featured"
+                                   style="color:var(--navy-dark);cursor:pointer;">Dịch vụ nổi bật (Featured)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 pt-3 border-top">
+                <button type="button" class="confirm-cancel-btn py-2"
+                        onclick="closeServiceModal()">Hủy bỏ</button>
+                <button type="submit" class="confirm-ok-btn confirm-btn-cyan py-2">
+                    <i class="fas fa-save me-1"></i>Lưu lại
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/services.js"></script>
+}

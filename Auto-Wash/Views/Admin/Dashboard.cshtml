@@ -1,0 +1,248 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.PageTitle = "Overview Dashboard";
+    ViewBag.ActiveNav = "dashboard";
+}
+
+<header class="d-flex justify-content-between align-items-center mb-5 animate-up">
+    <div>
+        <h4 class="fw-bold mb-1" style="color:var(--navy-dark);">Overview Dashboard</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item small">
+                    <a href="/Admin/Dashboard" class="text-decoration-none fw-bold" style="color:var(--cyan-electric);">ADMIN</a>
+                </li>
+                <li class="breadcrumb-item small active fw-medium">DASHBOARD</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-sm bg-white border shadow-sm px-3" style="border-radius:12px;"
+                onclick="handleExportReport()">
+            <i class="fas fa-download me-1 text-muted"></i> Export
+        </button>
+        <a href="/Admin/Queue"
+           class="app-btn-primary py-2 px-4 w-auto shadow-none text-decoration-none d-flex align-items-center gap-2"
+           style="font-size:0.8rem;border-radius:12px;">
+            <i class="fas fa-plus"></i> NEW BOOKING
+        </a>
+    </div>
+</header>
+
+<!-- ── Stats Grid ────────────────────────────────────────── -->
+<div class="row g-4 mb-5 animate-up" style="animation-delay:0.1s;">
+    <div class="col-md-3">
+        <div class="app-card p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:1px;">REVENUE</small>
+                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);" id="stat-revenue">₫12.5M</h3>
+                    <span class="text-success small fw-bold"><i class="fas fa-caret-up me-1"></i> 12.5%</span>
+                </div>
+                <div class="p-3 rounded-3 shadow-sm admin-stat-icon">
+                    <i class="fas fa-wallet" style="color:var(--cyan-electric);"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="app-card p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:1px;">ACTIVE QUEUE</small>
+                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);" id="stat-queue">3</h3>
+                    <span class="small fw-bold" style="color:var(--cyan-electric);">Peak hours</span>
+                </div>
+                <div class="p-3 rounded-3 shadow-sm admin-stat-icon">
+                    <i class="fas fa-car-side" style="color:var(--cyan-electric);"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="app-card p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:1px;">AVG. TIME</small>
+                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);">24m</h3>
+                    <span class="text-success small fw-bold"><i class="fas fa-check-circle me-1"></i> Optimal</span>
+                </div>
+                <div class="p-3 rounded-3 shadow-sm admin-stat-icon">
+                    <i class="fas fa-clock" style="color:var(--cyan-electric);"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="app-card p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:1px;">RATING</small>
+                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);">4.9/5</h3>
+                    <div class="text-warning small">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                </div>
+                <div class="p-3 rounded-3 shadow-sm admin-stat-icon">
+                    <i class="fas fa-smile" style="color:var(--cyan-electric);"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Charts Section ────────────────────────────────────── -->
+<div class="row g-4 animate-up" style="animation-delay:0.2s;">
+    <div class="col-md-8">
+        <div class="app-card p-4 border-0 h-100">
+            <h6 class="fw-bold mb-4" style="color:var(--navy-dark);">REVENUE ANALYTICS (7 DAYS)</h6>
+            <div style="height:300px;position:relative;">
+                <canvas id="revenue-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="app-card p-4 border-0 h-100">
+            <h6 class="fw-bold mb-4" style="color:var(--navy-dark);">TIER DISTRIBUTION</h6>
+            <div style="height:300px;position:relative;">
+                <canvas id="tier-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Loyalty Configuration Panel (Dynamic Config Rules) ──── -->
+<div class="row g-4 mt-2 animate-up" style="animation-delay:0.3s;">
+    <div class="col-12">
+        <div class="app-card p-4 border-0">
+            <div class="d-flex align-items-center mb-4">
+                <div class="p-2 rounded-3 me-3 d-flex align-items-center justify-content-center"
+                     style="background:rgba(15,23,42,0.06);width:44px;height:44px;">
+                    <i class="fas fa-sliders-h fa-lg" style="color:var(--cyan-electric);"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">Loyalty Rules & VIP Tier Configurations</h5>
+                    <p class="text-muted small mb-0 fw-medium">Cấu hình tỷ lệ tích điểm, hệ số nhân thưởng và đặc quyền thời gian đặt lịch của các hạng VIP.</p>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <!-- Point Rate -->
+                <div class="col-md-3">
+                    <div class="p-3 bg-light rounded-4 border border-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <label class="form-label small fw-bold text-muted mb-2">TỶ LỆ TÍCH ĐIỂM</label>
+                            <p class="text-muted mb-3" style="font-size:0.7rem;line-height:1.3;">Tỷ số điểm thưởng nhận được trên mỗi 1.000đ chi tiêu.</p>
+                        </div>
+                        <div class="input-group mt-auto">
+                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">1k đ =</span>
+                            <input type="number" id="cfg-point-rate" class="form-control border-0 px-2 text-center fw-bold" value="1" style="border-radius:0 10px 10px 0;outline:none;" />
+                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">PTS</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Silver Tier Config -->
+                <div class="col-md-3">
+                    <div class="p-3 bg-light rounded-4 border border-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge tier-badge tier-badge-silver px-3 py-1 border-0" style="font-size:0.65rem;">SILVER</span>
+                            <span class="small text-muted fw-bold">&ge; 500 PTS</span>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Hệ số điểm thưởng</label>
+                            <input type="number" step="0.1" id="cfg-silver-mult" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="1.1" style="border-radius:8px;" />
+                        </div>
+                        <div>
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Số ngày đặt lịch trước</label>
+                            <input type="number" id="cfg-silver-days" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="10" style="border-radius:8px;" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gold Tier Config -->
+                <div class="col-md-3">
+                    <div class="p-3 bg-light rounded-4 border border-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge tier-badge tier-badge-gold px-3 py-1 border-0" style="font-size:0.65rem;">GOLD</span>
+                            <span class="small text-muted fw-bold">&ge; 1,000 PTS</span>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Hệ số điểm thưởng</label>
+                            <input type="number" step="0.1" id="cfg-gold-mult" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="1.2" style="border-radius:8px;" />
+                        </div>
+                        <div>
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Số ngày đặt lịch trước</label>
+                            <input type="number" id="cfg-gold-days" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="12" style="border-radius:8px;" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Platinum Tier Config -->
+                <div class="col-md-3">
+                    <div class="p-3 bg-light rounded-4 border border-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge tier-badge tier-badge-platinum px-3 py-1 border-0" style="font-size:0.65rem;">PLATINUM</span>
+                            <span class="small text-muted fw-bold">&ge; 2,000 PTS</span>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Hệ số điểm thưởng</label>
+                            <input type="number" step="0.1" id="cfg-plat-mult" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="1.5" style="border-radius:8px;" />
+                        </div>
+                        <div>
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Số ngày đặt lịch trước</label>
+                            <input type="number" id="cfg-plat-days" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="14" style="border-radius:8px;" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <button onclick="handleSaveLoyaltyConfig()" class="app-btn-primary py-2.5 px-4 w-auto shadow-none fw-bold" style="border-radius:12px;font-size:0.82rem;">
+                    <i class="fas fa-save me-1"></i> CẬP NHẬT CẤU HÌNH VIP
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="~/js/admin-dashboard.js"></script>
+<script>
+    // Load config on startup
+    document.addEventListener('DOMContentLoaded', function () {
+        const config = JSON.parse(localStorage.getItem('loyalty_config') || '{}');
+        if (config.pointRate) document.getElementById('cfg-point-rate').value = config.pointRate;
+        if (config.silverMult) document.getElementById('cfg-silver-mult').value = config.silverMult;
+        if (config.silverDays) document.getElementById('cfg-silver-days').value = config.silverDays;
+        if (config.goldMult) document.getElementById('cfg-gold-mult').value = config.goldMult;
+        if (config.goldDays) document.getElementById('cfg-gold-days').value = config.goldDays;
+        if (config.platMult) document.getElementById('cfg-plat-mult').value = config.platMult;
+        if (config.platDays) document.getElementById('cfg-plat-days').value = config.platDays;
+    });
+
+    function handleSaveLoyaltyConfig() {
+        const config = {
+            pointRate:  Number(document.getElementById('cfg-point-rate').value || 1),
+            silverMult: Number(document.getElementById('cfg-silver-mult').value || 1.1),
+            silverDays: Number(document.getElementById('cfg-silver-days').value || 10),
+            goldMult:   Number(document.getElementById('cfg-gold-mult').value || 1.2),
+            goldDays:   Number(document.getElementById('cfg-gold-days').value || 12),
+            platMult:   Number(document.getElementById('cfg-plat-mult').value || 1.5),
+            platDays:   Number(document.getElementById('cfg-plat-days').value || 14)
+        };
+
+        localStorage.setItem('loyalty_config', JSON.stringify(config));
+        
+        // Dispatch event so other pages (like booking) can sync
+        window.dispatchEvent(new Event('storage'));
+
+        if (window.showToast) {
+            showToast('Đã lưu cấu hình quy chế tích điểm và đặc quyền hạng VIP thành công!', 'success');
+        } else {
+            alert('Đã lưu cấu hình thành công!');
+        }
+    }
+</script>
+}

@@ -1,0 +1,148 @@
+/* ============================================================
+   login.css — Trang Đăng nhập / Đăng ký / OTP
+   AutoWash Pro — SWP391 FPT University
+   ============================================================ */
+
+/* ── Login Page Wrapper ───────────────────────────────────── */
+.login-page-wrapper {
+    overflow: hidden;
+    position: relative;
+    background: var(--app-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 16px;
+}
+
+/* ── Background Glow Blobs ────────────────────────────────── */
+.login-bg-glow-1 {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0) 70%);
+    top: -80px;
+    left: -80px;
+    z-index: 1;
+    animation: floatingGlow 7s ease-in-out infinite alternate;
+}
+.login-bg-glow-2 {
+    position: absolute;
+    width: 350px;
+    height: 350px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(2, 132, 199, 0.1) 0%, rgba(2, 132, 199, 0) 70%);
+    bottom: 30px;
+    right: -100px;
+    z-index: 1;
+    animation: floatingGlow 9s ease-in-out infinite alternate-reverse;
+}
+
+/* ── Glass Card ───────────────────────────────────────────── */
+.glass-card {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1.5px solid rgba(14, 165, 233, 0.2) !important;
+    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.08) !important;
+    color: #334155 !important;
+    z-index: 10;
+    position: relative;
+    border-radius: 28px !important;
+    padding: 35px 28px !important;
+}
+.glass-card h4 { color: var(--navy-dark) !important; }
+.glass-card label { color: #475569 !important; }
+
+/* ── Glass Input Group ────────────────────────────────────── */
+.glass-input-group {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+.glass-input-group:focus-within {
+    border-color: var(--cyan-electric) !important;
+    box-shadow: 0 0 12px rgba(14, 165, 233, 0.18) !important;
+    background: #ffffff !important;
+}
+.glass-input-group .input-group-text {
+    background: transparent !important;
+    border: none !important;
+    color: #64748b !important;
+}
+.glass-input-group input {
+    background: transparent !important;
+    border: none !important;
+    color: #334155 !important;
+    padding: 14px 10px;
+}
+.glass-input-group input:focus { box-shadow: none !important; }
+.glass-input-group input::placeholder { color: #94a3b8 !important; }
+
+/* Light Background Overrides (Profile & Dashboard Forms) */
+.glass-input-group.bg-light {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+.glass-input-group.bg-light:focus-within {
+    border-color: var(--cyan-electric) !important;
+    box-shadow: 0 0 12px rgba(14, 165, 233, 0.15) !important;
+    background: #f8fafc !important;
+}
+.glass-input-group.bg-light input         { color: var(--navy-dark) !important; }
+.glass-input-group.bg-light input:disabled{ color: var(--navy-dark) !important; opacity: 0.6; }
+.glass-input-group.bg-light input::placeholder { color: #94a3b8 !important; }
+.glass-input-group.bg-light .input-group-text  { color: #64748b !important; }
+
+/* ── OTP Inputs ───────────────────────────────────────────── */
+.otp-input {
+    width: 55px;
+    height: 55px;
+    border-radius: 16px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: #cbd5e1;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #334155;
+    background: white;
+    transition: all 0.2s ease;
+    outline: none;
+}
+.otp-input.filled {
+    border-color: var(--cyan-electric);
+    box-shadow: var(--cyan-glow);
+}
+.otp-input:focus {
+    border-color: var(--cyan-electric);
+    box-shadow: var(--cyan-glow);
+    outline: none;
+}
+
+/* ── Login Brand Header ───────────────────────────────────── */
+.login-brand-icon {
+    display: inline-block;
+    padding: 0.75rem;
+    border-radius: 50%;
+    margin-bottom: 0.75rem;
+    border: 2px solid var(--cyan-electric);
+    box-shadow: var(--cyan-glow);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* ── Success Screen ───────────────────────────────────────── */
+.login-success-screen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    background: var(--app-bg);
+}

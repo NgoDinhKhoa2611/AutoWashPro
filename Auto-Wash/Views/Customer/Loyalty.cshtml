@@ -1,0 +1,165 @@
+@{
+    Layout = "~/Views/Shared/_CustomerLayout.cshtml";
+    ViewBag.PageTitle = "Đặc quyền VIP & Loyalty";
+    ViewBag.ActiveNav = "loyalty";
+}
+
+<div class="container-fluid p-0 animate-up">
+    <div class="row g-4">
+
+        <!-- ── Left Column ─────────────────────────────────── -->
+        <div class="col-lg-8">
+
+            <!-- Tier Simulator -->
+            <div class="app-card border-0 shadow-sm p-4 mb-4 bg-white" style="border-radius:24px;">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-2 rounded-3 me-3 d-flex align-items-center justify-content-center"
+                         style="background:rgba(15,23,42,0.06);width:44px;height:44px;">
+                        <i class="fas fa-crown fa-lg" style="color:var(--navy-dark);"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">Bộ giả lập phân cấp thành viên</h5>
+                        <small class="text-muted">Chọn hạng thành viên để kiểm tra và thay đổi các chính sách ưu đãi.</small>
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-6 col-md-3">
+                        <div onclick="changeTier('Standard Member')"
+                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light"
+                             style="cursor:pointer;border-radius:16px;" id="tier-btn-standard">
+                            <i class="fas fa-user text-secondary d-block fs-4 mb-2"></i>
+                            <span style="font-size:0.8rem;letter-spacing:0.5px;">MEMBER</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div onclick="changeTier('Silver Member')"
+                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light"
+                             style="cursor:pointer;border-radius:16px;" id="tier-btn-silver">
+                            <i class="fas fa-medal text-muted d-block fs-4 mb-2"></i>
+                            <span style="font-size:0.8rem;letter-spacing:0.5px;">SILVER</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div onclick="changeTier('Gold Member')"
+                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light"
+                             style="cursor:pointer;border-radius:16px;" id="tier-btn-gold">
+                            <i class="fas fa-award text-warning d-block fs-4 mb-2"></i>
+                            <span style="font-size:0.8rem;letter-spacing:0.5px;">GOLD</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div onclick="changeTier('Platinum Member')"
+                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light"
+                             style="cursor:pointer;border-radius:16px;" id="tier-btn-platinum">
+                            <i class="fas fa-crown text-cyan d-block fs-4 mb-2"></i>
+                            <span style="font-size:0.8rem;letter-spacing:0.5px;">PLATINUM</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rewards Header + Filter -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 mt-4 gap-2">
+                <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">
+                    Ưu đãi đổi thưởng (<span id="rewards-count">12</span>)
+                </h5>
+                <button onclick="showLoyaltyRules()"
+                        class="btn btn-link p-0 text-cyan small text-decoration-none fw-bold">
+                    Quy định tích điểm <i class="fas fa-question-circle ms-1"></i>
+                </button>
+            </div>
+
+            <!-- Category Filter Pills -->
+            <div class="d-flex gap-2 overflow-auto pb-3 no-scrollbar mb-4" style="white-space:nowrap;">
+                <button onclick="filterCategory('Tất cả')"
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-btn-primary w-auto text-dark"
+                        id="cat-all" style="font-size:0.78rem;font-weight:700;">
+                    Tất cả
+                </button>
+                <button onclick="filterCategory('Giảm giá')"
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
+                        id="cat-discount" style="font-size:0.78rem;font-weight:700;">
+                    Giảm giá
+                </button>
+                <button onclick="filterCategory('Dịch vụ')"
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
+                        id="cat-service" style="font-size:0.78rem;font-weight:700;">
+                    Dịch vụ
+                </button>
+                <button onclick="filterCategory('Quà tặng')"
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
+                        id="cat-gift" style="font-size:0.78rem;font-weight:700;">
+                    Quà tặng
+                </button>
+                <button onclick="filterCategory('Combo đặc biệt')"
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
+                        id="cat-combo" style="font-size:0.78rem;font-weight:700;">
+                    Combo đặc biệt
+                </button>
+                <button onclick="filterCategory('Ưu đãi sinh nhật')"
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
+                        id="cat-birthday" style="font-size:0.78rem;font-weight:700;">
+                    Ưu đãi sinh nhật
+                </button>
+            </div>
+
+            <!-- Rewards Grid -->
+            <div class="row g-3" id="rewards-grid">
+                <!-- Rendered by loyalty.js -->
+            </div>
+        </div>
+
+        <!-- ── Right Column: Member Card + Perks ──────────── -->
+        <div class="col-lg-4">
+            <div class="position-sticky" style="top:100px;">
+                <!-- Member Card Preview -->
+                <div class="mb-4" id="loyalty-member-card">
+                    <!-- Rendered by loyalty.js -->
+                </div>
+
+                <!-- VIP Perks Detail Card -->
+                <div class="app-card border-0 shadow-sm p-4 bg-white" style="border-radius:24px;">
+                    <h6 class="fw-bold mb-3 border-bottom pb-2" style="color:var(--navy-dark);">
+                        <i class="fas fa-star-of-life text-cyan me-2"></i>
+                        Đặc quyền hạng <span id="tier-perks-label">Gold</span>
+                    </h6>
+                    <ul class="list-unstyled d-flex flex-column gap-3 mb-0 text-muted" style="font-size:0.82rem;">
+                        <li class="d-flex align-items-start">
+                            <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                            <div id="perk-queue">
+                                <strong>Ưu tiên hàng đợi:</strong> Bypass hàng rửa xe thường. Vào thẳng ô rửa VIP.
+                            </div>
+                        </li>
+                        <li class="d-flex align-items-start">
+                            <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                            <div id="perk-multiplier">
+                                <strong>Hệ số tích điểm:</strong> Nhân hệ số x1.2 điểm thưởng.
+                            </div>
+                        </li>
+                        <li class="d-flex align-items-start">
+                            <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                            <div id="perk-birthday">
+                                <strong>Quà sinh nhật:</strong> Tặng 01 combo cao cấp rửa xe + vệ sinh sên miễn phí vào tháng sinh nhật.
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Redeem Confirm Modal ───────────────────────────────── -->
+<div id="redeem-modal-overlay" class="confirm-modal-backdrop" style="display:none;"
+     onclick="closeRedeemModal()">
+    <div class="confirm-modal-card animate-confirm-in" onclick="event.stopPropagation()">
+        <div id="redeem-modal-content">
+            <!-- Rendered by loyalty.js -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/loyalty.js"></script>
+}
