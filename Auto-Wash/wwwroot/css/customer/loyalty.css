@@ -1,0 +1,28 @@
+/* ============================================================
+   loyalty.css — Loyalty / VIP page styles
+   AutoWash Pro — SWP391 FPT University
+   ============================================================ */
+
+/* ── Loyalty.cshtml utility classes ──────────────────────── */
+.loyalty-sticky-col    { top: 100px; }
+.loyalty-perks-list    { font-size: 0.82rem; }
+.loyalty-perks-title   { color: var(--navy-dark); }
+.loyalty-rewards-title { color: var(--navy-dark); }
+.loyalty-tier-btn      { cursor: pointer; border-radius: 16px; }
+.loyalty-tier-label    { font-size: 0.8rem; letter-spacing: 0.5px; }
+.loyalty-filter-btn    { font-size: 0.78rem; font-weight: 700; }
+.loyalty-expiry-note   { font-size: 0.7rem; }
+
+/* ── Points Expiry Items ──────────────────────────────────── */
+.expiry-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; border-radius: 10px; background: #f8fafc;
+    font-size: 0.78rem;
+}
+.expiry-badge {
+    font-size: 0.62rem; font-weight: 800;
+    padding: 2px 8px; border-radius: 20px;
+    text-transform: uppercase; white-space: nowrap;
+}
+.expiry-badge-warn { background: rgba(239,68,68,0.1); color: #dc2626; }
+.expiry-badge-ok   { background: rgba(14,165,233,0.1);  color: #0284c7; }

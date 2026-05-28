@@ -281,9 +281,9 @@ html, body {
     .customer-sidebar {
         display: none !important; /* Hide sidebar completely on mobile since bottom navigation covers it */
     }
-    .customer-main { 
-        margin-left: 0 !important; 
-        padding-bottom: 78px !important; /* Add space at the bottom to avoid bottom nav bar overlap */
+    .customer-main {
+        margin-left: 0 !important;
+        padding-bottom: calc(85px + env(safe-area-inset-bottom)) !important;
     }
     .customer-top-header { 
         padding: 0 18px; 
@@ -378,14 +378,14 @@ html, body {
 
 /* Tier Variations */
 .member-card.tier-member {
-    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
-    color: var(--navy-dark) !important;
-    border: 1px solid #cbd5e1;
-    box-shadow: 0 15px 35px rgba(148, 163, 184, 0.1);
+    background: linear-gradient(135deg, #6b7280 0%, #374151 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 15px 35px rgba(71, 85, 105, 0.2);
 }
-.member-card.tier-member .tier-label { color: #475569; text-shadow: none; }
-.member-card.tier-member .text-cyan  { color: var(--navy-dark) !important; }
-.member-card.tier-member i.fa-crown  { color: #94a3b8 !important; }
+.member-card.tier-member .tier-label { color: #cbd5e1; text-shadow: none; }
+.member-card.tier-member .text-cyan  { color: #cbd5e1 !important; }
+.member-card.tier-member i.fa-crown  { color: #cbd5e1 !important; }
 .member-card.tier-silver {
     background: linear-gradient(135deg, #1e293b 0%, #475569 60%, #94a3b8 100%);
     box-shadow: 0 15px 35px rgba(148, 163, 184, 0.2);
@@ -394,21 +394,23 @@ html, body {
 .member-card.tier-silver .text-cyan  { color: #e2e8f0 !important; }
 .member-card.tier-silver i.fa-crown  { color: #e2e8f0 !important; }
 .member-card.tier-gold {
-    background: linear-gradient(135deg, #0f172a 0%, #854d0e 50%, var(--gold) 100%);
-    box-shadow: 0 15px 35px rgba(255, 193, 7, 0.2);
-    border: 1px solid rgba(255, 193, 7, 0.2);
+    background: linear-gradient(135deg, #fffdf0 0%, #fcf0cd 50%, #eab308 100%) !important;
+    box-shadow: 0 15px 35px rgba(255, 193, 7, 0.18);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #0f172a !important;
 }
-.member-card.tier-gold .tier-label { color: var(--gold); text-shadow: 0 0 10px rgba(255, 193, 7, 0.25); }
-.member-card.tier-gold .text-cyan  { color: var(--gold) !important; }
-.member-card.tier-gold i.fa-crown  { color: var(--gold) !important; }
+.member-card.tier-gold .tier-label { color: #b45309; text-shadow: none; }
+.member-card.tier-gold .text-cyan  { color: #b45309 !important; }
+.member-card.tier-gold i.fa-crown  { color: #eab308 !important; }
 .member-card.tier-platinum {
-    background: linear-gradient(135deg, var(--navy-dark) 0%, #0369a1 50%, var(--platinum) 100%);
-    box-shadow: 0 15px 35px rgba(14, 165, 233, 0.2);
-    border: 1px solid rgba(14, 165, 233, 0.2);
+    background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 45%, #e0f2fe 75%, #94a3b8 100%) !important;
+    box-shadow: 0 15px 35px rgba(148, 163, 184, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: #0f172a !important;
 }
-.member-card.tier-platinum .tier-label { color: var(--platinum); text-shadow: 0 0 10px rgba(14, 165, 233, 0.3); }
-.member-card.tier-platinum .text-cyan  { color: var(--platinum) !important; }
-.member-card.tier-platinum i.fa-crown  { color: var(--platinum) !important; }
+.member-card.tier-platinum .tier-label { color: #0284c7; text-shadow: none; }
+.member-card.tier-platinum .text-cyan  { color: #0284c7 !important; }
+.member-card.tier-platinum i.fa-crown  { color: #0ea5e9 !important; }
 
 /* Tier Label */
 .tier-label {
@@ -503,78 +505,86 @@ html, body {
     color: var(--cyan-electric);
     box-shadow: var(--cyan-glow);
     animation: activeNodePulse 2.2s infinite;
-}
-.node-label {
-    font-size: 0.65rem;
-    font-weight: 800;
-    margin-top: 10px;
-    color: #94a3b8;
-    text-transform: uppercase;
-    text-align: center;
-    white-space: nowrap;
-    letter-spacing: 0.5px;
-}
-.live-step-node.active .node-label   { color: var(--navy-dark); font-weight: 900; }
-.live-step-node.completed .node-label{ color: #64748b; }
-.live-stepper-wrapper {
-    background: white;
-    border-radius: 24px;
-    padding: 30px;
-    border: 1px solid #f1f5f9;
-    box-shadow: var(--card-shadow);
-}
-
-/* ── Ticket / Voucher Card ────────────────────────────────── */
-.ticket-card {
-    position: relative;
-    background: white;
-    border-radius: 24px;
-    overflow: hidden;
-    border: 1px solid #f1f5f9;
-    box-shadow: var(--card-shadow);
-    transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.ticket-card:hover { transform: translateY(-4px); box-shadow: var(--premium-shadow); }
-.ticket-card::before,
-.ticket-card::after {
-    content: '';
-    position: absolute;
-    top: 110px;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: var(--app-bg);
-    z-index: 10;
-}
-.ticket-card::before { left: -11px;  box-shadow: inset -3px 0 5px rgba(7,11,25,0.03); }
-.ticket-card::after  { right: -11px; box-shadow: inset 3px 0 5px rgba(7,11,25,0.03); }
-.ticket-divider {
-    border-top: 2px dashed #e2e8f0;
-    position: absolute;
-    top: 120px; left: 15px; right: 15px;
-    height: 1px; z-index: 9;
-}
-
-/* ── Reward Cards ─────────────────────────────────────────── */
-.reward-card-item {
-    background: #ffffff;
-    border: 1.5px solid rgba(14, 165, 233, 0.15);
-    border-radius: 22px;
-    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    overflow: hidden;
-    color: #334155;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.02);
+}.reward-card-item {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(25px) !important;
+    -webkit-backdrop-filter: blur(25px) !important;
+    border: 1.5px solid rgba(14, 165, 233, 0.15) !important;
+    border-radius: 24px !important;
+    padding: 20px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 16px !important;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    height: 100% !important;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.02) !important;
+    overflow: hidden !important;
+    color: #334155 !important;
 }
 .reward-card-item:hover {
-    transform: translateY(-4px);
-    border-color: rgba(14, 165, 233, 0.45);
-    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.1), 0 0 20px rgba(14, 165, 233, 0.05);
+    transform: translateY(-4px) !important;
+    border-color: rgba(14, 165, 233, 0.45) !important;
+    box-shadow: 0 15px 35px rgba(14, 165, 233, 0.1), 0 0 20px rgba(14, 165, 233, 0.05) !important;
 }
 .reward-icon-box {
-    background: rgba(14, 165, 233, 0.06);
+    background: rgba(14, 165, 233, 0.06) !important;
+    border: 1.5px solid rgba(14, 165, 233, 0.15) !important;
+    border-radius: 18px !important;
+    width: 56px !important;
+    height: 56px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.45rem !important;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.05) !important;
+    flex-shrink: 0 !important;
+    color: var(--cyan-electric) !important;
+}
+.reward-badge-status {
+    font-size: 0.65rem !important;
+    font-weight: 850 !important;
+    padding: 5px 12px !important;
+    border-radius: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    display: inline-block !important;
+}
+.reward-status-active  { background: rgba(14, 165, 233, 0.12) !important; color: #0ea5e9 !important; border: 1px solid rgba(14, 165, 233, 0.25) !important; }
+.reward-status-warning { background: rgba(245, 158, 11, 0.12) !important; color: #f59e0b !important; border: 1px solid rgba(245, 158, 11, 0.25) !important; }
+.reward-status-empty   { background: rgba(239, 68, 68, 0.12) !important;  color: #ef4444 !important; border: 1px solid rgba(239, 68, 68, 0.25) !important; }
+
+.reward-btn-redeem {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 14px !important;
+    font-weight: 800 !important;
+    font-size: 0.75rem !important;
+    padding: 10px 18px !important;
+    letter-spacing: 0.5px !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+}
+.reward-btn-redeem:hover {
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%) !important;
+    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.35) !important;
+    transform: translateY(-1.5px) !important;
+}
+.reward-btn-redeem:disabled {
+    background: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    cursor: not-allowed !important;
+}
     border: 1px solid rgba(14, 165, 233, 0.15);
     border-radius: 16px;
     width: 52px; height: 52px;
@@ -704,166 +714,8 @@ html, body {
 }
 @keyframes fadeIn { to { opacity: 1; } }
 
-/* ════════════════════════════════════════════════════════════
-   PROFILE PAGE
-   ════════════════════════════════════════════════════════════ */
-
-/* ── Profile Banner Header ────────────────────────────────── */
-.profile-header-banner {
-    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-light) 100%);
-    border-radius: 24px 24px 0 0;
-    padding: 32px 28px 70px 28px;
-    position: relative;
-    overflow: hidden;
-}
-.profile-header-glow {
-    position: absolute;
-    top: -40px;
-    right: -40px;
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-}
-
-/* ── Profile Avatar ───────────────────────────────────────── */
-.profile-avatar-img {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--cyan-electric);
-    box-shadow: var(--cyan-glow);
-}
-.profile-cam-btn {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: var(--cyan-electric);
-    border: none;
-    color: #fff;
-    font-size: 0.65rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
-    transition: transform 0.2s;
-}
-.profile-cam-btn:hover { transform: scale(1.1); }
-
-/* ── Profile Points Box ───────────────────────────────────── */
-.profile-pts-box {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 14px;
-    padding: 10px 18px;
-    text-align: center;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-}
-.profile-pts-box .pts-value {
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: var(--cyan-electric);
-    line-height: 1.1;
-}
-.profile-pts-box .pts-label {
-    font-size: 0.6rem;
-    font-weight: 700;
-    color: rgba(255,255,255,0.55);
-    letter-spacing: 0.05em;
-}
-
-/* ── Profile Tier Badge ───────────────────────────────────── */
-.profile-tier-badge {
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    padding: 4px 12px;
-    border-radius: 999px;
-}
-
-/* ════════════════════════════════════════════════════════════
-   HISTORY / SURVEY PAGE
-   ════════════════════════════════════════════════════════════ */
-
-/* ── Survey Stars ─────────────────────────────────────────── */
-.survey-star {
-    background: none;
-    border: none;
-    font-size: 2rem;
-    color: #e2e8f0;
-    cursor: pointer;
-    padding: 0 4px;
-    transition: color 0.15s ease, transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    line-height: 1;
-}
-.survey-star:hover  { transform: scale(1.2); }
-.survey-star.active { color: var(--gold); text-shadow: 0 0 12px rgba(255, 207, 51, 0.45); }
-
-/* ── Survey Emoji ─────────────────────────────────────────── */
-.survey-emoji-item {
-    cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 12px;
-    transition: background 0.15s ease, transform 0.18s ease;
-    text-align: center;
-    user-select: none;
-}
-.survey-emoji-item:hover    { background: rgba(14, 165, 233, 0.08); transform: scale(1.08); }
-.survey-emoji-item.selected { background: rgba(14, 165, 233, 0.12); }
-.survey-emoji-item .emoji-icon  { font-size: 1.6rem; display: block; line-height: 1; }
-.survey-emoji-item .emoji-label { font-size: 0.6rem; font-weight: 700; color: #94a3b8; margin-top: 3px; }
-
-/* ── Survey Tags ──────────────────────────────────────────── */
-.survey-tag {
-    display: inline-block;
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: #f1f5f9;
-    color: #64748b;
-    font-size: 0.72rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: 1.5px solid transparent;
-    transition: all 0.15s ease;
-    user-select: none;
-}
-.survey-tag:hover {
-    border-color: var(--cyan-electric);
-    color: var(--navy-dark);
-}
-.survey-tag.selected {
-    background: rgba(14, 165, 233, 0.1);
-    border-color: var(--cyan-electric);
-    color: var(--navy-dark);
-}
-
-/* ── Notification Items (History / Layout) ────────────────── */
-.notif-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    transition: background 0.15s ease;
-    cursor: default;
-}
-.notif-item:hover { background: rgba(14, 165, 233, 0.05); }
-.notif-item.notif-unread { background: rgba(14, 165, 233, 0.06); }
-.notif-item .notif-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--cyan-electric);
-    flex-shrink: 0;
-    margin-top: 5px;
-}
+/* Profile page styles → profile.css */
+/* History/Survey page styles → history.css */
 
 /* ════════════════════════════════════════════════════════════
    CREATIVE CUSTOMER PORTAL OVERRIDES (WHITE GLASSMORPHISM LIGHT THEME)
@@ -925,6 +777,43 @@ body {
     box-shadow: 0 0 0 1px var(--cyan-electric), 0 12px 30px rgba(14, 165, 233, 0.1) !important;
 }
 
+.member-card.tier-gold {
+    background: linear-gradient(135deg, #fffdf0 0%, #fcf0cd 50%, #eab308 100%) !important;
+    color: #0f172a !important;
+}
+.member-card.tier-platinum {
+    background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 45%, #e0f2fe 75%, #94a3b8 100%) !important;
+    color: #0f172a !important;
+}
+.member-card.tier-silver {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%) !important;
+    color: #ffffff !important;
+}
+.member-card.tier-standard {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #374151 100%) !important;
+    color: #ffffff !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+}
+.member-card .text-white {
+    color: #ffffff !important;
+}
+.member-card.tier-standard .text-white {
+    color: #ffffff !important;
+}
+.member-card.tier-gold .text-white, .member-card.tier-platinum .text-white {
+    color: #0f172a !important;
+}
+.member-card .text-muted, .member-card .text-secondary {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+.member-card.tier-standard .text-muted, .member-card.tier-standard .text-secondary {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+.member-card.tier-gold .text-muted, .member-card.tier-gold .text-secondary,
+.member-card.tier-platinum .text-muted, .member-card.tier-platinum .text-secondary {
+    color: #475569 !important;
+}
+
 /* Forms Glass Overrides */
 .custom-input, .form-control, .form-select {
     background-color: rgba(255, 255, 255, 0.85) !important;
@@ -947,15 +836,39 @@ body {
     font-weight: 700 !important;
     letter-spacing: 0.5px !important;
 }
+.glass-input-group {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.01) !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+.glass-input-group:focus-within {
+    border-color: var(--cyan-electric) !important;
+    box-shadow: 0 0 8px rgba(14, 165, 233, 0.15) !important;
+}
+.glass-input-group .input-group-text {
+    background: transparent !important;
+    border: none !important;
+    color: #64748b !important;
+    padding-right: 0 !important;
+    font-size: 1rem !important;
+}
+.glass-input-group .form-control {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--navy-dark) !important;
+    font-weight: 600 !important;
+}
 .input-group-text {
     background: rgba(255, 255, 255, 0.85) !important;
     border: 1.5px solid #cbd5e1 !important;
     border-right: none !important;
     color: #475569 !important;
-}
-.glass-input-group {
-    background: rgba(255, 255, 255, 0.85) !important;
-    border: 1.5px solid #cbd5e1 !important;
 }
 
 /* Glass Buttons */
@@ -1003,33 +916,40 @@ body {
     z-index: 2;
 }
 .member-card.tier-gold {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-    color: #ffffff !important;
+    background: linear-gradient(135deg, #fffdf0 0%, #fcf0cd 50%, #eab308 100%) !important;
+    color: #0f172a !important;
 }
 .member-card.tier-platinum {
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
-    color: #ffffff !important;
+    background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 45%, #e0f2fe 75%, #94a3b8 100%) !important;
+    color: #0f172a !important;
 }
 .member-card.tier-silver {
     background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%) !important;
     color: #ffffff !important;
 }
 .member-card.tier-standard {
-    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%) !important;
-    color: #475569 !important;
-    border: 1.5px solid rgba(15, 23, 42, 0.08) !important;
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #374151 100%) !important;
+    color: #ffffff !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
 }
 .member-card .text-white {
     color: #ffffff !important;
 }
 .member-card.tier-standard .text-white {
+    color: #ffffff !important;
+}
+.member-card.tier-gold .text-white, .member-card.tier-platinum .text-white {
     color: #0f172a !important;
 }
 .member-card .text-muted, .member-card .text-secondary {
     color: rgba(255, 255, 255, 0.85) !important;
 }
 .member-card.tier-standard .text-muted, .member-card.tier-standard .text-secondary {
-    color: #64748b !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+.member-card.tier-gold .text-muted, .member-card.tier-gold .text-secondary,
+.member-card.tier-platinum .text-muted, .member-card.tier-platinum .text-secondary {
+    color: #475569 !important;
 }
 
 /* ── Barcode Components ──────────────────────────────────── */
@@ -1162,10 +1082,8 @@ body {
 .mobile-nav-bg-left {
     flex: 1 !important;
     height: 100% !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border-top: 1.5px solid rgba(15, 23, 42, 0.05) !important;
+    background: #ffffff !important;
+    border-top: 1.5px solid rgba(15, 23, 42, 0.06) !important;
     border-top-left-radius: 24px !important;
 }
 
@@ -1185,10 +1103,8 @@ body {
 .mobile-nav-bg-right {
     flex: 1 !important;
     height: 100% !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border-top: 1.5px solid rgba(15, 23, 42, 0.05) !important;
+    background: #ffffff !important;
+    border-top: 1.5px solid rgba(15, 23, 42, 0.06) !important;
     border-top-right-radius: 24px !important;
 }
 
@@ -1308,41 +1224,8 @@ body {
 }
 
 @media (min-width: 992px) {
-    .mobile-bottom-nav {
-        left: 50% !important;
-        right: auto !important;
-        width: 550px !important;
-        transform: translateX(-50%) !important;
-        bottom: 24px !important; /* Floats beautifully in the bottom-center of the screen like a macOS dock */
-        height: 72px !important;
-        padding-bottom: 0 !important;
-    }
-    
-    .mobile-nav-bg-left {
-        border-radius: 24px 0 0 24px !important;
-        border: 1.5px solid rgba(15, 23, 42, 0.07) !important;
-        border-right: none !important;
-    }
-    
-    .mobile-nav-bg-right {
-        border-radius: 0 24px 24px 0 !important;
-        border: 1.5px solid rgba(15, 23, 42, 0.07) !important;
-        border-left: none !important;
-    }
-
-    .mobile-bottom-nav-link {
-        padding-top: 0 !important;
-    }
-
-    .mobile-bottom-nav-center-btn {
-        border: 3px solid #ffffff !important;
-        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25) !important;
-    }
-
-    /* Add padding at the bottom of the main content area to prevent overlap with the floating dock */
-    .customer-main {
-        padding-bottom: 120px !important;
-    }
+    .mobile-bottom-nav { display: none !important; }
+    .customer-main { padding-bottom: 0 !important; }
 }
 
 /* Modal Overrides */
@@ -1399,15 +1282,17 @@ body {
 .app-card[style*="linear-gradient"] h6,
 .app-card[style*="linear-gradient"] span,
 .app-card[style*="linear-gradient"] p,
-.app-card[style*="linear-gradient"] strong:not(.text-cyan),
+.app-card[style*="linear-gradient"] strong,
 .app-card[style*="linear-gradient"] div,
 .app-card[style*="linear-gradient"] .fw-bold,
+.app-card[style*="linear-gradient"] .text-white,
 .booking-summary-sticky .app-card h5,
 .booking-summary-sticky .app-card span,
-.booking-summary-sticky .app-card strong:not(.text-cyan),
+.booking-summary-sticky .app-card strong,
 .booking-summary-sticky .app-card div,
 .booking-summary-sticky .app-card .fw-bold,
-.booking-summary-sticky .app-card .text-white {
+.booking-summary-sticky .app-card .text-white,
+.booking-summary-sticky .app-card #summary-vip-status {
     color: #0f172a !important;
 }
 
@@ -1427,55 +1312,21 @@ body {
     color: #0ea5e9 !important;
 }
 
-/* VIP Perks box inside white glass summary card */
-.booking-summary-sticky .app-card div[style*="background:rgba(255,255,255,0.06)"],
-.booking-summary-sticky .app-card .p-3.mb-4.rounded-3[style*="background:rgba(255,255,255,0.06)"] {
+/* Borders and sub-boxes inside the white card */
+.app-card[style*="linear-gradient"] .border-top,
+.app-card[style*="linear-gradient"] .border-bottom,
+.booking-summary-sticky .app-card .border-top,
+.booking-summary-sticky .app-card .border-bottom {
+    border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* VIP Perks box background override to soft grey */
+.app-card[style*="linear-gradient"] div.rounded-3,
+.booking-summary-sticky .app-card div.rounded-3 {
     background: rgba(15, 23, 42, 0.04) !important;
 }
 
-@media (max-width: 991.98px) {
-    /* Style summary block as bottom sticky bar in booking page */
-    .booking-summary-sticky {
-        position: fixed !important;
-        top: auto !important; /* Prevent vertical stretching conflict with top: 100px inline style */
-        bottom: calc(72px + env(safe-area-inset-bottom)) !important; /* Dynamically floats above notch bottom navigation bar */
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 1200 !important;
-        background: rgba(255, 255, 255, 0.96) !important;
-        border-top: 1px solid rgba(15, 23, 42, 0.08) !important;
-        box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.08) !important;
-        border-radius: 20px 20px 0 0 !important;
-        padding: 12px 16px !important;
-        margin: 0 !important;
-    }
-    .booking-summary-sticky .border-bottom, 
-    .booking-summary-sticky .d-flex.flex-column.gap-3, 
-    .booking-summary-sticky .p-3.mb-4.rounded-3.d-flex.align-items-center,
-    .booking-summary-sticky .border-top.pt-2 {
-        display: none !important; /* Hide details on mobile to keep it thin */
-    }
-    .booking-summary-sticky .d-flex.justify-content-between.align-items-center.mb-4.pt-3.border-top {
-        border-top: none !important;
-        padding-top: 0 !important;
-        margin-bottom: 8px !important;
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-    }
-    .booking-summary-sticky button {
-        margin-top: 0 !important;
-        padding: 12px 20px !important;
-        font-size: 0.85rem !important;
-        border-radius: 12px !important;
-    }
-    .booking-summary-sticky .app-card {
-        padding: 4px 0 !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-}
+
 
 /* ── Suggestion 2: Smart Service Card Highlights with "ĐANG CHỌN" Badge ── */
 .selectable-card.selected {
@@ -1527,192 +1378,9 @@ body {
     100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* ── Suggestion 4: Interactive Review Stars & Emoji Reactions ── */
-.survey-star {
-    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-}
-.survey-star:hover {
-    transform: scale(1.25) rotate(8deg) !important;
-    color: #fbbf24 !important;
-}
-.survey-star.active {
-    color: #f59e0b !important;
-    text-shadow: 0 0 15px rgba(245, 158, 11, 0.6), 0 0 5px rgba(245, 158, 11, 0.3) !important;
-    animation: starPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
-}
-@keyframes starPop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.35) rotate(-10deg); }
-    100% { transform: scale(1) rotate(0); }
-}
-
-.survey-emoji-item {
-    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-}
-.survey-emoji-item:hover {
-    background: rgba(14, 165, 233, 0.08) !important;
-    transform: scale(1.15) !important;
-}
-.survey-emoji-item.selected {
-    background: rgba(14, 165, 233, 0.12) !important;
-    border: 1px solid rgba(14, 165, 233, 0.2) !important;
-    transform: scale(1.08) !important;
-    animation: emojiSelect 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
-}
-.survey-emoji-item.selected .survey-emoji {
-    animation: emojiBounce 0.5s ease-in-out infinite alternate !important;
-}
-@keyframes emojiSelect {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2) translateY(-2px); }
-    100% { transform: scale(1.08) translateY(0); }
-}
-@keyframes emojiBounce {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(-4px); }
-}
-
-/* ── Suggestion 5: Modern Glass Time Chips Selector ── */
-#time-slots .selectable-card {
-    border-radius: 99px !important; /* Perfect rounded chip capsule */
-    padding: 10px 16px !important;
-    font-size: 0.82rem !important;
-    background: rgba(255, 255, 255, 0.6) !important;
-    border: 1.5px solid #e2e8f0 !important;
-    color: #64748b !important;
-    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
-}
-#time-slots .selectable-card:hover {
-    border-color: var(--cyan-electric) !important;
-    color: var(--navy-dark) !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    transform: translateY(-1.5px) !important;
-}
-#time-slots .selectable-card.selected {
-    background: rgba(14, 165, 233, 0.12) !important;
-    border-color: var(--cyan-electric) !important;
-    color: #0ea5e9 !important;
-    box-shadow: 0 0 12px rgba(14, 165, 233, 0.15) !important;
-    font-weight: 800 !important;
-    transform: scale(1.05) !important;
-}
-#time-slots .selectable-card.disabled-slot {
-    background: rgba(15, 23, 42, 0.02) !important;
-    border-color: rgba(15, 23, 42, 0.05) !important;
-    color: #cbd5e1 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
-    text-decoration: line-through !important;
-}
-
-/* ── Redesigned Customer Dashboard Premium Styles ── */
-
-/* Concierge Weather Spinner */
-.animate-spin-slow {
-    animation: spinSlow 12s linear infinite !important;
-    display: inline-block;
-}
-@keyframes spinSlow {
-    100% { transform: rotate(360deg); }
-}
-
-/* 3D Glass Apple-Wallet VIP Membership Card */
-.member-card-3d {
-    position: relative !important;
-    overflow: hidden !important;
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08) !important;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
-}
-.member-card-3d:hover {
-    transform: translateY(-5px) scale(1.01) rotate(0.5deg) !important;
-    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.12) !important;
-}
-
-/* Premium Gloss Highlight texture overlay */
-.card-gloss-overlay {
-    position: absolute !important;
-    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0) 100%) !important;
-    z-index: 1 !important;
-    pointer-events: none !important;
-}
-
-/* Card Gold, Platinum, Silver, Standard metallic overrides */
-.member-card-3d.tier-gold {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%) !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
-}
-.member-card-3d.tier-platinum {
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%) !important;
-    border-color: rgba(255, 255, 255, 0.35) !important;
-}
-.member-card-3d.tier-silver {
-    background: linear-gradient(135deg, #94a3b8 0%, #64748b 50%, #475569 100%) !important;
-    border-color: rgba(255, 255, 255, 0.25) !important;
-}
-.member-card-3d.tier-standard {
-    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 50%, #e2e8f0 100%) !important;
-    border-color: rgba(15, 23, 42, 0.08) !important;
-}
-
-/* SIM chip slot icon */
-.card-chip-icon {
-    width: 32px !important;
-    height: 24px !important;
-    background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%) !important;
-    border-radius: 4px !important;
-    padding: 4px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-    border: 1px solid rgba(15, 23, 42, 0.15) !important;
-    opacity: 0.85 !important;
-}
-.chip-line {
-    height: 1px !important;
-    background: rgba(15, 23, 42, 0.15) !important;
-    width: 100% !important;
-}
-
-/* Dynamic Garage plates and typography */
-.font-monospace {
-    font-family: 'Consolas', 'Courier New', monospace !important;
-    letter-spacing: 0.5px !important;
-}
-
-/* Concierge Vertical Timeline Feed */
-.concierge-feed {
-    position: relative !important;
-}
-.feed-timeline-line {
-    position: absolute !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    left: 25px !important; /* Aligns with center of the timeline dot */
-    width: 2px !important;
-    background: rgba(15, 23, 42, 0.05) !important;
-    z-index: 1 !important;
-}
-.concierge-feed-item {
-    z-index: 2 !important;
-    background: rgba(255, 255, 255, 0.75) !important;
-    backdrop-filter: blur(15px) !important;
-    -webkit-backdrop-filter: blur(15px) !important;
-    border: 1px solid rgba(15, 23, 42, 0.04) !important;
-    border-radius: 16px !important;
-    transition: all 0.25s ease-in-out !important;
-}
-.concierge-feed-item:hover {
-    transform: translateX(4px) !important;
-    background: #ffffff !important;
-    border-color: rgba(14, 165, 233, 0.15) !important;
-    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.04) !important;
-}
-.concierge-feed-item.border-cyan-light {
-    border-left: 3px solid var(--cyan-electric) !important;
-    background: rgba(14, 165, 233, 0.02) !important;
-}
+/* History/Survey enhanced interactions → history.css */
+/* Booking time chips → booking.css */
+/* Dashboard premium styles → dashboard.css */
 
 /* ── Mobile Layout Optimization for All Cards ──────────────── */
 @media (max-width: 767.98px) {
@@ -1837,19 +1505,163 @@ body {
         margin-bottom: 4px !important;
     }
 
-    /* Quick category navigation blocks on mobile dashboard */
+    /* Unified dashboard quick telemetry & category cards on mobile */
+    .col-4 .app-card,
     .col-6 a.app-card {
-        padding: 12px 10px !important;
-        border-radius: 12px !important;
+        padding: 12px !important;
+        border-radius: 16px !important;
+        min-height: 84px !important;
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
     }
 
-    .col-6 a.app-card i {
-        font-size: 1.1rem !important;
-        margin-bottom: 4px !important;
+    /* Remove mt-2 top-margin since gap handles the spacing */
+    .col-4 .app-card > .mt-2,
+    .col-6 a.app-card > .mt-2 {
+        margin-top: 0 !important;
     }
 
-    .col-6 a.app-card .small {
-        font-size: 0.72rem !important;
+    .col-4 .app-card i.fa-lg,
+    .col-6 a.app-card i.fa-lg {
+        font-size: 1.05rem !important;
+        margin-bottom: 0 !important;
+    }
+
+    .col-4 .app-card h4,
+    .col-6 a.app-card h4 {
+        font-size: 0.95rem !important;
+        line-height: 1.1 !important;
+        margin-top: 0 !important;
+    }
+
+    /* Icon row in stats/category cards should stretch full width */
+    .col-4 .app-card > .d-flex,
+    .col-6 a.app-card > .d-flex {
+        width: 100% !important;
+        align-items: center !important;
+    }
+
+    /* Fix: clip plate text so it never overflows the narrow col-4 card */
+    #stat-garage-plates-mobile {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 100% !important;
+        display: block !important;
+    }
+
+    /* Fix: ensure both col-6 quick-category cards stay equal height */
+    .col-6 .app-card,
+    .col-6 a.app-card {
+        height: 100% !important;
+        min-height: 84px !important;
     }
 }
 
+/* ── Mobile Layout Fixes & Premium Enhancements ── */
+@media (max-width: 991.98px) {
+    /* 1. Let the detailed booking summary flow naturally below the inputs on mobile with beautiful spacing */
+    .booking-page-container .col-lg-8 .app-card:last-child {
+        margin-bottom: 0px !important;
+    }
+
+    /* 2. Prevent category selection pills in loyalty from being squeezed or truncated */
+    .no-scrollbar button,
+    .no-scrollbar .btn {
+        flex-shrink: 0 !important;
+    }
+
+    /* 3. Disable hover transformations (scale & tilt rotation) on mobile to prevent them from getting permanently stuck on tap */
+    .member-card-3d:hover {
+        transform: none !important;
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08) !important;
+    }
+
+    /* 4. Disable hover lift on all interactive cards on touch devices — prevents cards from
+          being stuck in a raised position after tapping, which makes siblings look misaligned */
+    .app-card:hover,
+    .selectable-card:hover,
+    .col-6 a.app-card:hover,
+    .col-4 .app-card:hover {
+        transform: none !important;
+        border-color: rgba(14, 165, 233, 0.15) !important;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.03) !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   EXTRACTED FROM CSHTML — Shared utilities
+   ════════════════════════════════════════════════════════════ */
+
+/* Animation delays */
+.anim-delay-1 { animation-delay: 0.05s; }
+.anim-delay-2 { animation-delay: 0.1s; }
+.anim-delay-3 { animation-delay: 0.2s; }
+.anim-delay-4 { animation-delay: 0.3s; }
+
+/* Default card radius — mobile overrides to 16px via existing rules */
+.app-card { border-radius: 24px; }
+
+/* Section icon boxes (reused across Booking, Loyalty, Profile) */
+.section-icon-box {
+    background: rgba(15, 23, 42, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.section-icon-box-sm { width: 36px; height: 36px; border-radius: 10px; }
+.section-icon-box-md { width: 44px; height: 44px; border-radius: 12px; }
+.section-icon-box-lg { width: 48px; height: 48px; border-radius: 14px; }
+.section-icon-box-bg { background: rgba(15, 23, 42, 0.06); }
+.section-icon-color  { color: var(--navy-dark); }
+.section-title       { color: var(--navy-dark); }
+
+/* ── _CustomerLayout.cshtml ────────────────────────────────── */
+.sidebar-brand-link     { transition: opacity 0.2s; cursor: pointer; }
+.sidebar-brand-icon     { background: var(--cyan-electric); width: 40px; height: 40px; border-radius: 10px; }
+.sidebar-brand-name     { letter-spacing: -0.5px; }
+.sidebar-brand-sub      { font-size: 0.65rem; }
+.sidebar-divider        { border-color: rgba(14, 165, 233, 0.15); margin: 10px 0 20px 0; }
+.sidebar-logout-link    { border-radius: 12px; }
+
+#notif-dot {
+    width: 8px; height: 8px;
+    top: -2px; right: -2px;
+    background: var(--cyan-electric);
+    display: none;
+}
+.notif-dropdown-title   { color: var(--navy-dark); }
+.notif-dropdown-btn     { font-size: 0.72rem; }
+.notif-list-scroll      { max-height: 250px; overflow-y: auto; }
+
+#profile-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    border: 1px solid #e2e8f0;
+    padding: 8px;
+    min-width: 220px;
+    z-index: 1100;
+    display: none;
+}
+.header-avatar          { width: 40px; height: 40px; border: 2px solid var(--cyan-electric); }
+.header-account-label   { font-size: 0.65rem; font-weight: 600; }
+.header-username-text   { font-size: 0.85rem; color: var(--navy-dark); }
+.dropdown-profile-name  { font-size: 0.88rem; color: var(--navy-dark); }
+.dropdown-profile-tier  { font-size: 0.75rem; }
+
+/* ── Shared card radius utilities ─────────────────────────── */
+.card-r-20  { border-radius: 20px; }
+.card-r-24  { border-radius: 24px; }
+.card-r-14  { border-radius: 14px; }
+.quick-cat-card { border-radius: 20px; cursor: pointer; }
+
+/* Page-specific utility classes → dashboard.css / booking.css / loyalty.css / profile.css */

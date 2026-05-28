@@ -8,17 +8,16 @@
     <div class="row g-4">
 
         <!-- ── Left Column ─────────────────────────────────── -->
-        <div class="col-lg-8">
+        <div class="col-lg-8 order-2 order-lg-1">
 
             <!-- Tier Simulator -->
-            <div class="app-card border-0 shadow-sm p-4 mb-4 bg-white" style="border-radius:24px;">
+            <div class="app-card border-0 shadow-sm p-4 mb-4 bg-white card-r-24">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="p-2 rounded-3 me-3 d-flex align-items-center justify-content-center"
-                         style="background:rgba(15,23,42,0.06);width:44px;height:44px;">
-                        <i class="fas fa-crown fa-lg" style="color:var(--navy-dark);"></i>
+                    <div class="p-2 me-3 d-flex align-items-center justify-content-center section-icon-box-md section-icon-box-bg">
+                        <i class="fas fa-crown fa-lg section-icon-color"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">Bộ giả lập phân cấp thành viên</h5>
+                        <h5 class="fw-bold mb-0 section-title">Bộ giả lập phân cấp thành viên</h5>
                         <small class="text-muted">Chọn hạng thành viên để kiểm tra và thay đổi các chính sách ưu đãi.</small>
                     </div>
                 </div>
@@ -26,34 +25,34 @@
                 <div class="row g-2">
                     <div class="col-6 col-md-3">
                         <div onclick="changeTier('Standard Member')"
-                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light"
-                             style="cursor:pointer;border-radius:16px;" id="tier-btn-standard">
+                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light loyalty-tier-btn"
+                             id="tier-btn-standard">
                             <i class="fas fa-user text-secondary d-block fs-4 mb-2"></i>
-                            <span style="font-size:0.8rem;letter-spacing:0.5px;">MEMBER</span>
+                            <span class="loyalty-tier-label">MEMBER</span>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div onclick="changeTier('Silver Member')"
-                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light"
-                             style="cursor:pointer;border-radius:16px;" id="tier-btn-silver">
+                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light loyalty-tier-btn"
+                             id="tier-btn-silver">
                             <i class="fas fa-medal text-muted d-block fs-4 mb-2"></i>
-                            <span style="font-size:0.8rem;letter-spacing:0.5px;">SILVER</span>
+                            <span class="loyalty-tier-label">SILVER</span>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div onclick="changeTier('Gold Member')"
-                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light"
-                             style="cursor:pointer;border-radius:16px;" id="tier-btn-gold">
+                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light loyalty-tier-btn"
+                             id="tier-btn-gold">
                             <i class="fas fa-award text-warning d-block fs-4 mb-2"></i>
-                            <span style="font-size:0.8rem;letter-spacing:0.5px;">GOLD</span>
+                            <span class="loyalty-tier-label">GOLD</span>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div onclick="changeTier('Platinum Member')"
-                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light"
-                             style="cursor:pointer;border-radius:16px;" id="tier-btn-platinum">
+                             class="p-3 text-center fw-bold selectable-card h-100 border border-light bg-light loyalty-tier-btn"
+                             id="tier-btn-platinum">
                             <i class="fas fa-crown text-cyan d-block fs-4 mb-2"></i>
-                            <span style="font-size:0.8rem;letter-spacing:0.5px;">PLATINUM</span>
+                            <span class="loyalty-tier-label">PLATINUM</span>
                         </div>
                     </div>
                 </div>
@@ -61,7 +60,7 @@
 
             <!-- Rewards Header + Filter -->
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 mt-4 gap-2">
-                <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">
+                <h5 class="fw-bold mb-0 loyalty-rewards-title">
                     Ưu đãi đổi thưởng (<span id="rewards-count">12</span>)
                 </h5>
                 <button onclick="showLoyaltyRules()"
@@ -71,35 +70,35 @@
             </div>
 
             <!-- Category Filter Pills -->
-            <div class="d-flex gap-2 overflow-auto pb-3 no-scrollbar mb-4" style="white-space:nowrap;">
+            <div class="d-flex gap-2 overflow-auto pb-3 no-scrollbar mb-4">
                 <button onclick="filterCategory('Tất cả')"
-                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-btn-primary w-auto text-dark"
-                        id="cat-all" style="font-size:0.78rem;font-weight:700;">
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-btn-primary w-auto text-dark loyalty-filter-btn"
+                        id="cat-all">
                     Tất cả
                 </button>
                 <button onclick="filterCategory('Giảm giá')"
-                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
-                        id="cat-discount" style="font-size:0.78rem;font-weight:700;">
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white loyalty-filter-btn"
+                        id="cat-discount">
                     Giảm giá
                 </button>
                 <button onclick="filterCategory('Dịch vụ')"
-                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
-                        id="cat-service" style="font-size:0.78rem;font-weight:700;">
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white loyalty-filter-btn"
+                        id="cat-service">
                     Dịch vụ
                 </button>
                 <button onclick="filterCategory('Quà tặng')"
-                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
-                        id="cat-gift" style="font-size:0.78rem;font-weight:700;">
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white loyalty-filter-btn"
+                        id="cat-gift">
                     Quà tặng
                 </button>
                 <button onclick="filterCategory('Combo đặc biệt')"
-                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
-                        id="cat-combo" style="font-size:0.78rem;font-weight:700;">
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white loyalty-filter-btn"
+                        id="cat-combo">
                     Combo đặc biệt
                 </button>
                 <button onclick="filterCategory('Ưu đãi sinh nhật')"
-                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white"
-                        id="cat-birthday" style="font-size:0.78rem;font-weight:700;">
+                        class="btn btn-sm px-4 rounded-pill py-2 border-0 app-card w-auto shadow-sm text-muted bg-white loyalty-filter-btn"
+                        id="cat-birthday">
                     Ưu đãi sinh nhật
                 </button>
             </div>
@@ -111,20 +110,20 @@
         </div>
 
         <!-- ── Right Column: Member Card + Perks ──────────── -->
-        <div class="col-lg-4">
-            <div class="position-sticky" style="top:100px;">
+        <div class="col-lg-4 order-1 order-lg-2">
+            <div class="position-sticky loyalty-sticky-col">
                 <!-- Member Card Preview -->
                 <div class="mb-4" id="loyalty-member-card">
                     <!-- Rendered by loyalty.js -->
                 </div>
 
                 <!-- VIP Perks Detail Card -->
-                <div class="app-card border-0 shadow-sm p-4 bg-white" style="border-radius:24px;">
-                    <h6 class="fw-bold mb-3 border-bottom pb-2" style="color:var(--navy-dark);">
+                <div class="app-card border-0 shadow-sm p-4 bg-white card-r-24">
+                    <h6 class="fw-bold mb-3 border-bottom pb-2 loyalty-perks-title">
                         <i class="fas fa-star-of-life text-cyan me-2"></i>
                         Đặc quyền hạng <span id="tier-perks-label">Gold</span>
                     </h6>
-                    <ul class="list-unstyled d-flex flex-column gap-3 mb-0 text-muted" style="font-size:0.82rem;">
+                    <ul class="list-unstyled d-flex flex-column gap-3 mb-0 text-muted loyalty-perks-list">
                         <li class="d-flex align-items-start">
                             <i class="fas fa-check-circle text-success me-2 mt-1"></i>
                             <div id="perk-queue">
@@ -145,6 +144,20 @@
                         </li>
                     </ul>
                 </div>
+
+                <!-- Points Expiry Card -->
+                <div class="app-card border-0 shadow-sm p-4 bg-white card-r-24 mt-4">
+                    <h6 class="fw-bold mb-3 border-bottom pb-2 loyalty-perks-title">
+                        <i class="fas fa-hourglass-half text-warning me-2"></i>
+                        Hạn sử dụng điểm thưởng
+                    </h6>
+                    <div id="expiry-batches" class="d-flex flex-column gap-2">
+                        <!-- Rendered by loyalty.js -->
+                    </div>
+                    <small class="text-muted d-block mt-3 loyalty-expiry-note">
+                        * Điểm tích lũy hết hạn sau <strong>12 tháng</strong> kể từ ngày giao dịch.
+                    </small>
+                </div>
             </div>
         </div>
     </div>
@@ -159,6 +172,10 @@
         </div>
     </div>
 </div>
+
+@section Styles {
+<link rel="stylesheet" href="~/css/customer/loyalty.css" asp-append-version="true" />
+}
 
 @section Scripts {
 <script src="~/js/loyalty.js"></script>

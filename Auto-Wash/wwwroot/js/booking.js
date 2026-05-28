@@ -228,6 +228,15 @@ function initDatePicker() {
     const maxDateStr = maxDate.toISOString().split('T')[0];
     dateInput.max = maxDateStr;
 
+    // Show booking window info text
+    const windowTextEl = document.getElementById('booking-window-text');
+    if (windowTextEl) {
+        const tierLabel = tier.includes('PLATINUM') ? 'Platinum' :
+                          tier.includes('GOLD')     ? 'Gold'     :
+                          tier.includes('SILVER')   ? 'Silver'   : 'Member';
+        windowTextEl.textContent = `${tierLabel} Member: đặt trước tối đa ${days} ngày`;
+    }
+
     dateInput.addEventListener('change', function () {
         selectedDate = this.value;
         updateSummary();
@@ -286,7 +295,7 @@ function updateSummary() {
 
     // Total & Auto-applied perks at checkout
     const baseTotal = mainPrice + addonTotal;
-    
+
     // VIP perks discount calculation
     const tier = (localStorage.getItem('user_tier') || 'Standard Member').toUpperCase();
     let discountPercent = 0;
@@ -294,18 +303,56 @@ function updateSummary() {
     if (tier.includes('PLATINUM')) { discountPercent = 10; tierText = 'Platinum'; }
     else if (tier.includes('GOLD')) { discountPercent = 5; tierText = 'Gold'; }
     else if (tier.includes('SILVER')) { discountPercent = 2; tierText = 'Silver'; }
-    
+
     const discountAmount = Math.round(baseTotal * (discountPercent / 100));
     const finalTotal = baseTotal - discountAmount;
-    
+
+    // Show/hide tier perk row
+    const tierPerkRow = document.getElementById('tier-perk-row');
+    const tierPerkVal = document.getElementById('tier-perk-value');
+    if (discountPercent > 0 && baseTotal > 0) {
+        if (tierPerkRow) tierPerkRow.classList.remove('d-none');
+        if (tierPerkVal) tierPerkVal.textContent = `-${Number(discountAmount).toLocaleString()}đ (${discountPercent}% ${tierText})`;
+    } else {
+        if (tierPerkRow) tierPerkRow.classList.add('d-none');
+    }
+
     // Display total price
     const totalEl = document.getElementById('summary-total');
     if (totalEl) {
-        if (discountPercent > 0) {
-            totalEl.innerHTML = `<span style="font-size:0.75rem;color:#94a3b8;text-decoration:line-through;display:block;line-height:1.2;">${Number(baseTotal).toLocaleString()}đ</span>${Number(finalTotal).toLocaleString()}đ <small style="font-size:0.62rem;display:block;color:var(--cyan-electric);font-weight:bold;margin-top:2px;">(Đã giảm ${discountPercent}% VIP ${tierText})</small>`;
+        if (discountPercent > 0 && baseTotal > 0) {
+            totalEl.innerHTML = `<span style="font-size:0.75rem;color:#94a3b8;text-decoration:line-through;display:block;line-height:1.2;">${Number(baseTotal).toLocaleString()}đ</span>${Number(finalTotal).toLocaleString()}đ`;
         } else {
             totalEl.textContent = baseTotal ? Number(baseTotal).toLocaleString() + 'đ' : '0đ';
         }
+    }
+}
+
+// ── Promo Code ────────────────────────────────────────────
+function applyPromoCode() {
+    const input = document.getElementById('promo-code-input');
+    const msg   = document.getElementById('promo-applied-msg');
+    const label = document.getElementById('promo-applied-label');
+    const discEl = document.getElementById('promo-discount-display');
+    if (!input) return;
+
+    const code = input.value.trim().toUpperCase();
+    const promos = {
+        'SILVER10': { label: 'Silver ưu đãi 10%',    desc: '-10%' },
+        'GOLD15':   { label: 'Gold special 15%',      desc: '-15%' },
+        'VIP20':    { label: 'Platinum VIP 20%',      desc: '-20%' },
+        'WASH50K':  { label: 'Giảm 50.000đ mặc định', desc: '-50.000đ' }
+    };
+
+    if (!code) { showToast('Nhập mã ưu đãi trước khi áp dụng.', 'warning'); return; }
+
+    if (promos[code]) {
+        if (msg) msg.classList.remove('d-none');
+        if (label) label.textContent = promos[code].label;
+        if (discEl) discEl.textContent = promos[code].desc;
+        showToast(`Áp dụng mã "${code}" thành công!`, 'success');
+    } else {
+        showToast('Mã ưu đãi không hợp lệ hoặc đã hết hạn.', 'warning');
     }
 }
 

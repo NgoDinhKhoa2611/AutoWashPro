@@ -4,20 +4,19 @@
     ViewBag.ActiveNav = "booking";
 }
 
-<div class="container-fluid p-0 animate-up">
+<div class="container-fluid p-0 animate-up booking-page-container">
     <div class="row g-4">
 
         <!-- ── Left Column: Input Options ─────────────────── -->
         <div class="col-lg-8">
 
             <!-- 1. Choose Vehicle -->
-            <div class="app-card border-0 shadow-sm p-4 mb-4 bg-white" style="border-radius:24px;">
+            <div class="app-card border-0 shadow-sm p-4 mb-4 bg-white card-r-24">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="p-2 rounded-3 me-3 d-flex align-items-center justify-content-center"
-                         style="background:rgba(15,23,42,0.06);width:44px;height:44px;">
-                        <i class="fas fa-motorcycle fa-lg" style="color:var(--navy-dark);"></i>
+                    <div class="p-2 me-3 d-flex align-items-center justify-content-center section-icon-box-md section-icon-box-bg">
+                        <i class="fas fa-motorcycle fa-lg section-icon-color"></i>
                     </div>
-                    <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">1. Chọn phương tiện</h5>
+                    <h5 class="fw-bold mb-0 section-title">1. Chọn phương tiện</h5>
                 </div>
 
                 <!-- Vehicles list populated by booking.js -->
@@ -27,17 +26,16 @@
             </div>
 
             <!-- 2. Choose Service -->
-            <div class="app-card border-0 shadow-sm p-4 mb-4 bg-white" style="border-radius:24px;">
+            <div class="app-card border-0 shadow-sm p-4 mb-4 bg-white card-r-24">
                 <div class="d-flex align-items-center mb-4">
-                    <div class="p-2 rounded-3 me-3 d-flex align-items-center justify-content-center"
-                         style="background:rgba(15,23,42,0.06);width:44px;height:44px;">
-                        <i class="fas fa-shower fa-lg" style="color:var(--navy-dark);"></i>
+                    <div class="p-2 me-3 d-flex align-items-center justify-content-center section-icon-box-md section-icon-box-bg">
+                        <i class="fas fa-shower fa-lg section-icon-color"></i>
                     </div>
-                    <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">2. Chọn dịch vụ & Add-ons</h5>
+                    <h5 class="fw-bold mb-0 section-title">2. Chọn dịch vụ & Add-ons</h5>
                 </div>
 
                 <!-- Main Wash -->
-                <h6 class="fw-bold mb-3" style="color:var(--navy-dark);">
+                <h6 class="fw-bold mb-3 section-title">
                     <i class="fas fa-soap text-cyan me-2"></i>Dịch vụ rửa chính (Chọn 1 gói)
                 </h6>
                 <div class="row g-3 mb-4" id="main-services-list">
@@ -45,7 +43,7 @@
                 </div>
 
                 <!-- Add-ons -->
-                <h6 class="fw-bold mb-3" style="color:var(--navy-dark);">
+                <h6 class="fw-bold mb-3 section-title">
                     <i class="fas fa-plus-circle text-cyan me-2"></i>Dịch vụ chăm sóc thêm (Add-ons)
                 </h6>
                 <div class="d-flex flex-column gap-2" id="addon-services-list">
@@ -54,21 +52,23 @@
             </div>
 
             <!-- 3. Date & Time -->
-            <div class="app-card border-0 shadow-sm p-4 bg-white" style="border-radius:24px;">
+            <div class="app-card border-0 shadow-sm p-4 bg-white card-r-24">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="p-2 rounded-3 me-3 d-flex align-items-center justify-content-center"
-                         style="background:rgba(15,23,42,0.06);width:44px;height:44px;">
-                        <i class="fas fa-clock fa-lg" style="color:var(--navy-dark);"></i>
+                    <div class="p-2 me-3 d-flex align-items-center justify-content-center section-icon-box-md section-icon-box-bg">
+                        <i class="fas fa-clock fa-lg section-icon-color"></i>
                     </div>
-                    <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">3. Chọn ngày & khung giờ</h5>
+                    <h5 class="fw-bold mb-0 section-title">3. Chọn ngày & khung giờ</h5>
                 </div>
 
                 <div class="row g-3">
                     <div class="col-md-5">
                         <label class="form-label small fw-bold text-muted">NGÀY HẸN GIAO XE</label>
                         <input type="date" id="booking-date"
-                               class="form-control form-control-lg border rounded-4 fw-bold px-3 py-2"
-                               style="font-size:0.92rem;background:#f8fafc;color:var(--navy-dark);" />
+                               class="form-control form-control-lg border rounded-4 fw-bold px-3 py-2 booking-date-input" />
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                            <i class="fas fa-calendar-check booking-window-icon"></i>
+                            <small class="fw-bold booking-window-label" id="booking-window-text">Đang tải giới hạn đặt lịch...</small>
+                        </div>
                     </div>
                     <div class="col-md-7">
                         <label class="form-label small fw-bold text-muted">
@@ -84,60 +84,82 @@
 
         <!-- ── Right Column: Sticky Summary ───────────────── -->
         <div class="col-lg-4">
-            <div class="position-sticky booking-summary-sticky" style="top:100px;">
-                <div class="app-card border-0 shadow-lg p-4 text-white"
-                     style="background:linear-gradient(135deg,var(--navy-dark) 0%,var(--navy-light) 100%);border-radius:24px;">
-                    <h5 class="fw-bold text-white mb-3 pb-2 border-bottom"
-                        style="border-color:rgba(255,255,255,0.1)!important;">
+            <div class="position-sticky booking-sticky-top">
+                <div class="app-card border-0 shadow-lg p-4 text-white booking-summary-dark-card">
+                    <h5 class="fw-bold text-white mb-3 pb-2 border-bottom booking-border-subtle">
                         Tóm tắt dịch vụ
                     </h5>
 
-                    <div class="d-flex flex-column gap-3 mb-4" style="font-size:0.85rem;color:rgba(255,255,255,0.6);">
+                    <div class="d-flex flex-column gap-3 mb-4 booking-summary-rows">
                         <div class="d-flex justify-content-between">
                             <span>Phương tiện:</span>
                             <strong class="text-white" id="summary-vehicle">—</strong>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span>Gói dịch vụ chính:</span>
-                            <strong class="text-white text-end" style="max-width:180px;" id="summary-main-service">Chưa chọn</strong>
+                            <strong class="text-white text-end booking-svc-name" id="summary-main-service">Chưa chọn</strong>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span>Đơn giá gói:</span>
                             <strong class="text-white" id="summary-main-price">0đ</strong>
                         </div>
-                        <div id="summary-addons-block" style="display:none; border-color:rgba(255,255,255,0.1) !important;" class="border-top pt-2">
-                            <span class="d-block mb-1 fw-bold small" style="color:rgba(255,255,255,0.5);">Dịch vụ chăm sóc thêm:</span>
+                        <div id="summary-addons-block" class="border-top pt-2 booking-border-subtle" style="display:none;">
+                            <span class="d-block mb-1 fw-bold small booking-addons-title">Dịch vụ chăm sóc thêm:</span>
                             <div id="summary-addons-list" class="d-flex flex-column gap-1"></div>
                         </div>
-                        <div class="d-flex justify-content-between border-top pt-2"
-                             style="border-color:rgba(255,255,255,0.1)!important;">
+                        <div class="d-flex justify-content-between border-top pt-2 booking-border-subtle">
                             <span>Thời gian hẹn:</span>
                             <strong class="text-cyan" id="summary-time">—</strong>
                         </div>
                     </div>
 
                     <!-- VIP Perks -->
-                    <div class="p-3 mb-4 rounded-3 d-flex align-items-center"
-                         style="background:rgba(255,255,255,0.06);font-size:0.82rem;">
+                    <div class="p-3 mb-3 rounded-3 d-flex align-items-center booking-vip-box">
                         <i class="fas fa-crown text-warning me-3 fa-lg"></i>
                         <div>
-                            <span class="d-block" style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,0.5);">
-                                HẠNG THÀNH VIÊN
-                            </span>
+                            <span class="booking-vip-label">HẠNG THÀNH VIÊN</span>
                             <div class="fw-bold text-white mt-1" id="summary-vip-status">Đang tải...</div>
                         </div>
                     </div>
 
+                    <!-- Tier Perk Auto-apply -->
+                    <div id="tier-perk-row" class="d-none d-flex justify-content-between align-items-center mb-3">
+                        <span class="small booking-perk-label">
+                            <i class="fas fa-tag me-1 text-warning"></i>Ưu đãi thành viên:
+                        </span>
+                        <strong class="text-success small" id="tier-perk-value">—</strong>
+                    </div>
+
+                    <!-- Apply Reward / Promo Code -->
+                    <div class="border-top pt-3 mb-3 booking-border-subtle">
+                        <span class="d-block mb-2 fw-bold small booking-addons-title">
+                            <i class="fas fa-gift me-1"></i>ÁP DỤNG ƯU ĐÃI
+                        </span>
+                        <div class="d-flex gap-0">
+                            <input type="text" id="promo-code-input"
+                                   class="form-control form-control-sm booking-promo-input"
+                                   placeholder="Mã reward hoặc promo code..." />
+                            <button onclick="applyPromoCode()"
+                                    class="btn btn-sm fw-bold booking-promo-btn flex-shrink-0">
+                                ÁP DỤNG
+                            </button>
+                        </div>
+                        <div id="promo-applied-msg" class="d-none d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-success fw-bold">
+                                <i class="fas fa-check-circle me-1"></i><span id="promo-applied-label">Ưu đãi đã áp dụng</span>
+                            </small>
+                            <span class="text-success fw-bold small" id="promo-discount-display">-0đ</span>
+                        </div>
+                    </div>
+
                     <!-- Total Cost -->
-                    <div class="d-flex justify-content-between align-items-center mb-4 pt-3 border-top"
-                         style="border-color:rgba(255,255,255,0.1)!important;">
+                    <div class="d-flex justify-content-between align-items-center mb-4 pt-3 border-top booking-border-subtle">
                         <span class="fw-bold fs-6">Tổng chi phí:</span>
-                        <h3 class="fw-bold text-cyan mb-0" id="summary-total" style="letter-spacing:0.5px;">0đ</h3>
+                        <h3 class="fw-bold text-cyan mb-0 booking-total-cost" id="summary-total">0đ</h3>
                     </div>
 
                     <button onclick="handleConfirmBooking()"
-                            class="app-btn-primary w-100 py-3 shadow d-flex align-items-center justify-content-center gap-2"
-                            style="border-radius:14px;font-size:0.92rem;font-weight:700;">
+                            class="app-btn-primary w-100 py-3 shadow d-flex align-items-center justify-content-center gap-2 booking-confirm-btn">
                         XÁC NHẬN ĐẶT LỊCH <i class="fas fa-check-circle"></i>
                     </button>
                 </div>
@@ -146,6 +168,10 @@
 
     </div>
 </div>
+
+@section Styles {
+<link rel="stylesheet" href="~/css/customer/booking.css" asp-append-version="true" />
+}
 
 @section Scripts {
 <script src="~/js/booking.js"></script>
