@@ -30,7 +30,24 @@ namespace Auto_Wash
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
+            app.Lifetime.ApplicationStarted.Register(() =>
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "http://localhost:5023",
+                        UseShellExecute = true
+                    });
+                }
+                catch
+                {
+                    // Bỏ qua lỗi nếu không thể tự khởi chạy trình duyệt
+                }
+            });
+
             app.Run();
         }
     }
 }
+

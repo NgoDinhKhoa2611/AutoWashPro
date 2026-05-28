@@ -22,6 +22,7 @@ let selectedMain    = null;
 let selectedAddons  = {};
 let selectedDate    = '';
 let selectedTime    = '';
+let appliedVoucher  = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     renderVehicles();
@@ -296,23 +297,47 @@ function updateSummary() {
     // Total & Auto-applied perks at checkout
     const baseTotal = mainPrice + addonTotal;
 
-    // VIP perks discount calculation
+    // 1. Calculate VIP Tier discount
     const tier = (localStorage.getItem('user_tier') || 'Standard Member').toUpperCase();
-    let discountPercent = 0;
+    let tierDiscountPercent = 0;
     let tierText = 'Standard';
-    if (tier.includes('PLATINUM')) { discountPercent = 10; tierText = 'Platinum'; }
-    else if (tier.includes('GOLD')) { discountPercent = 5; tierText = 'Gold'; }
-    else if (tier.includes('SILVER')) { discountPercent = 2; tierText = 'Silver'; }
+    if (tier.includes('PLATINUM')) { tierDiscountPercent = 10; tierText = 'Platinum'; }
+    else if (tier.includes('GOLD')) { tierDiscountPercent = 5; tierText = 'Gold'; }
+    else if (tier.includes('SILVER')) { tierDiscountPercent = 2; tierText = 'Silver'; }
 
-    const discountAmount = Math.round(baseTotal * (discountPercent / 100));
-    const finalTotal = baseTotal - discountAmount;
+    const tierDiscountAmount = Math.round(baseTotal * (tierDiscountPercent / 100));
+
+    // 2. Calculate Voucher/Promo discount
+    let promoDiscountAmount = 0;
+    const msg   = document.getElementById('promo-applied-msg');
+    const label = document.getElementById('promo-applied-label');
+    const discEl = document.getElementById('promo-discount-display');
+
+    if (appliedVoucher && baseTotal > 0) {
+        if (appliedVoucher.rewardType === 'DiscountPercent') {
+            promoDiscountAmount = Math.round(baseTotal * (Number(appliedVoucher.rewardValue) / 100));
+            if (discEl) discEl.textContent = `-${appliedVoucher.rewardValue}%`;
+        } else {
+            // Fixed discount or free wash
+            promoDiscountAmount = Math.min(baseTotal, Number(appliedVoucher.rewardValue));
+            if (discEl) discEl.textContent = `-${Number(promoDiscountAmount).toLocaleString()}đ`;
+        }
+        if (msg) msg.classList.remove('d-none');
+        if (label) label.textContent = appliedVoucher.title;
+    } else {
+        if (msg) msg.classList.add('d-none');
+        appliedVoucher = null; // Clear if base total is 0
+    }
+
+    const totalDiscount = tierDiscountAmount + promoDiscountAmount;
+    const finalTotal = Math.max(0, baseTotal - totalDiscount);
 
     // Show/hide tier perk row
     const tierPerkRow = document.getElementById('tier-perk-row');
     const tierPerkVal = document.getElementById('tier-perk-value');
-    if (discountPercent > 0 && baseTotal > 0) {
+    if (tierDiscountPercent > 0 && baseTotal > 0) {
         if (tierPerkRow) tierPerkRow.classList.remove('d-none');
-        if (tierPerkVal) tierPerkVal.textContent = `-${Number(discountAmount).toLocaleString()}đ (${discountPercent}% ${tierText})`;
+        if (tierPerkVal) tierPerkVal.textContent = `-${Number(tierDiscountAmount).toLocaleString()}đ (${tierDiscountPercent}% ${tierText})`;
     } else {
         if (tierPerkRow) tierPerkRow.classList.add('d-none');
     }
@@ -320,7 +345,7 @@ function updateSummary() {
     // Display total price
     const totalEl = document.getElementById('summary-total');
     if (totalEl) {
-        if (discountPercent > 0 && baseTotal > 0) {
+        if (totalDiscount > 0 && baseTotal > 0) {
             totalEl.innerHTML = `<span style="font-size:0.75rem;color:#94a3b8;text-decoration:line-through;display:block;line-height:1.2;">${Number(baseTotal).toLocaleString()}đ</span>${Number(finalTotal).toLocaleString()}đ`;
         } else {
             totalEl.textContent = baseTotal ? Number(baseTotal).toLocaleString() + 'đ' : '0đ';
@@ -337,20 +362,47 @@ function applyPromoCode() {
     if (!input) return;
 
     const code = input.value.trim().toUpperCase();
-    const promos = {
-        'SILVER10': { label: 'Silver ưu đãi 10%',    desc: '-10%' },
-        'GOLD15':   { label: 'Gold special 15%',      desc: '-15%' },
-        'VIP20':    { label: 'Platinum VIP 20%',      desc: '-20%' },
-        'WASH50K':  { label: 'Giảm 50.000đ mặc định', desc: '-50.000đ' }
-    };
-
     if (!code) { showToast('Nhập mã ưu đãi trước khi áp dụng.', 'warning'); return; }
 
+    // 1. Check in claimed vouchers in localStorage (aligned with RewardRedemptions)
+    const claimedList = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
+    const voucher = claimedList.find(v => v.code.toUpperCase() === code);
+
+    if (voucher) {
+        if (voucher.status === 2 || voucher.status === 'used') {
+            showToast('Mã voucher này đã được sử dụng trước đây!', 'warning');
+            return;
+        }
+
+        appliedVoucher = {
+            redemptionId: voucher.redemptionId,
+            code: voucher.code,
+            title: voucher.title,
+            rewardType: voucher.rewardType,
+            rewardValue: voucher.rewardValue
+        };
+        showToast(`Áp dụng voucher "${voucher.title}" thành công!`, 'success');
+        updateSummary();
+        return;
+    }
+
+    // 2. Check hardcoded promos fallback
+    const promos = {
+        'SILVER10': { label: 'Silver ưu đãi 10%',    rewardType: 'DiscountPercent', rewardValue: 10 },
+        'GOLD15':   { label: 'Gold special 15%',      rewardType: 'DiscountPercent', rewardValue: 15 },
+        'VIP20':    { label: 'Platinum VIP 20%',      rewardType: 'DiscountPercent', rewardValue: 20 },
+        'WASH50K':  { label: 'Giảm 50.000đ mặc định', rewardType: 'FixedAmount',     rewardValue: 50000 }
+    };
+
     if (promos[code]) {
-        if (msg) msg.classList.remove('d-none');
-        if (label) label.textContent = promos[code].label;
-        if (discEl) discEl.textContent = promos[code].desc;
-        showToast(`Áp dụng mã "${code}" thành công!`, 'success');
+        appliedVoucher = {
+            code: code,
+            title: promos[code].label,
+            rewardType: promos[code].rewardType,
+            rewardValue: promos[code].rewardValue
+        };
+        showToast(`Áp dụng mã khuyến mãi "${code}" thành công!`, 'success');
+        updateSummary();
     } else {
         showToast('Mã ưu đãi không hợp lệ hoặc đã hết hạn.', 'warning');
     }
@@ -384,13 +436,24 @@ function handleConfirmBooking() {
     const tier  = localStorage.getItem('user_tier') || 'Standard Member';
     const tierUp = tier.replace(' Member', '').toUpperCase();
 
-    // Apply VIP tier discount
-    let discountPercent = 0;
-    if (tierUp.includes('PLATINUM')) discountPercent = 10;
-    else if (tierUp.includes('GOLD')) discountPercent = 5;
-    else if (tierUp.includes('SILVER')) discountPercent = 2;
-    const discountAmount = Math.round(basePrice * (discountPercent / 100));
-    const totalPrice = basePrice - discountAmount;
+    // Calculate VIP tier discount
+    let tierDiscountPercent = 0;
+    if (tierUp.includes('PLATINUM')) tierDiscountPercent = 10;
+    else if (tierUp.includes('GOLD')) tierDiscountPercent = 5;
+    else if (tierUp.includes('SILVER')) tierDiscountPercent = 2;
+    const tierDiscountAmount = Math.round(basePrice * (tierDiscountPercent / 100));
+
+    // Calculate Voucher/Promo discount
+    let promoDiscountAmount = 0;
+    if (appliedVoucher) {
+        if (appliedVoucher.rewardType === 'DiscountPercent') {
+            promoDiscountAmount = Math.round(basePrice * (Number(appliedVoucher.rewardValue) / 100));
+        } else {
+            promoDiscountAmount = Math.min(basePrice, Number(appliedVoucher.rewardValue));
+        }
+    }
+
+    const totalPrice = Math.max(0, basePrice - (tierDiscountAmount + promoDiscountAmount));
 
     let multiplier = 1.0;
     if (tierUp.includes('PLATINUM')) multiplier = 1.5;
@@ -429,6 +492,16 @@ function handleConfirmBooking() {
         ]
     };
 
+    // Mark voucher as used in localStorage (representing RewardRedemptions status = 2)
+    if (appliedVoucher && appliedVoucher.redemptionId) {
+        const claimedList = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
+        const idx = claimedList.findIndex(v => v.redemptionId === appliedVoucher.redemptionId);
+        if (idx !== -1) {
+            claimedList[idx].status = 2; // 2 = Used in database enum
+            localStorage.setItem('user_claimed_vouchers', JSON.stringify(claimedList));
+        }
+    }
+
     localStorage.setItem('active_booking', JSON.stringify(booking));
     localStorage.setItem('wash_step', '0');
     window.dispatchEvent(new Event('storage'));
@@ -447,4 +520,57 @@ function handleConfirmBooking() {
 
     showToast(`Đặt lịch thành công! Xe ${selectedVehicle} đã vào hàng đợi.`, 'success');
     setTimeout(() => { window.location.href = '/Customer/Dashboard'; }, 1200);
+}
+
+// ── Voucher Modal Selector ───────────────────────────────
+function showMyVouchersSelector() {
+    const backdrop = document.getElementById('voucher-modal-backdrop');
+    const listContainer = document.getElementById('voucher-selector-list');
+    if (!backdrop || !listContainer) return;
+
+    const claimedList = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
+    const availableVouchers = claimedList.filter(v => v.status === 1); // 1 = Available
+
+    if (availableVouchers.length === 0) {
+        listContainer.innerHTML = `
+            <div class="text-center py-4 text-muted small">
+                <i class="fas fa-info-circle mb-2 fa-lg d-block" style="color: var(--cyan-electric);"></i>
+                Bạn không có voucher khả dụng nào trong ví.<br>
+                Hãy vào trang <strong>Tích điểm & Ưu đãi</strong> để đổi quà!
+            </div>
+        `;
+    } else {
+        listContainer.innerHTML = availableVouchers.map(v => {
+            let badgeText = '';
+            if (v.rewardType === 'DiscountPercent') badgeText = `Giảm ${v.rewardValue}%`;
+            else badgeText = `Giảm ₫${Number(v.rewardValue).toLocaleString()}`;
+
+            return `
+            <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between mb-2 select-voucher-item" style="transition: all 0.2s ease;">
+                <div class="text-start">
+                    <div class="fw-bold text-dark small mb-0.5">${v.title}</div>
+                    <div class="font-monospace text-secondary small" style="font-size:0.7rem;">Mã: ${v.code}</div>
+                    <span class="badge bg-cyan text-dark small mt-1" style="font-size:0.6rem; font-weight:700;">${badgeText}</span>
+                </div>
+                <button type="button" class="ticket-btn" style="padding: 4px 10px; font-size: 0.68rem; border-radius: 8px;" onclick="selectVoucherFromModal('${v.code}')">Chọn</button>
+            </div>
+            `;
+        }).join('');
+    }
+
+    backdrop.style.display = 'flex';
+}
+
+function selectVoucherFromModal(code) {
+    const input = document.getElementById('promo-code-input');
+    if (input) {
+        input.value = code;
+        applyPromoCode();
+    }
+    closeVoucherModal();
+}
+
+function closeVoucherModal() {
+    const backdrop = document.getElementById('voucher-modal-backdrop');
+    if (backdrop) backdrop.style.display = 'none';
 }
