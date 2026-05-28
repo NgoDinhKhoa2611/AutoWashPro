@@ -151,7 +151,7 @@
                     <div class="notif-icon-btn">
                         <i class="far fa-bell fa-lg"></i>
                     </div>
-                    <span class="position-absolute bg-cyan rounded-circle" id="notif-dot"></span>
+                    <span class="position-absolute bg-cyan rounded-circle text-dark d-flex align-items-center justify-content-center fw-bold" id="notif-badge" style="display:none; width: 18px; height: 18px; top: -5px; right: -5px; font-size: 0.65rem; border: 1.5px solid white;">0</span>
 
                     <!-- Notification Dropdown -->
                     <div class="notif-dropdown" id="notif-dropdown" style="display:none;">
@@ -171,11 +171,11 @@
                 <!-- Profile Dropdown -->
                 <div class="position-relative" id="profile-trigger" onclick="toggleProfileDropdown()">
                     <div class="header-profile-trigger">
-                        <img src="@(ViewBag.UserAvatar ?? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200")"
+                        <img id="header-user-avatar" src="@(ViewBag.UserAvatar ?? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200")"
                              class="avatar-circle header-avatar" alt="Avatar" />
                         <div class="d-none d-md-block text-start">
                             <small class="text-muted d-block header-account-label">TÀI KHOẢN</small>
-                            <h6 class="fw-bold mb-0 header-username-text">
+                            <h6 class="fw-bold mb-0 header-username-text" id="header-user-name">
                                 @(ViewBag.UserName ?? "Người dùng")
                             </h6>
                         </div>
@@ -184,11 +184,14 @@
 
                     <div id="profile-dropdown">
                         <div class="px-3 py-2 border-bottom mb-2 text-start">
-                            <div class="fw-bold text-truncate dropdown-profile-name">
+                            <div class="fw-bold text-truncate dropdown-profile-name" id="dropdown-user-name">
                                 @(ViewBag.UserName ?? "Người dùng")
                             </div>
-                            <div class="text-muted text-truncate dropdown-profile-tier">
+                            <div class="text-muted text-truncate dropdown-profile-tier" id="header-user-tier" style="font-size:0.75rem;">
                                 @(ViewBag.UserTier ?? "Member")
+                            </div>
+                            <div class="fw-bold text-cyan dropdown-profile-points mt-1" id="header-user-points" style="font-size:0.72rem;">
+                                @(ViewBag.UserPoints ?? 0) PTS
                             </div>
                         </div>
                         <a href="/Customer/Profile" class="profile-dropdown-item">
