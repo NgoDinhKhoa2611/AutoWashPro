@@ -233,11 +233,11 @@ function handleLogout() {
             localStorage.removeItem('user_role');
             window.dispatchEvent(new Event('storage'));
             showToast('Đăng xuất thành công!', 'success');
-            setTimeout(() => { window.location.href = '/Account/Login'; }, 800);
+            setTimeout(() => { window.location.href = '/'; }, 800);
         });
     } else if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
         localStorage.removeItem('user_role');
-        window.location.href = '/Account/Login';
+        window.location.href = '/';
     }
 }
 

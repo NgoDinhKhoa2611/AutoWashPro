@@ -26,3 +26,19 @@ function applySidebarCollapse(collapse) {
         if (main) main.classList.remove('collapsed');
     }
 }
+
+function handleAdminLogout() {
+    if (window.showConfirm) {
+        window.showConfirm('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất khỏi Admin Panel?', () => {
+            localStorage.removeItem('user_role');
+            window.dispatchEvent(new Event('storage'));
+            if (window.showToast) showToast('Đăng xuất thành công!', 'success');
+            setTimeout(() => { window.location.href = '/'; }, 800);
+        });
+    } else if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi Admin Panel?')) {
+        localStorage.removeItem('user_role');
+        window.dispatchEvent(new Event('storage'));
+        window.location.href = '/';
+    }
+}
+

@@ -146,3 +146,28 @@
     z-index: 100;
     background: var(--app-bg);
 }
+
+/* ── Auth Separator ───────────────────────────────────────── */
+.auth-separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.auth-separator::before,
+.auth-separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px dashed rgba(14, 165, 233, 0.25);
+}
+.auth-separator:not(:empty)::before {
+    margin-right: .75em;
+}
+.auth-separator:not(:empty)::after {
+    margin-left: .75em;
+}
+
