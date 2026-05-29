@@ -173,15 +173,14 @@
                         <div class="header-profile-trigger">
                             @* <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200""
                              class="avatar-circle header-avatar" alt="Avatar" /> *@
-                            <img id="profile-avatar-img" src="" alt="Avatar"
-                                 class="avatar-circle header-avatar" alt="Avatar" />
+                            <img id="profile-avatar-img" src="@(string.IsNullOrEmpty(ViewBag.UserAvatar) ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200" : ViewBag.UserAvatar)" alt="Avatar"
+                                 class="avatar-circle header-avatar" />
                             <div class="d-none d-md-block text-start">
                                 <small class="text-muted d-block header-account-label">TÀI KHOẢN</small>
                                 <h6 class="fw-bold mb-0 header-username-text">
                                     @(ViewBag.UserName ?? "Người dùng")
                                 </h6>
                             </div>
-                            <i class="fas fa-chevron-down text-muted small d-none d-md-block"></i>
                         </div>
 
                         <div id="profile-dropdown">

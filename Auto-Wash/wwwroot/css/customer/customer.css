@@ -50,6 +50,7 @@ html, body {
 }
 .customer-sidebar.collapsed .brand-full,
 .customer-sidebar.collapsed .customer-sidebar-links span,
+.customer-sidebar.collapsed .customer-sidebar-link span,
 .customer-sidebar.collapsed hr,
 .customer-sidebar.collapsed .sidebar-footer-text,
 .customer-sidebar.collapsed .sidebar-collapse-btn span {

@@ -41,6 +41,7 @@ namespace Auto_Wash.Controllers
                     {
                         Email = request.Email.Trim(),
                         FullName = request.FullName.Trim(),
+                        GoogleId = request.GoogleId?.Trim(),
                         Role = 3, // 3 = Customer
                         IsActive = true,
                         CreatedAt = DateTime.Now
@@ -66,6 +67,19 @@ namespace Auto_Wash.Controllers
                     _context.Customers.Add(customer);
                     await _context.SaveChangesAsync();
                 }
+                else
+                {
+                    // If account exists but GoogleId is not set, set it now
+                    if (string.IsNullOrEmpty(account.GoogleId))
+                    {
+                        account.GoogleId = request.GoogleId?.Trim();
+                        await _context.SaveChangesAsync();
+                    }
+                    else if (account.GoogleId != request.GoogleId?.Trim())
+                    {
+                        return BadRequest(new { success = false, message = "Tài khoản này đã được liên kết với một tài khoản Google khác!" });
+                    }
+                }
 
                 return Ok(new { success = true });
             }
@@ -73,12 +87,13 @@ namespace Auto_Wash.Controllers
             {
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
-        }
+        }        
     }
 
     public class GoogleLoginRequest
     {
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
+        public string GoogleId { get; set; } = string.Empty;
     }
 }

@@ -12,23 +12,20 @@
         <div class="p-4 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4 member-card-layer">
             <div class="d-flex align-items-center">
                 <div class="position-relative">
-                    <img id="profile-avatar-img-gg" src="" alt="Avatar"
+                    <img id="profile-avatar-img-gg" src="@(string.IsNullOrEmpty(ViewBag.UserAvatar) ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200" : ViewBag.UserAvatar)" alt="Avatar"
                          class="avatar-circle border border-3 shadow-lg profile-avatar-img" />
-                    <div class="position-absolute bottom-0 end-0 rounded-circle d-flex align-items-center justify-content-center shadow-sm profile-cam-btn">
-                        <i class="fas fa-camera"></i>
-                    </div>
                 </div>
                 <div class="ms-4">
-                    <h4 class="fw-bold mb-1 text-white" id="profile-name-display">—</h4>
+                    <h4 class="fw-bold mb-1 text-white" id="profile-name-display">@ViewBag.UserName</h4>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <span class="badge fw-bold px-2 py-1 profile-tier-badge" id="profile-tier-badge">—</span>
-                        <span class="small fw-medium profile-phone-text" id="profile-phone-display">—</span>
+                        <span class="badge fw-bold px-2 py-1 profile-tier-badge" id="profile-tier-badge">@ViewBag.UserTier</span>
+                        <span class="small fw-medium profile-phone-text" id="profile-phone-display">@(string.IsNullOrEmpty(ViewBag.UserPhone) ? ViewBag.UserEmail : ViewBag.UserPhone)</span>
                     </div>
                 </div>
             </div>
             <div class="rounded-4 px-4 py-3 d-flex flex-column align-items-md-end profile-pts-box">
                 <small class="fw-bold mb-1 profile-pts-sub">S-POINTS TÍCH LŨY</small>
-                <h3 class="fw-bold text-warning mb-0" id="profile-points-display">— <span class="profile-pts-span fw-bold">PTS</span></h3>
+                <h3 class="fw-bold text-warning mb-0" id="profile-points-display">@ViewBag.UserPoints.ToString("N0") <span class="profile-pts-span fw-bold">PTS</span></h3>
             </div>
         </div>
     </div>
@@ -49,7 +46,7 @@
                     </div>
                 </div>
 
-                <form id="profile-form" onsubmit="handleSaveProfile(event)">
+                <form id="profile-form" onsubmit="handleSaveProfile(event)" method="post">
                     <!-- Avatar presets -->
                     @* <div class="mb-4">
                         <label class="form-label small fw-bold text-muted d-block mb-3 form-label-spaced">CHỌN ẢNH ĐẠI DIỆN</label>
@@ -62,15 +59,23 @@
                         <label class="form-label small fw-bold text-muted form-label-spaced">HỌ VÀ TÊN</label>
                         <div class="input-group glass-input-group bg-light">
                             <span class="input-group-text bg-transparent border-0 text-muted"><i class="fas fa-user"></i></span>
-                            <input type="text" id="edit-name" class="form-control bg-transparent border-0 py-3 fw-semibold profile-input-text" required />
+                            <input type="text" id="edit-name" value="@ViewBag.UserName" class="form-control bg-transparent border-0 py-3 fw-semibold profile-input-text" required />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted form-label-spaced">SỐ ĐIỆN THOẠI</label>
+                        <div class="input-group glass-input-group bg-light">
+                            <span class="input-group-text bg-transparent border-0 text-muted"><i class="fas fa-phone"></i></span>
+                            <input type="text" id="edit-phone" value="@ViewBag.UserPhone" class="form-control bg-transparent border-0 py-3 fw-semibold profile-input-text" />
                         </div>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted form-label-spaced">SỐ ĐIỆN THOẠI</label>
-                        <div class="input-group glass-input-group bg-light">
-                            <span class="input-group-text bg-transparent border-0 text-muted"><i class="fas fa-phone"></i></span>
-                            <input type="text" id="edit-phone" class="form-control bg-transparent border-0 py-3 fw-semibold profile-input-text" required />
+                        <label class="form-label small fw-bold text-muted form-label-spaced">ĐỊA CHỈ EMAIL (KHÔNG THỂ THAY ĐỔI)</label>
+                        <div class="input-group glass-input-group bg-light form-group-disabled" style="opacity: 0.75; cursor: not-allowed;">
+                            <span class="input-group-text bg-transparent border-0 text-muted"><i class="fas fa-envelope"></i></span>
+                            <input type="email" id="edit-email" value="@ViewBag.UserEmail" class="form-control bg-transparent border-0 py-3 fw-semibold profile-input-text" style="pointer-events: none;" readonly />
                         </div>
                     </div>
 
