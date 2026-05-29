@@ -33,12 +33,12 @@ function handleAdminLogout() {
             localStorage.removeItem('user_role');
             window.dispatchEvent(new Event('storage'));
             if (window.showToast) showToast('Đăng xuất thành công!', 'success');
-            setTimeout(() => { window.location.href = '/'; }, 800);
+            setTimeout(() => { window.location.href = '/Account/Logout'; }, 800);
         });
     } else if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi Admin Panel?')) {
         localStorage.removeItem('user_role');
         window.dispatchEvent(new Event('storage'));
-        window.location.href = '/';
+        window.location.href = '/Account/Logout';
     }
 }
 

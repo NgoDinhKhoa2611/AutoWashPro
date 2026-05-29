@@ -40,8 +40,8 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <small class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:1px;">REVENUE</small>
-                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);" id="stat-revenue">₫12.5M</h3>
-                    <span class="text-success small fw-bold"><i class="fas fa-caret-up me-1"></i> 12.5%</span>
+                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);" id="stat-revenue">—</h3>
+                    <span class="small fw-bold" id="stat-revenue-change">—</span>
                 </div>
                 <div class="p-3 rounded-3 shadow-sm admin-stat-icon">
                     <i class="fas fa-wallet" style="color:var(--cyan-electric);"></i>
@@ -54,7 +54,7 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <small class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:1px;">ACTIVE QUEUE</small>
-                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);" id="stat-queue">3</h3>
+                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);" id="stat-queue">—</h3>
                     <span class="small fw-bold" style="color:var(--cyan-electric);">Peak hours</span>
                 </div>
                 <div class="p-3 rounded-3 shadow-sm admin-stat-icon">
@@ -68,8 +68,8 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <small class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:1px;">AVG. TIME</small>
-                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);">24m</h3>
-                    <span class="text-success small fw-bold"><i class="fas fa-check-circle me-1"></i> Optimal</span>
+                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);" id="stat-avgtime">—</h3>
+                    <span class="small fw-bold" id="stat-avgtime-label">—</span>
                 </div>
                 <div class="p-3 rounded-3 shadow-sm admin-stat-icon">
                     <i class="fas fa-clock" style="color:var(--cyan-electric);"></i>
@@ -82,10 +82,8 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <small class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:1px;">RATING</small>
-                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);">4.9/5</h3>
-                    <div class="text-warning small">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    </div>
+                    <h3 class="fw-bold my-2" style="color:var(--navy-dark);" id="stat-rating">—</h3>
+                    <div class="text-warning small" id="stat-rating-stars"></div>
                 </div>
                 <div class="p-3 rounded-3 shadow-sm admin-stat-icon">
                     <i class="fas fa-smile" style="color:var(--cyan-electric);"></i>
@@ -130,9 +128,9 @@
                 </div>
             </div>
 
-            <!-- Row 1: Base Rules -->
+            <!-- Row 1: Base Rules (4 fields) -->
             <div class="row g-3 mb-3">
-                <div class="col-md-6">
+                <div class="col-md-3 col-6">
                     <div class="p-3 bg-light rounded-4 border border-light h-100 d-flex flex-column justify-content-between">
                         <div>
                             <label class="form-label small fw-bold text-muted mb-2">TỶ LỆ TÍCH ĐIỂM CƠ BẢN</label>
@@ -145,7 +143,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3 col-6">
                     <div class="p-3 bg-light rounded-4 border border-light h-100 d-flex flex-column justify-content-between">
                         <div>
                             <label class="form-label small fw-bold text-muted mb-2">THỜI HẠN ĐIỂM THƯỞNG</label>
@@ -158,6 +156,32 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-md-3 col-6">
+                    <div class="p-3 bg-light rounded-4 border border-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <label class="form-label small fw-bold text-muted mb-2">NGÀY XÉT DUYỆT HẠNG</label>
+                            <p class="text-muted mb-3" style="font-size:0.7rem;line-height:1.3;">Ngày trong tháng hệ thống tự động chạy monthly review để nâng / hạ hạng thành viên.</p>
+                        </div>
+                        <div class="input-group mt-auto">
+                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">Ngày</span>
+                            <input type="number" min="1" max="28" id="cfg-tier-review-day" class="form-control border-0 px-2 text-center fw-bold" value="1" style="border-radius:0 10px 10px 0;outline:none;" />
+                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">/tháng</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="p-3 bg-light rounded-4 border border-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <label class="form-label small fw-bold text-muted mb-2">CỬA SỔ XẾP HẠNG</label>
+                            <p class="text-muted mb-3" style="font-size:0.7rem;line-height:1.3;">Số năm tính RankingBalance trong cửa sổ trượt để xét nâng / hạ hạng thành viên.</p>
+                        </div>
+                        <div class="input-group mt-auto">
+                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">Cửa sổ</span>
+                            <input type="number" min="1" max="5" id="cfg-ranking-window" class="form-control border-0 px-2 text-center fw-bold" value="2" style="border-radius:0 10px 10px 0;outline:none;" />
+                            <span class="input-group-text bg-white border-0 text-muted small fw-bold" style="font-size:0.75rem;">năm</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Row 2: Tier Configs -->
@@ -167,7 +191,7 @@
                     <div class="p-3 bg-light rounded-4 border border-light">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge tier-badge tier-badge-member px-3 py-1 border-0" style="font-size:0.65rem;">MEMBER</span>
-                            <span class="small text-muted fw-bold">Mặc định</span>
+                            <span class="small text-muted fw-bold" id="lbl-member-threshold"></span>
                         </div>
                         <div>
                             <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Số ngày đặt lịch trước</label>
@@ -181,11 +205,15 @@
                     <div class="p-3 bg-light rounded-4 border border-light">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge tier-badge tier-badge-silver px-3 py-1 border-0" style="font-size:0.65rem;">SILVER</span>
-                            <span class="small text-muted fw-bold">&ge; 500 PTS</span>
+                            <span class="small text-muted fw-bold" id="lbl-silver-threshold"></span>
                         </div>
                         <div class="mb-2">
                             <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Hệ số điểm thưởng</label>
-                            <input type="number" step="0.1" id="cfg-silver-mult" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="1.1" style="border-radius:8px;" />
+                            <input type="number" step="0.1" id="cfg-silver-mult" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="1.2" style="border-radius:8px;" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">% Giảm giá tự động</label>
+                            <input type="number" step="0.1" min="0" max="100" id="cfg-silver-discount" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="5" style="border-radius:8px;" />
                         </div>
                         <div>
                             <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Số ngày đặt lịch trước</label>
@@ -199,11 +227,15 @@
                     <div class="p-3 bg-light rounded-4 border border-light">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge tier-badge tier-badge-gold px-3 py-1 border-0" style="font-size:0.65rem;">GOLD</span>
-                            <span class="small text-muted fw-bold">&ge; 1,000 PTS</span>
+                            <span class="small text-muted fw-bold" id="lbl-gold-threshold"></span>
                         </div>
                         <div class="mb-2">
                             <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Hệ số điểm thưởng</label>
-                            <input type="number" step="0.1" id="cfg-gold-mult" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="1.2" style="border-radius:8px;" />
+                            <input type="number" step="0.1" id="cfg-gold-mult" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="1.5" style="border-radius:8px;" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">% Giảm giá tự động</label>
+                            <input type="number" step="0.1" min="0" max="100" id="cfg-gold-discount" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="10" style="border-radius:8px;" />
                         </div>
                         <div>
                             <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Số ngày đặt lịch trước</label>
@@ -217,11 +249,15 @@
                     <div class="p-3 bg-light rounded-4 border border-light">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge tier-badge tier-badge-platinum px-3 py-1 border-0" style="font-size:0.65rem;">PLATINUM</span>
-                            <span class="small text-muted fw-bold">&ge; 2,000 PTS</span>
+                            <span class="small text-muted fw-bold" id="lbl-plat-threshold"></span>
                         </div>
                         <div class="mb-2">
                             <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Hệ số điểm thưởng</label>
-                            <input type="number" step="0.1" id="cfg-plat-mult" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="1.5" style="border-radius:8px;" />
+                            <input type="number" step="0.1" id="cfg-plat-mult" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="2.0" style="border-radius:8px;" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">% Giảm giá tự động</label>
+                            <input type="number" step="0.1" min="0" max="100" id="cfg-plat-discount" class="form-control form-control-sm border-0 fw-bold px-2 text-center" value="15" style="border-radius:8px;" />
                         </div>
                         <div>
                             <label class="form-label small text-muted mb-1" style="font-size:0.68rem;">Số ngày đặt lịch trước</label>
@@ -271,7 +307,7 @@
                         <tr class="small text-uppercase text-muted" style="letter-spacing:0.5px;">
                             <th class="ps-3 py-3">Khách hàng</th>
                             <th>Hạng hiện tại</th>
-                            <th>Điểm tích lũy</th>
+                            <th>Tích lũy xếp hạng (VNĐ)</th>
                             <th>Dự báo thay đổi</th>
                             <th class="pe-3">Lý do</th>
                         </tr>
@@ -287,80 +323,5 @@
 
 @section Scripts {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="~/js/admin-dashboard.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const config = JSON.parse(localStorage.getItem('loyalty_config') || '{}');
-        if (config.pointRate)    document.getElementById('cfg-point-rate').value    = config.pointRate;
-        if (config.expiryMonths) document.getElementById('cfg-expiry-months').value = config.expiryMonths;
-        if (config.memberDays)   document.getElementById('cfg-member-days').value   = config.memberDays;
-        if (config.silverMult)   document.getElementById('cfg-silver-mult').value   = config.silverMult;
-        if (config.silverDays)   document.getElementById('cfg-silver-days').value   = config.silverDays;
-        if (config.goldMult)     document.getElementById('cfg-gold-mult').value     = config.goldMult;
-        if (config.goldDays)     document.getElementById('cfg-gold-days').value     = config.goldDays;
-        if (config.platMult)     document.getElementById('cfg-plat-mult').value     = config.platMult;
-        if (config.platDays)     document.getElementById('cfg-plat-days').value     = config.platDays;
-        renderTierReview();
-    });
-
-    function handleSaveLoyaltyConfig() {
-        const config = {
-            pointRate:    Number(document.getElementById('cfg-point-rate').value    || 1),
-            expiryMonths: Number(document.getElementById('cfg-expiry-months').value || 12),
-            memberDays:   Number(document.getElementById('cfg-member-days').value   || 7),
-            silverMult:   Number(document.getElementById('cfg-silver-mult').value   || 1.1),
-            silverDays:   Number(document.getElementById('cfg-silver-days').value   || 10),
-            goldMult:     Number(document.getElementById('cfg-gold-mult').value     || 1.2),
-            goldDays:     Number(document.getElementById('cfg-gold-days').value     || 12),
-            platMult:     Number(document.getElementById('cfg-plat-mult').value     || 1.5),
-            platDays:     Number(document.getElementById('cfg-plat-days').value     || 14)
-        };
-        localStorage.setItem('loyalty_config', JSON.stringify(config));
-        window.dispatchEvent(new Event('storage'));
-        if (window.showToast) showToast('Đã lưu cấu hình quy chế tích điểm và đặc quyền hạng VIP thành công!', 'success');
-        else alert('Đã lưu cấu hình thành công!');
-    }
-
-    function handleRunReview() {
-        renderTierReview();
-        if (window.showToast) showToast('Đã chạy Monthly Tier Review thành công!', 'success');
-    }
-
-    function renderTierReview() {
-        const tierBadge = {
-            'Member':   '<span class="badge tier-badge tier-badge-member">MEMBER</span>',
-            'Silver':   '<span class="badge tier-badge tier-badge-silver">SILVER</span>',
-            'Gold':     '<span class="badge tier-badge tier-badge-gold">GOLD</span>',
-            'Platinum': '<span class="badge tier-badge tier-badge-platinum">PLATINUM</span>',
-        };
-        const changeBadge = (dir, label) => dir === 'up'
-            ? `<span class="tier-change-badge tier-change-up"><i class="fas fa-arrow-up me-1"></i>${label}</span>`
-            : dir === 'down'
-            ? `<span class="tier-change-badge tier-change-down"><i class="fas fa-arrow-down me-1"></i>${label}</span>`
-            : `<span class="tier-change-badge tier-change-stable">Giữ nguyên</span>`;
-
-        const reviews = [
-            { name: 'Nguyễn Văn An',  current: 'Silver',   pts: 1050, dir: 'up',   next: 'Gold',     reason: 'Đạt ngưỡng 1,000 PTS' },
-            { name: 'Trần Thị Bích',  current: 'Gold',     pts: 480,  dir: 'down', next: 'Silver',   reason: 'Giảm xuống dưới 500 PTS' },
-            { name: 'Lê Văn Cường',   current: 'Gold',     pts: 1980, dir: 'up',   next: 'Platinum', reason: 'Sắp đạt ngưỡng 2,000 PTS' },
-            { name: 'Phạm Thị Dung',  current: 'Platinum', pts: 1850, dir: 'down', next: 'Gold',     reason: 'Dưới ngưỡng 2,000 PTS' },
-            { name: 'Hoàng Văn Em',   current: 'Member',   pts: 510,  dir: 'up',   next: 'Silver',   reason: 'Đạt ngưỡng 500 PTS' },
-            { name: 'Vũ Thị Phương',  current: 'Silver',   pts: 990,  dir: 'stable', next: 'Silver', reason: 'Chưa đạt ngưỡng Gold' },
-        ];
-
-        const nextReview = new Date();
-        nextReview.setMonth(nextReview.getMonth() + 1, 1);
-        document.getElementById('next-review-date').textContent =
-            nextReview.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-        document.getElementById('tier-review-tbody').innerHTML = reviews.map(r => `
-            <tr>
-                <td class="ps-3 py-3 fw-bold" style="color:var(--navy-dark);">${r.name}</td>
-                <td>${tierBadge[r.current] ?? r.current}</td>
-                <td class="fw-bold">${r.pts.toLocaleString()} <span class="text-muted fw-normal">PTS</span></td>
-                <td>${changeBadge(r.dir, r.next)}</td>
-                <td class="pe-3 text-muted small">${r.reason}</td>
-            </tr>`).join('');
-    }
-</script>
+<script src="~/js/admin-dashboard.js" asp-append-version="true"></script>
 }

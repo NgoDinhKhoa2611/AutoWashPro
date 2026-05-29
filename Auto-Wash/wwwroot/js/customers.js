@@ -10,7 +10,6 @@ let adjustReason     = '';
 
 document.addEventListener('DOMContentLoaded', function () {
     loadCustomers();
-    window.addEventListener('storage', loadCustomers);
 });
 
 function loadCustomers() {

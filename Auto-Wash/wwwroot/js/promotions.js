@@ -6,7 +6,6 @@ let campaigns = [];
 
 document.addEventListener('DOMContentLoaded', function () {
     loadCampaigns();
-    window.addEventListener('storage', loadCampaigns);
 });
 
 function loadCampaigns() {

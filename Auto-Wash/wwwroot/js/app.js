@@ -85,29 +85,25 @@ window.showToast = function(message, type = 'success') {
     const icon = TOAST_ICONS[type] || TOAST_ICONS.info;
 
     const el = document.createElement('div');
-    el.className = `toast-item toast-${type}`;
+    el.className = `toast-item toast-${type} animate-toast-in`;
     el.id = id;
     el.innerHTML = `
         <div class="toast-icon"><i class="fas ${icon}"></i></div>
-        <div class="toast-body">${message}</div>
-        <button class="toast-close" onclick="dismissToast('${id}')">&times;</button>
+        <div class="toast-content">${message}</div>
+        <button class="toast-close-btn" onclick="dismissToast('${id}')"><i class="fas fa-times"></i></button>
+        <div class="toast-progress"></div>
     `;
 
     container.appendChild(el);
-
-    // Trigger entrance animation
-    requestAnimationFrame(() => el.classList.add('show'));
-
-    // Auto-dismiss after 3.5 s
     setTimeout(() => dismissToast(id), 3500);
 };
 
 window.dismissToast = function(id) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.classList.remove('show');
-    el.classList.add('hide');
-    setTimeout(() => el.remove(), 400);
+    el.classList.remove('animate-toast-in');
+    el.classList.add('animate-toast-out');
+    setTimeout(() => el.remove(), 350);
 };
 
 // ── Confirm Modal ────────────────────────────────────────
@@ -165,9 +161,3 @@ window.getTierClass = function(tier) {
     return 'tier-pill-member active';
 };
 
-window.getTierInfo = function(pts) {
-    if (pts >= 2000) return { tier: 'Platinum Member', nextTier: 'Diamond Ultimate', remaining: '0' };
-    if (pts >= 1000) return { tier: 'Gold Member',     nextTier: 'Platinum',         remaining: '250k' };
-    if (pts >= 500)  return { tier: 'Silver Member',   nextTier: 'Gold',             remaining: '800k' };
-    return            { tier: 'Standard Member', nextTier: 'Silver',   remaining: '1.5M' };
-};

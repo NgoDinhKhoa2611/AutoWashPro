@@ -17,45 +17,59 @@ function showPanel(panel) {
 // ── Login ────────────────────────────────────────────────
 function handleLogin(e) {
     e.preventDefault();
-    const phone = document.getElementById('login-phone').value.trim();
-    const pwd   = document.getElementById('login-password').value.trim();
+    const identifier = document.getElementById('login-phone').value.trim();
+    const pwd = document.getElementById('login-password').value.trim();
 
-    if (!phone || !pwd) {
+    if (!identifier || !pwd) {
         showToast('Vui lòng điền đầy đủ thông tin đăng nhập!', 'warning');
         return;
     }
 
-    // Demo: accept any credentials
-    // Admin shortcut
-    if (phone.toLowerCase().includes('admin')) {
-        localStorage.setItem('user_role', 'admin');
-        localStorage.setItem('user_display_name', 'Admin AutoWash');
-        window.dispatchEvent(new Event('storage'));
-        showToast('Đăng nhập Admin thành công!', 'success');
-        setTimeout(() => { window.location.href = '/Admin/Dashboard'; }, 700);
-        return;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Đang xử lý... <i class="fas fa-spinner fa-spin ms-2"></i>';
     }
 
-    // Default customer
-    localStorage.setItem('user_role', 'customer');
-    if (!localStorage.getItem('user_display_name')) {
-        localStorage.setItem('user_display_name', 'Lê Tuấn Kiệt');
-    }
-    if (!localStorage.getItem('user_phone')) {
-        localStorage.setItem('user_phone', phone);
-    }
-    if (!localStorage.getItem('user_points')) {
-        localStorage.setItem('user_points', '550');
-    }
-    if (!localStorage.getItem('user_tier')) {
-        localStorage.setItem('user_tier', 'Gold Member');
-    }
-    // Set cookies for C# server database state tracking
-    document.cookie = "UserPhone=" + phone + "; path=/; max-age=" + (30*24*60*60);
-    document.cookie = "UserEmail=kien.le@example.com; path=/; max-age=" + (30*24*60*60); // Default mock email
-    window.dispatchEvent(new Event('storage'));
-    showToast('Đăng nhập thành công!', 'success');
-    setTimeout(() => { window.location.href = '/Customer/Dashboard'; }, 700);
+    fetch('/Account/Login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ Identifier: identifier, Password: pwd })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            showToast(data.message || 'Đăng nhập thất bại!', 'error');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'ĐĂNG NHẬP <i class="fas fa-sign-in-alt ms-2"></i>';
+            }
+            return;
+        }
+
+        localStorage.setItem('user_role', data.role);
+        localStorage.setItem('user_display_name', data.name || '');
+        localStorage.setItem('user_email', data.email || '');
+        if (data.phone) localStorage.setItem('user_phone', data.phone);
+        if (data.tier) localStorage.setItem('user_tier', data.tier);
+        if (data.points != null) localStorage.setItem('user_points', String(data.points));
+        window.dispatchEvent(new Event('storage'));
+
+        if (data.role === 'admin' || data.role === 'staff') {
+            showToast('Đăng nhập Admin thành công!', 'success');
+            setTimeout(() => { window.location.href = '/Admin/Dashboard'; }, 700);
+        } else {
+            showToast('Đăng nhập thành công!', 'success');
+            setTimeout(() => { window.location.href = '/Customer/Dashboard'; }, 700);
+        }
+    })
+    .catch(() => {
+        showToast('Không thể kết nối với máy chủ!', 'error');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'ĐĂNG NHẬP <i class="fas fa-sign-in-alt ms-2"></i>';
+        }
+    });
 }
 
 // ── Register ─────────────────────────────────────────────

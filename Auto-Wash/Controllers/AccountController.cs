@@ -21,6 +21,67 @@ namespace Auto_Wash.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> Login([FromBody] PhoneLoginRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Identifier) || string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ thông tin!" });
+
+            try
+            {
+                var hash = HashSHA256(request.Password);
+                var account = await _context.Accounts
+                    .FirstOrDefaultAsync(a =>
+                        (a.Email == request.Identifier.Trim() || a.Phone == request.Identifier.Trim())
+                        && a.PasswordHash == hash
+                        && a.IsActive);
+
+                if (account == null)
+                    return Ok(new { success = false, message = "Tài khoản hoặc mật khẩu không đúng!" });
+
+                var roleStr = account.Role == 1 ? "admin" : account.Role == 2 ? "staff" : "customer";
+                HttpContext.Session.SetString("UserRole", roleStr);
+                HttpContext.Session.SetString("UserName", account.FullName);
+                HttpContext.Session.SetString("UserEmail", account.Email);
+                HttpContext.Session.SetInt32("AccountId", account.AccountId);
+
+                string? tier = null;
+                int? points = null;
+                if (account.Role == 3)
+                {
+                    var customer = await _context.Customers
+                        .Include(c => c.Tier)
+                        .FirstOrDefaultAsync(c => c.AccountId == account.AccountId);
+                    if (customer != null)
+                    {
+                        tier = customer.Tier?.TierName;
+                        points = customer.PointBalance;
+                    }
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    role = roleStr,
+                    name = account.FullName,
+                    email = account.Email,
+                    phone = account.Phone,
+                    tier,
+                    points
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+
+        [HttpPost]
         public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Email))
@@ -87,7 +148,14 @@ namespace Auto_Wash.Controllers
             {
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
-        }        
+        }
+
+        private static string HashSHA256(string input)
+        {
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            var bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+            return Convert.ToHexString(bytes).ToLower();
+        }
     }
 
     public class GoogleLoginRequest
@@ -95,5 +163,11 @@ namespace Auto_Wash.Controllers
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string GoogleId { get; set; } = string.Empty;
+    }
+
+    public class PhoneLoginRequest
+    {
+        public string Identifier { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 }

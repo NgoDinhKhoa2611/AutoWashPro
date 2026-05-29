@@ -16,7 +16,6 @@ let editingId      = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     loadServices();
-    window.addEventListener('storage', loadServices);
 });
 
 function loadServices() {
