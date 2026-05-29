@@ -74,6 +74,5 @@ publish/
 local.settings.json
 
 # External files
-a.txt
-req.md
-schema.sql
+*.md
+*.sql
