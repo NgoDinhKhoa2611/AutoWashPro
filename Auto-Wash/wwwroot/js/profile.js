@@ -56,9 +56,6 @@ function loadProfileData() {
     const avatarImg = document.getElementById('profile-avatar-img');
     if (avatarImg) avatarImg.src = avatar;
 
-    const avatarImgGG = document.getElementById('profile-avatar-img-gg');
-    if (avatarImgGG) avatarImgGG.src = avatar;
-
     // Form inputs
     setVal('edit-name',  name);
     setVal('edit-phone', phone);
@@ -176,7 +173,7 @@ function renderVehicles() {
                         </div>
                         <div>
                             <small class="text-muted d-block fw-bold" style="font-size:0.6rem;letter-spacing:0.5px;">DÒNG XE</small>
-                            <div class="fw-bold text-truncate text-black" style="font-size:0.8rem;max-width:140px;">${v.type}</div>
+                            <div class="fw-bold text-truncate text-white" style="font-size:0.8rem;max-width:140px;">${v.type}</div>
                         </div>
                     </div>
                     <!-- Biển số thiết kế 3D phát sáng cực xịn -->

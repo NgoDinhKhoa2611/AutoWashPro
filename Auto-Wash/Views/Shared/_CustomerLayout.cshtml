@@ -24,241 +24,239 @@
 </head>
 <body>
 
-    <div id="toast-container"></div>
+<div id="toast-container"></div>
 
-    <!-- ── Confirm Modal (global) ─────────────────────────────── -->
-    <div id="confirm-modal-backdrop" class="confirm-modal-backdrop" style="display:none;" role="dialog" aria-modal="true">
-        <div class="confirm-modal-card animate-confirm-in">
-            <div class="confirm-modal-header">
-                <h5 class="confirm-modal-title" id="confirm-modal-title">Xác nhận</h5>
-                <button type="button" class="confirm-modal-close-btn" onclick="window.closeConfirm()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="confirm-modal-body" id="confirm-modal-body">Bạn có chắc chắn không?</div>
-            <div class="confirm-modal-footer">
-                <button class="confirm-cancel-btn" onclick="window.closeConfirm()">HỦY</button>
-                <button class="confirm-ok-btn confirm-btn-cyan" id="confirm-ok-btn">XÁC NHẬN</button>
-            </div>
+<!-- ── Confirm Modal (global) ─────────────────────────────── -->
+<div id="confirm-modal-backdrop" class="confirm-modal-backdrop" style="display:none;" role="dialog" aria-modal="true">
+    <div class="confirm-modal-card animate-confirm-in">
+        <div class="confirm-modal-header">
+            <h5 class="confirm-modal-title" id="confirm-modal-title">Xác nhận</h5>
+            <button type="button" class="confirm-modal-close-btn" onclick="window.closeConfirm()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="confirm-modal-body" id="confirm-modal-body">Bạn có chắc chắn không?</div>
+        <div class="confirm-modal-footer">
+            <button class="confirm-cancel-btn" onclick="window.closeConfirm()">HỦY</button>
+            <button class="confirm-ok-btn confirm-btn-cyan" id="confirm-ok-btn">XÁC NHẬN</button>
         </div>
     </div>
-    <script>
-            window.closeConfirm = function() {
-                if (typeof window.closeConfirmModal === 'function') {
-                    window.closeConfirmModal();
-                } else {
-                    const overlay = document.getElementById('confirm-modal-backdrop');
-                    if (overlay) {
-                        overlay.classList.remove('show');
-                        setTimeout(() => { overlay.style.display = 'none'; }, 300);
-                    }
-                }
-            };
-    </script>
+</div>
+<script>
+    window.closeConfirm = function() {
+        if (typeof window.closeConfirmModal === 'function') {
+            window.closeConfirmModal();
+        } else {
+            const overlay = document.getElementById('confirm-modal-backdrop');
+            if (overlay) {
+                overlay.classList.remove('show');
+                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+            }
+        }
+    };
+</script>
 
-    <div class="customer-layout-wrapper">
+<div class="customer-layout-wrapper">
 
-        <!-- ── Mobile Sidebar Overlay ─────────────────────────── -->
-        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+    <!-- ── Mobile Sidebar Overlay ─────────────────────────── -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
-        <!-- ── Left Sidebar ───────────────────────────────────── -->
-        <aside class="customer-sidebar" id="customer-sidebar">
-            <!-- Mobile close button -->
-            <div class="d-flex d-lg-none justify-content-end w-100 mb-2">
-                <button class="btn text-dark p-1 border-0" onclick="closeMobileSidebar()">
-                    <i class="fas fa-times fa-lg"></i>
-                </button>
-            </div>
+    <!-- ── Left Sidebar ───────────────────────────────────── -->
+    <aside class="customer-sidebar" id="customer-sidebar">
+        <!-- Mobile close button -->
+        <div class="d-flex d-lg-none justify-content-end w-100 mb-2">
+            <button class="btn text-dark p-1 border-0" onclick="closeMobileSidebar()">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
 
-            <!-- Brand Logo (full) -->
-            <a href="/Customer/Dashboard" class="text-decoration-none d-flex align-items-center mb-4 px-2 hover-opacity sidebar-brand-link">
-                <div class="brand-full d-flex align-items-center">
-                    <div class="p-2 me-3 d-flex align-items-center justify-content-center sidebar-brand-icon">
-                        <i class="fas fa-hands-wash fa-lg text-dark"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold mb-0 text-dark sidebar-brand-name">
-                            AutoWash <span class="text-cyan">Pro</span>
-                        </h5>
-                        <small class="text-secondary sidebar-brand-sub">SWP391 FPT University</small>
-                    </div>
-                </div>
-                <!-- Brand Logo (mini — khi thu gọn) -->
-                <div class="brand-mini d-none sidebar-brand-icon">
+        <!-- Brand Logo (full) -->
+        <a href="/Customer/Dashboard" class="text-decoration-none d-flex align-items-center mb-4 px-2 hover-opacity sidebar-brand-link">
+            <div class="brand-full d-flex align-items-center">
+                <div class="p-2 me-3 d-flex align-items-center justify-content-center sidebar-brand-icon">
                     <i class="fas fa-hands-wash fa-lg text-dark"></i>
                 </div>
-            </a>
-
-            <hr class="sidebar-divider" />
-
-            <!-- Nav Links -->
-            <nav class="customer-sidebar-links">
-                <a href="/Customer/Dashboard"
-                   class="customer-sidebar-link @(ViewBag.ActiveNav == "dashboard" ? "active" : "")">
-                    <i class="fas fa-columns"></i><span>Trang chủ</span>
-                </a>
-                <a href="/Customer/Booking"
-                   class="customer-sidebar-link @(ViewBag.ActiveNav == "booking" ? "active" : "")">
-                    <i class="fas fa-calendar-alt"></i><span>Đặt lịch rửa xe</span>
-                </a>
-                <a href="/Customer/Loyalty"
-                   class="customer-sidebar-link @(ViewBag.ActiveNav == "loyalty" ? "active" : "")">
-                    <i class="fas fa-crown"></i><span>Hạng thành viên VIP</span>
-                </a>
-                <a href="/Customer/History"
-                   class="customer-sidebar-link @(ViewBag.ActiveNav == "history" ? "active" : "")">
-                    <i class="fas fa-history"></i><span>Lịch sử & Đánh giá</span>
-                </a>
-                <a href="/Customer/Profile"
-                   class="customer-sidebar-link @(ViewBag.ActiveNav == "profile" ? "active" : "")">
-                    <i class="fas fa-user-cog"></i><span>Tài khoản của tôi</span>
-                </a>
-            </nav>
-
-            <!-- Sidebar Footer -->
-            <div class="mt-auto pt-4 d-flex flex-column gap-2">
-                <a href="javascript:void(0)"
-                   class="customer-sidebar-link text-danger"
-                   onclick="handleLogoutFromLayout()"
-                   style="border-radius:12px;">
-                    <i class="fas fa-sign-out-alt text-danger"></i>
-                    <span>Đăng xuất</span>
-                </a>
-                <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebar()">
-                    <i class="fas fa-chevron-left"></i>
-                    <span>Thu gọn menu</span>
-                </button>
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark sidebar-brand-name">
+                        AutoWash <span class="text-cyan">Pro</span>
+                    </h5>
+                    <small class="text-secondary sidebar-brand-sub">SWP391 FPT University</small>
+                </div>
             </div>
-        </aside>
+            <!-- Brand Logo (mini — khi thu gọn) -->
+            <div class="brand-mini d-none sidebar-brand-icon">
+                <i class="fas fa-hands-wash fa-lg text-dark"></i>
+            </div>
+        </a>
 
-        <!-- ── Main Content Area ───────────────────────────────── -->
-        <div class="customer-main" id="customer-main">
+        <hr class="sidebar-divider" />
 
-            <!-- Top Header -->
-            <header class="customer-top-header">
-                <div class="d-flex align-items-center">
-                    <!-- Hamburger (mobile) — Hidden because we have beautiful bottom nav! -->
-                    <button class="btn d-lg-none me-3 p-0 border-0 d-none" onclick="openMobileSidebar()">
-                        <i class="fas fa-bars fa-lg text-dark"></i>
-                    </button>
-                    <h5 class="fw-bold text-dark mb-0">@(ViewBag.PageTitle ?? "AutoWash Pro")</h5>
-                </div>
+        <!-- Nav Links -->
+        <nav class="customer-sidebar-links">
+            <a href="/Customer/Dashboard"
+               class="customer-sidebar-link @(ViewBag.ActiveNav=="dashboard" ? "active" : "")">
+                <i class="fas fa-columns"></i><span>Trang chủ</span>
+            </a>
+            <a href="/Customer/Booking"
+               class="customer-sidebar-link @(ViewBag.ActiveNav=="booking" ? "active" : "")">
+                <i class="fas fa-calendar-alt"></i><span>Đặt lịch rửa xe</span>
+            </a>
+            <a href="/Customer/Loyalty"
+               class="customer-sidebar-link @(ViewBag.ActiveNav=="loyalty" ? "active" : "")">
+                <i class="fas fa-crown"></i><span>Hạng thành viên VIP</span>
+            </a>
+            <a href="/Customer/History"
+               class="customer-sidebar-link @(ViewBag.ActiveNav=="history" ? "active" : "")">
+                <i class="fas fa-history"></i><span>Lịch sử & Đánh giá</span>
+            </a>
+            <a href="/Customer/Profile"
+               class="customer-sidebar-link @(ViewBag.ActiveNav=="profile" ? "active" : "")">
+                <i class="fas fa-user-cog"></i><span>Tài khoản của tôi</span>
+            </a>
+        </nav>
 
-                <div class="d-flex align-items-center gap-4">
-                    <!-- Notification Bell -->
-                    <div class="header-notif-trigger position-relative" id="notif-trigger"
-                         onclick="toggleNotifDropdown()">
-                        <div class="notif-icon-btn">
-                            <i class="far fa-bell fa-lg"></i>
-                        </div>
-                        <span class="position-absolute bg-cyan rounded-circle" id="notif-dot"></span>
-
-                        <!-- Notification Dropdown -->
-                        <div class="notif-dropdown" id="notif-dropdown" style="display:none;">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="fw-bold mb-0 notif-dropdown-title">Thông báo</h6>
-                                <button class="btn btn-link p-0 text-cyan small text-decoration-none fw-bold notif-dropdown-btn"
-                                        onclick="markAllRead()">
-                                    Đánh dấu đã đọc
-                                </button>
-                            </div>
-                            <div id="notif-list" class="d-flex flex-column gap-2 notif-list-scroll">
-                                <div class="text-center py-4 text-muted small">Không có thông báo nào</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Profile Dropdown -->
-                    <div class="position-relative" id="profile-trigger" onclick="toggleProfileDropdown()">
-                        <div class="header-profile-trigger">
-                            @* <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200""
-                             class="avatar-circle header-avatar" alt="Avatar" /> *@
-                            <img id="profile-avatar-img" src="" alt="Avatar"
-                                 class="avatar-circle header-avatar" alt="Avatar" />
-                            <div class="d-none d-md-block text-start">
-                                <small class="text-muted d-block header-account-label">TÀI KHOẢN</small>
-                                <h6 class="fw-bold mb-0 header-username-text">
-                                    @(ViewBag.UserName ?? "Người dùng")
-                                </h6>
-                            </div>
-                            <i class="fas fa-chevron-down text-muted small d-none d-md-block"></i>
-                        </div>
-
-                        <div id="profile-dropdown">
-                            <div class="px-3 py-2 border-bottom mb-2 text-start">
-                                <div class="fw-bold text-truncate dropdown-profile-name">
-                                    @(ViewBag.UserName ?? "Người dùng")
-                                </div>
-                                <div class="text-muted text-truncate dropdown-profile-tier">
-                                    @(ViewBag.UserTier ?? "Member")
-                                </div>
-                            </div>
-                            <a href="/Customer/Profile" class="profile-dropdown-item">
-                                <i class="fas fa-user-circle"></i> Trang cá nhân
-                            </a>
-                            <a href="javascript:void(0)"
-                               class="profile-dropdown-item text-danger"
-                               onclick="handleLogoutFromLayout()">
-                                <i class="fas fa-sign-out-alt text-danger"></i> Đăng xuất
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Page Content -->
-            <main class="customer-content">
-                @RenderBody()
-            </main>
+        <!-- Sidebar Footer -->
+        <div class="mt-auto pt-4 d-flex flex-column gap-2">
+            <a href="javascript:void(0)"
+               class="customer-sidebar-link text-danger"
+               onclick="handleLogoutFromLayout()"
+               style="border-radius:12px;">
+                <i class="fas fa-sign-out-alt text-danger"></i>
+                <span>Đăng xuất</span>
+            </a>
+            <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebar()">
+                <i class="fas fa-chevron-left"></i>
+                <span>Thu gọn menu</span>
+            </button>
         </div>
+    </aside>
+
+    <!-- ── Main Content Area ───────────────────────────────── -->
+    <div class="customer-main" id="customer-main">
+
+        <!-- Top Header -->
+        <header class="customer-top-header">
+            <div class="d-flex align-items-center">
+                <!-- Hamburger (mobile) — Hidden because we have beautiful bottom nav! -->
+                <button class="btn d-lg-none me-3 p-0 border-0 d-none" onclick="openMobileSidebar()">
+                    <i class="fas fa-bars fa-lg text-dark"></i>
+                </button>
+                <h5 class="fw-bold text-dark mb-0">@(ViewBag.PageTitle ?? "AutoWash Pro")</h5>
+            </div>
+
+            <div class="d-flex align-items-center gap-4">
+                <!-- Notification Bell -->
+                <div class="header-notif-trigger position-relative" id="notif-trigger"
+                     onclick="toggleNotifDropdown()">
+                    <div class="notif-icon-btn">
+                        <i class="far fa-bell fa-lg"></i>
+                    </div>
+                    <span class="position-absolute bg-cyan rounded-circle" id="notif-dot"></span>
+
+                    <!-- Notification Dropdown -->
+                    <div class="notif-dropdown" id="notif-dropdown" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0 notif-dropdown-title">Thông báo</h6>
+                            <button class="btn btn-link p-0 text-cyan small text-decoration-none fw-bold notif-dropdown-btn"
+                                    onclick="markAllRead()">
+                                Đánh dấu đã đọc
+                            </button>
+                        </div>
+                        <div id="notif-list" class="d-flex flex-column gap-2 notif-list-scroll">
+                            <div class="text-center py-4 text-muted small">Không có thông báo nào</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Dropdown -->
+                <div class="position-relative" id="profile-trigger" onclick="toggleProfileDropdown()">
+                    <div class="header-profile-trigger">
+                        <img src="@(ViewBag.UserAvatar ?? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200")"
+                             class="avatar-circle header-avatar" alt="Avatar" />
+                        <div class="d-none d-md-block text-start">
+                            <small class="text-muted d-block header-account-label">TÀI KHOẢN</small>
+                            <h6 class="fw-bold mb-0 header-username-text">
+                                @(ViewBag.UserName ?? "Người dùng")
+                            </h6>
+                        </div>
+                        <i class="fas fa-chevron-down text-muted small d-none d-md-block"></i>
+                    </div>
+
+                    <div id="profile-dropdown">
+                        <div class="px-3 py-2 border-bottom mb-2 text-start">
+                            <div class="fw-bold text-truncate dropdown-profile-name">
+                                @(ViewBag.UserName ?? "Người dùng")
+                            </div>
+                            <div class="text-muted text-truncate dropdown-profile-tier">
+                                @(ViewBag.UserTier ?? "Member")
+                            </div>
+                        </div>
+                        <a href="/Customer/Profile" class="profile-dropdown-item">
+                            <i class="fas fa-user-circle"></i> Trang cá nhân
+                        </a>
+                        <a href="javascript:void(0)"
+                           class="profile-dropdown-item text-danger"
+                           onclick="handleLogoutFromLayout()">
+                            <i class="fas fa-sign-out-alt text-danger"></i> Đăng xuất
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="customer-content">
+            @RenderBody()
+        </main>
+    </div>
+</div>
+
+<!-- Mobile Bottom Navigation Bar (Hiển thị trên mobile/tablet) -->
+<nav class="mobile-bottom-nav d-flex d-lg-none">
+    <!-- Premium Concave Cutout Background -->
+    <div class="mobile-nav-bg-container">
+        <div class="mobile-nav-bg-left"></div>
+        <div class="mobile-nav-bg-center">
+            <svg width="86" height="72" viewBox="0 0 86 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 1 L6 1 C16 1, 18 28, 43 28 C68 28, 70 1, 80 1 L86 1 L86 72 L0 72 Z" fill="white" stroke="rgba(15, 23, 42, 0.06)" stroke-width="1.5"/>
+            </svg>
+        </div>
+        <div class="mobile-nav-bg-right"></div>
     </div>
 
-    <!-- Mobile Bottom Navigation Bar (Hiển thị trên mobile/tablet) -->
-    <nav class="mobile-bottom-nav d-flex d-lg-none">
-        <!-- Premium Concave Cutout Background -->
-        <div class="mobile-nav-bg-container">
-            <div class="mobile-nav-bg-left"></div>
-            <div class="mobile-nav-bg-center">
-                <svg width="86" height="72" viewBox="0 0 86 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M0 1 L6 1 C16 1, 18 28, 43 28 C68 28, 70 1, 80 1 L86 1 L86 72 L0 72 Z" fill="white" stroke="rgba(15, 23, 42, 0.06)" stroke-width="1.5" />
-                </svg>
-            </div>
-            <div class="mobile-nav-bg-right"></div>
+    <!-- Nav Links Container -->
+    <div class="mobile-nav-links-container">
+        <a href="/Customer/Dashboard" class="mobile-bottom-nav-link @(ViewBag.ActiveNav == "dashboard" ? "active" : "")">
+            <i class="fas fa-th-large"></i>
+            <span>Trang chủ</span>
+        </a>
+        <a href="/Customer/History" class="mobile-bottom-nav-link @(ViewBag.ActiveNav == "history" ? "active" : "")">
+            <i class="fas fa-history"></i>
+            <span>Lịch sử</span>
+        </a>
+
+        <!-- Center Floating Circular Booking Button -->
+        <div class="mobile-bottom-nav-center-wrapper">
+            <a href="/Customer/Booking" class="mobile-bottom-nav-center-btn @(ViewBag.ActiveNav == "booking" ? "active" : "")">
+                <i class="fas fa-calendar-alt"></i>
+            </a>
+            <span class="mobile-bottom-nav-center-label">Đặt lịch</span>
         </div>
 
-        <!-- Nav Links Container -->
-        <div class="mobile-nav-links-container">
-            <a href="/Customer/Dashboard" class="mobile-bottom-nav-link @(ViewBag.ActiveNav == "dashboard" ? "active" : "")">
-                <i class="fas fa-th-large"></i>
-                <span>Trang chủ</span>
-            </a>
-            <a href="/Customer/History" class="mobile-bottom-nav-link @(ViewBag.ActiveNav == "history" ? "active" : "")">
-                <i class="fas fa-history"></i>
-                <span>Lịch sử</span>
-            </a>
+        <a href="/Customer/Loyalty" class="mobile-bottom-nav-link @(ViewBag.ActiveNav == "loyalty" ? "active" : "")">
+            <i class="fas fa-crown"></i>
+            <span>Hạng VIP</span>
+        </a>
+        <a href="/Customer/Profile" class="mobile-bottom-nav-link @(ViewBag.ActiveNav == "profile" ? "active" : "")">
+            <i class="fas fa-user-cog"></i>
+            <span>Tài khoản</span>
+        </a>
+    </div>
+</nav>
 
-            <!-- Center Floating Circular Booking Button -->
-            <div class="mobile-bottom-nav-center-wrapper">
-                <a href="/Customer/Booking" class="mobile-bottom-nav-center-btn @(ViewBag.ActiveNav == "booking" ? "active" : "")">
-                    <i class="fas fa-calendar-alt"></i>
-                </a>
-                <span class="mobile-bottom-nav-center-label">Đặt lịch</span>
-            </div>
-
-            <a href="/Customer/Loyalty" class="mobile-bottom-nav-link @(ViewBag.ActiveNav == "loyalty" ? "active" : "")">
-                <i class="fas fa-crown"></i>
-                <span>Hạng VIP</span>
-            </a>
-            <a href="/Customer/Profile" class="mobile-bottom-nav-link @(ViewBag.ActiveNav == "profile" ? "active" : "")">
-                <i class="fas fa-user-cog"></i>
-                <span>Tài khoản</span>
-            </a>
-        </div>
-    </nav>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/app.js" asp-append-version="true"></script>
-    <script src="~/js/customer-layout.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/app.js" asp-append-version="true"></script>
+<script src="~/js/customer-layout.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

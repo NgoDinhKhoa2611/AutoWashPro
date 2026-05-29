@@ -55,7 +55,7 @@ function renderCustomers() {
                 <small class="text-muted">Joined: ${c.joined}</small>
             </td>
             <td class="fw-bold" style="color:var(--navy-dark);">${c.phone}</td>
-            <td><span class="badge tier-pill ${getTierBadgeClass(c.tier)} px-3 py-1 border-0" style="font-size:0.65rem;color:black">${c.tier}</span></td>
+            <td><span class="badge tier-pill ${getTierBadgeClass(c.tier)} px-3 py-1 border-0" style="font-size:0.65rem;">${c.tier}</span></td>
             <td><span class="fw-bold" style="color:var(--navy-dark);">${Number(c.points).toLocaleString()} PTS</span></td>
             <td class="fw-bold text-cyan">${c.spend}</td>
             <td class="text-end pe-4">

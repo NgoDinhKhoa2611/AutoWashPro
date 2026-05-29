@@ -82,22 +82,12 @@
     outline: none !important;
     box-shadow: none !important;
     border-color: rgba(255,255,255,0.35) !important;
-    background: rgba(255,255,255,0.08) !important;
-    color: rgba(255,255,255,0.85) !important;
 }
 .booking-promo-btn {
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
-    color: #ffffff !important;
+    background: var(--cyan-electric);
+    color: var(--navy-dark);
     border-radius: 0 10px 10px 0 !important;
     font-size: 0.72rem;
     white-space: nowrap;
-    border: none !important;
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25) !important;
-    transition: all 0.3s ease !important;
-}
-.booking-promo-btn:hover {
-    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%) !important;
-    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4) !important;
-/*    transform: translateY(-2px) !important;*/
-    color: #ffffff !important;
+    border: none;
 }
