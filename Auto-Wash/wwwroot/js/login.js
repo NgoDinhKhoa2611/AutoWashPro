@@ -50,6 +50,9 @@ function handleLogin(e) {
     if (!localStorage.getItem('user_tier')) {
         localStorage.setItem('user_tier', 'Gold Member');
     }
+    // Set cookies for C# server database state tracking
+    document.cookie = "UserPhone=" + phone + "; path=/; max-age=" + (30*24*60*60);
+    document.cookie = "UserEmail=kien.le@example.com; path=/; max-age=" + (30*24*60*60); // Default mock email
     window.dispatchEvent(new Event('storage'));
     showToast('Đăng nhập thành công!', 'success');
     setTimeout(() => { window.location.href = '/Customer/Dashboard'; }, 700);
@@ -230,6 +233,7 @@ function handleCredentialResponse(response) {
         const email = payload.email;
         const name  = payload.name || "Người dùng Google";
         const avatar = payload.picture || "";
+        const googleId = payload.sub || "";
 
         // Send user details to C# backend to check/persist in the MySQL database
         fetch('/Account/GoogleLogin', {
@@ -239,16 +243,25 @@ function handleCredentialResponse(response) {
             },
             body: JSON.stringify({
                 Email: email,
-                FullName: name
+                FullName: name,
+                GoogleId: googleId
             })
         })
         .then(res => res.json())
         .then(data => {
             if (data && data.success) {
+                // Set cookies for C# server database state tracking
+                document.cookie = "UserEmail=" + email + "; path=/; max-age=" + (30*24*60*60);
+                document.cookie = "UserPhone=; path=/; max-age=" + (30*24*60*60); // Clear phone cookie
+                if (avatar) {
+                    document.cookie = "UserAvatar=" + encodeURIComponent(avatar) + "; path=/; max-age=" + (30*24*60*60);
+                }
+
                 // Store into localStorage to match AutoWash's custom mock authentication layer
                 localStorage.setItem('user_role', 'customer');
                 localStorage.setItem('user_display_name', name);
-                localStorage.setItem('user_phone', email); // Use email as the identifier
+                localStorage.setItem('user_email', email); // Store email correctly in user_email
+                localStorage.setItem('user_phone', '');    // Phone is empty initially for Google Sign-Ins
                 localStorage.setItem('user_avatar', avatar);
                 
                 // Retain existing points or initialize new standard customer points

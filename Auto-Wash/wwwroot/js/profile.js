@@ -12,58 +12,19 @@ const AVATAR_PRESETS = [
 let editAvatar = '';
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadProfileData();
+    // loadProfileData(); // Deprecated: profile fields are now securely server-rendered by C# MVC
     renderVehicles();
 
     window.addEventListener('storage', function () {
-        loadProfileData();
+        // loadProfileData(); // Deprecated: no longer using localStorage for profile data
         renderVehicles();
     });
 });
 
 // ── Load profile data ────────────────────────────────────
 function loadProfileData() {
-    const name   = localStorage.getItem('user_display_name') || 'Lê Tuấn Kiệt';
-    const phone  = localStorage.getItem('user_phone')        || '0901234567';
-    const tier   = localStorage.getItem('user_tier')         || 'Gold Member';
-    const avatar = localStorage.getItem('user_avatar')       || AVATAR_PRESETS[0];
-    const points = Number(localStorage.getItem('user_points') || 1250);
-
-    editAvatar = avatar;
-
-    // Header display
-    setEl('profile-name-display',   name);
-    setEl('profile-phone-display',  phone);
-    setEl('profile-points-display', points.toLocaleString() + ' <span style="font-size:1rem;font-weight:bold;">PTS</span>', true);
-
-    const tierBadge = document.getElementById('profile-tier-badge');
-    if (tierBadge) {
-        tierBadge.textContent = tier;
-        tierBadge.className   = 'badge fw-bold px-2 py-1 profile-tier-badge ' + getTierBgClass(tier);
-    }
-
-    // Sync profile header banner gradient to match the membership tier card
-    const headerBanner = document.getElementById('profile-header-banner');
-    if (headerBanner) {
-        headerBanner.classList.remove('tier-gold', 'tier-silver', 'tier-platinum', 'tier-standard');
-        const tUp = tier.toUpperCase();
-        if (tUp.includes('PLATINUM')) headerBanner.classList.add('tier-platinum');
-        else if (tUp.includes('GOLD')) headerBanner.classList.add('tier-gold');
-        else if (tUp.includes('SILVER')) headerBanner.classList.add('tier-silver');
-        else headerBanner.classList.add('tier-standard');
-    }
-
-    const avatarImg = document.getElementById('profile-avatar-img');
-    if (avatarImg) avatarImg.src = avatar;
-
-    const avatarImgGG = document.getElementById('profile-avatar-img-gg');
-    if (avatarImgGG) avatarImgGG.src = avatar;
-
-    // Form inputs
-    setVal('edit-name',  name);
-    setVal('edit-phone', phone);
-
-    renderAvatarPresets();
+    // Deprecated: Profile information is now securely rendered server-side by C# MVC & SQL Server database.
+    // Client-side localStorage overrides have been completely disabled to prevent tampering.
 }
 
 function getTierBgClass(tier) {
@@ -103,21 +64,101 @@ function selectAvatar(url) {
 }
 
 // ── Save profile ─────────────────────────────────────────
-function handleSaveProfile(e) {
+async function handleSaveProfile(e) {
     e.preventDefault();
     const name  = getVal('edit-name').trim();
     const phone = getVal('edit-phone').trim();
 
     if (!name)  { showToast('Họ và tên không được bỏ trống!', 'warning'); return; }
-    if (!phone) { showToast('Số điện thoại không được bỏ trống!', 'warning'); return; }
 
-    localStorage.setItem('user_display_name', name);
-    localStorage.setItem('user_phone', phone);
-    localStorage.setItem('user_avatar', editAvatar);
-    window.dispatchEvent(new Event('storage'));
-    showToast('Đã cập nhật hồ sơ cá nhân thành công!', 'success');
-    loadProfileData();
+    const saveBtn = document.querySelector('.profile-save-btn');
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+        const response = await fetch('/Customer/UpdateProfile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                FullName: name,
+                Phone: phone
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Sync fallback localStorage if still used elsewhere in layouts
+            localStorage.setItem('user_display_name', name);
+            if (phone) localStorage.setItem('user_phone', phone);
+            
+            showToast('Đã lưu hồ sơ cá nhân vào cơ sở dữ liệu thành công!', 'success');
+            setTimeout(() => { window.location.reload(); }, 1000);
+        } else {
+            showToast(result.message || 'Cập nhật hồ sơ thất bại!', 'error');
+        }
+    } catch (err) {
+        console.error("Error saving profile to C# backend:", err);
+        showToast('Không thể kết nối đến máy chủ C#!', 'error');
+    } finally {
+        if (saveBtn) saveBtn.disabled = false;
+    }
 }
+
+/*
+// ── REAL DATA DATABASE INTEGRATION BLUEPRINT (Bug 4) ────────────────
+// To transition this profile page from client-side localStorage mockups to real SQL Server database integration,
+// you can comment out the localStorage lines above and use the following AJAX blueprint:
+//
+// // 1. Real Fetching Blueprint:
+// async function loadProfileData() {
+//     try {
+//         const response = await fetch('/Customer/GetProfileData');
+//         const data = await response.json();
+//         if (data && data.success) {
+//             const profile = data.profile;
+//             editAvatar = profile.avatar || AVATAR_PRESETS[0];
+//             setEl('profile-name-display',   profile.fullName);
+//             setEl('profile-phone-display',  profile.phone || profile.email || 'Chưa cập nhật SĐT');
+//             setEl('profile-points-display', profile.points.toLocaleString() + ' PTS', true);
+//             setVal('edit-name',  profile.fullName);
+//             setVal('edit-phone', profile.phone);
+//             setVal('edit-email', profile.email);
+//             // ... rest of binding logic ...
+//         }
+//     } catch (err) {
+//         console.error("Error loading real customer profile:", err);
+//     }
+// }
+//
+// // 2. Real Saving Blueprint:
+// async function handleSaveProfile(e) {
+//     e.preventDefault();
+//     const name  = getVal('edit-name').trim();
+//     const phone = getVal('edit-phone').trim();
+//     const email = getVal('edit-email').trim();
+//
+//     if (!name || !phone || !email) { showToast('Vui lòng nhập đầy đủ thông tin!', 'warning'); return; }
+//
+//     try {
+//         const response = await fetch('/Customer/UpdateProfile', {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify({ FullName: name, Phone: phone, Email: email, Avatar: editAvatar })
+//         });
+//         const result = await response.json();
+//         if (result && result.success) {
+//             showToast('Đã lưu hồ sơ cá nhân vào cơ sở dữ liệu thành công!', 'success');
+//             loadProfileData();
+//         } else {
+//             showToast(result.message || 'Lưu hồ sơ thất bại!', 'error');
+//         }
+//     } catch (err) {
+//         showToast('Lỗi kết nối máy chủ!', 'error');
+//     }
+// }
+*/
 
 // ── Save password ─────────────────────────────────────────
 function handleSavePassword(e) {

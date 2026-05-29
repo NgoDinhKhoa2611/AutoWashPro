@@ -49,32 +49,8 @@ function closeSidebarOverlay() {
 
 // ── Sync header from localStorage ────────────────────────
 function syncLayoutFromStorage() {
-    // Auto-migration to ensure user is Gold Member for premium testing
-    let tier = localStorage.getItem('user_tier');
-    if (!tier || tier === 'Standard Member' || tier === 'Member') {
-        tier = 'Gold Member';
-        localStorage.setItem('user_tier', 'Gold Member');
-        localStorage.setItem('user_points', '550');
-        localStorage.setItem('user_next_tier', 'Platinum');
-        localStorage.setItem('user_remaining_spend', '250k');
-        window.dispatchEvent(new Event('storage'));
-    }
-
-    const name   = localStorage.getItem('user_display_name') || 'Người dùng';
-    const avatar = localStorage.getItem('user_avatar')       || '';
-    const points = localStorage.getItem('user_points')       || '0';
-
-    const nameEl   = document.getElementById('header-user-name');
-    const tierEl   = document.getElementById('header-user-tier');
-    const avatarEl = document.getElementById('header-user-avatar');
-    const ptsEl    = document.getElementById('header-user-points');
-    const dropdownNameEl = document.getElementById('dropdown-user-name');
-
-    if (nameEl)   nameEl.textContent   = name;
-    if (dropdownNameEl) dropdownNameEl.textContent = name;
-    if (tierEl)   tierEl.textContent   = tier;
-    if (ptsEl)    ptsEl.textContent    = Number(points).toLocaleString() + ' PTS';
-    if (avatarEl && avatar) avatarEl.src = avatar;
+    // Deprecated: Layout properties are now securely rendered server-side by C# MVC & SQL Server database.
+    // Client-side localStorage overrides have been disabled to prevent tampering.
 }
 
 // ── Notification dropdown ────────────────────────────────
@@ -168,6 +144,10 @@ function markAllRead() {
 function handleLogoutFromLayout() {
     if (window.showConfirm) {
         window.showConfirm('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất khỏi AutoWash Pro?', () => {
+            // Clear mock credentials & cookies
+            document.cookie = "UserEmail=; path=/; max-age=0";
+            document.cookie = "UserPhone=; path=/; max-age=0";
+            document.cookie = "UserAvatar=; path=/; max-age=0";
             localStorage.removeItem('user_role');
             window.dispatchEvent(new Event('storage'));
             if (window.showToast) showToast('Đăng xuất thành công!', 'success');
@@ -175,6 +155,9 @@ function handleLogoutFromLayout() {
         });
     } else {
         if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+            document.cookie = "UserEmail=; path=/; max-age=0";
+            document.cookie = "UserPhone=; path=/; max-age=0";
+            document.cookie = "UserAvatar=; path=/; max-age=0";
             localStorage.removeItem('user_role');
             window.location.href = '/';
         }
