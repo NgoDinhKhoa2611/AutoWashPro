@@ -72,3 +72,7 @@ publish/
 
 # Azure Functions local settings
 local.settings.json
+
+# Database & docs (local only)
+*.md
+*.sql
