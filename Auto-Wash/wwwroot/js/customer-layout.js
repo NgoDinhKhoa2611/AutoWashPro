@@ -68,8 +68,10 @@ function syncLayoutFromStorage() {
     const tierEl   = document.getElementById('header-user-tier');
     const avatarEl = document.getElementById('header-user-avatar');
     const ptsEl    = document.getElementById('header-user-points');
+    const dropdownNameEl = document.getElementById('dropdown-user-name');
 
     if (nameEl)   nameEl.textContent   = name;
+    if (dropdownNameEl) dropdownNameEl.textContent = name;
     if (tierEl)   tierEl.textContent   = tier;
     if (ptsEl)    ptsEl.textContent    = Number(points).toLocaleString() + ' PTS';
     if (avatarEl && avatar) avatarEl.src = avatar;
