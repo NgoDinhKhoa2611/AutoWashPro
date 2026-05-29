@@ -210,7 +210,7 @@ function renderQueue() {
                 <small class="text-muted d-block"><i class="far fa-clock me-1"></i>Đặt lịch: ${item.bookingTime}</small>
             </td>
             <td><span class="badge fw-bold px-3 py-2" style="background:var(--navy-dark);color:white;font-family:monospace;border-radius:8px;">${item.plate}</span></td>
-            <td><span class="badge tier-pill ${getTierBadgeClass(item.tier)} px-3 py-1 border-0" style="font-size:0.65rem;">${item.tier}</span></td>
+            <td><span class="badge tier-badge ${getTierBadgeClass(item.tier)} px-3 py-1 border-0" style="font-size:0.65rem;">${item.tier}</span></td>
             <td>${getOverallStatusDisplay(item.queueStatus)}</td>
             <td class="fw-bold" style="color:var(--navy-dark);">${item.service}</td>
             <td>${getCurrentServiceDisplay(item)}</td>
@@ -243,10 +243,10 @@ function renderQueue() {
 
 function getTierBadgeClass(tier) {
     switch ((tier || '').toUpperCase()) {
-        case 'PLATINUM': return 'tier-pill-platinum active';
-        case 'GOLD':     return 'tier-pill-gold active';
-        case 'SILVER':   return 'tier-pill-silver active';
-        default:         return 'tier-pill-member active';
+        case 'PLATINUM': return 'tier-badge-platinum';
+        case 'GOLD':     return 'tier-badge-gold';
+        case 'SILVER':   return 'tier-badge-silver';
+        default:         return 'tier-badge-member';
     }
 }
 
@@ -320,7 +320,7 @@ function renderManageModal() {
                 </div>
                 <div class="col-sm-4 ps-sm-3">
                     <small class="text-muted fw-bold small">HẠNG THÀNH VIÊN</small>
-                    <div><span class="badge tier-pill ${badgeClass} py-1 px-2 border-0" style="font-size:0.65rem;">${activeManageItem.tier}</span></div>
+                    <div><span class="badge tier-badge ${badgeClass} py-1 px-2 border-0" style="font-size:0.65rem;">${activeManageItem.tier}</span></div>
                 </div>
             </div>
         </div>
@@ -512,7 +512,7 @@ function openCheckoutModal(plate) {
                 </div>
                 <div class="col-6 ps-3">
                     <small class="text-muted fw-bold small mb-1">HẠNG THÀNH VIÊN</small>
-                    <div><span class="badge tier-pill ${getTierBadgeClass(selectedCheckoutItem.tier)} py-1 px-2 border-0" style="font-size:0.65rem;">${selectedCheckoutItem.tier}</span></div>
+                    <div><span class="badge tier-badge ${getTierBadgeClass(selectedCheckoutItem.tier)} py-1 px-2 border-0" style="font-size:0.65rem;">${selectedCheckoutItem.tier}</span></div>
                 </div>
             </div>
         </div>

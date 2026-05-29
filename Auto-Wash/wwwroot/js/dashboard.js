@@ -79,8 +79,15 @@ function renderDashboard() {
     }
 
     // Sync stats
-    const pts     = Number(localStorage.getItem('user_points') || '550');
-    const tier    = localStorage.getItem('user_tier') || 'Gold Member';
+    let tier = localStorage.getItem('user_tier');
+    if (!tier || tier === 'Standard Member' || tier === 'Member') {
+        tier = 'Gold Member';
+        localStorage.setItem('user_tier', 'Gold Member');
+        localStorage.setItem('user_points', '550');
+        localStorage.setItem('user_next_tier', 'Platinum');
+        localStorage.setItem('user_remaining_spend', '250k');
+    }
+    const pts  = Number(localStorage.getItem('user_points') || '550');
     
     let vehicles = [];
     try {
@@ -122,6 +129,24 @@ function renderDashboard() {
     if (statProgress) {
         const pct = Math.min((pts / 1000) * 100, 100);
         statProgress.style.width = `${pct}%`;
+    }
+
+    // Points expiry warning (simulated batch expiring soonest)
+    const expiryWarningEl = document.getElementById('stat-expiry-warning');
+    const expiryTextEl    = document.getElementById('stat-expiry-text');
+    if (expiryWarningEl && expiryTextEl) {
+        const config = JSON.parse(localStorage.getItem('loyalty_config') || '{}');
+        const expiryMonths = config.expiryMonths || 12;
+        const soonestExpiry = new Date();
+        soonestExpiry.setMonth(soonestExpiry.getMonth() - (expiryMonths - 2)); // simulate ~2 months to expiry
+        soonestExpiry.setMonth(soonestExpiry.getMonth() + expiryMonths);
+        const daysLeft = Math.ceil((soonestExpiry - new Date()) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 60) {
+            expiryTextEl.textContent = `150 PTS hết hạn trong ${daysLeft} ngày`;
+            expiryWarningEl.style.display = 'block';
+        } else {
+            expiryWarningEl.style.display = 'none';
+        }
     }
 
     // Update VIP tier medal card aesthetics
@@ -169,6 +194,12 @@ function renderDashboard() {
         else if (tUp.includes('GOLD')) cardEl.classList.add('tier-gold');
         else if (tUp.includes('SILVER')) cardEl.classList.add('tier-silver');
         else cardEl.classList.add('tier-standard');
+        
+        // Sync the top-left tier label text dynamically to match the actual tier
+        const tierLabelEl = cardEl.querySelector('.tier-label');
+        if (tierLabelEl) {
+            tierLabelEl.innerHTML = `<i class="fas fa-crown me-2"></i>${tier}`;
+        }
     }
 
     // Sync barcode and next tier details dynamically

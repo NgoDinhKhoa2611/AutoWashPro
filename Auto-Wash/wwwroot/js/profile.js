@@ -42,8 +42,22 @@ function loadProfileData() {
         tierBadge.className   = 'badge fw-bold px-2 py-1 profile-tier-badge ' + getTierBgClass(tier);
     }
 
+    // Sync profile header banner gradient to match the membership tier card
+    const headerBanner = document.getElementById('profile-header-banner');
+    if (headerBanner) {
+        headerBanner.classList.remove('tier-gold', 'tier-silver', 'tier-platinum', 'tier-standard');
+        const tUp = tier.toUpperCase();
+        if (tUp.includes('PLATINUM')) headerBanner.classList.add('tier-platinum');
+        else if (tUp.includes('GOLD')) headerBanner.classList.add('tier-gold');
+        else if (tUp.includes('SILVER')) headerBanner.classList.add('tier-silver');
+        else headerBanner.classList.add('tier-standard');
+    }
+
     const avatarImg = document.getElementById('profile-avatar-img');
     if (avatarImg) avatarImg.src = avatar;
+
+    const avatarImgGG = document.getElementById('profile-avatar-img-gg');
+    if (avatarImgGG) avatarImgGG.src = avatar;
 
     // Form inputs
     setVal('edit-name',  name);
@@ -162,7 +176,7 @@ function renderVehicles() {
                         </div>
                         <div>
                             <small class="text-muted d-block fw-bold" style="font-size:0.6rem;letter-spacing:0.5px;">DÒNG XE</small>
-                            <div class="fw-bold text-truncate text-white" style="font-size:0.8rem;max-width:140px;">${v.type}</div>
+                            <div class="fw-bold text-truncate text-black" style="font-size:0.8rem;max-width:140px;">${v.type}</div>
                         </div>
                     </div>
                     <!-- Biển số thiết kế 3D phát sáng cực xịn -->

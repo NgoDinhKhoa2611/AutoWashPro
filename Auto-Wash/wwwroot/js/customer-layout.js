@@ -49,8 +49,18 @@ function closeSidebarOverlay() {
 
 // ── Sync header from localStorage ────────────────────────
 function syncLayoutFromStorage() {
+    // Auto-migration to ensure user is Gold Member for premium testing
+    let tier = localStorage.getItem('user_tier');
+    if (!tier || tier === 'Standard Member' || tier === 'Member') {
+        tier = 'Gold Member';
+        localStorage.setItem('user_tier', 'Gold Member');
+        localStorage.setItem('user_points', '550');
+        localStorage.setItem('user_next_tier', 'Platinum');
+        localStorage.setItem('user_remaining_spend', '250k');
+        window.dispatchEvent(new Event('storage'));
+    }
+
     const name   = localStorage.getItem('user_display_name') || 'Người dùng';
-    const tier   = localStorage.getItem('user_tier')         || 'Member';
     const avatar = localStorage.getItem('user_avatar')       || '';
     const points = localStorage.getItem('user_points')       || '0';
 
@@ -58,8 +68,10 @@ function syncLayoutFromStorage() {
     const tierEl   = document.getElementById('header-user-tier');
     const avatarEl = document.getElementById('header-user-avatar');
     const ptsEl    = document.getElementById('header-user-points');
+    const dropdownNameEl = document.getElementById('dropdown-user-name');
 
     if (nameEl)   nameEl.textContent   = name;
+    if (dropdownNameEl) dropdownNameEl.textContent = name;
     if (tierEl)   tierEl.textContent   = tier;
     if (ptsEl)    ptsEl.textContent    = Number(points).toLocaleString() + ' PTS';
     if (avatarEl && avatar) avatarEl.src = avatar;
