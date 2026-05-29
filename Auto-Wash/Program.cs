@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using Auto_Wash.Data;
+
 namespace Auto_Wash
 {
     public class Program
@@ -8,6 +11,13 @@ namespace Auto_Wash
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+
+            // Register database context
+            builder.Services.AddDbContext<AutoWashDbContext>(options =>
+            {
+                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+                options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 30)));
+            });
 
             var app = builder.Build();
 

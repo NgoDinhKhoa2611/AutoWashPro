@@ -229,28 +229,51 @@ function handleCredentialResponse(response) {
         const name  = payload.name || "Người dùng Google";
         const avatar = payload.picture || "";
 
-        // Store into localStorage to match AutoWash's custom mock authentication layer
-        localStorage.setItem('user_role', 'customer');
-        localStorage.setItem('user_display_name', name);
-        localStorage.setItem('user_phone', email); // Use email as the identifier
-        localStorage.setItem('user_avatar', avatar);
-        
-        // Retain existing points or initialize new standard customer points
-        if (!localStorage.getItem('user_points')) {
-            localStorage.setItem('user_points', '100'); // Give 100 points for first Google signup!
-        }
-        if (!localStorage.getItem('user_tier')) {
-            localStorage.setItem('user_tier', 'Standard Member');
-        }
+        // Send user details to C# backend to check/persist in the MySQL database
+        fetch('/Account/GoogleLogin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                Email: email,
+                FullName: name
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.success) {
+                // Store into localStorage to match AutoWash's custom mock authentication layer
+                localStorage.setItem('user_role', 'customer');
+                localStorage.setItem('user_display_name', name);
+                localStorage.setItem('user_phone', email); // Use email as the identifier
+                localStorage.setItem('user_avatar', avatar);
+                
+                // Retain existing points or initialize new standard customer points
+                if (!localStorage.getItem('user_points')) {
+                    localStorage.setItem('user_points', '100'); // Give 100 points for first Google signup!
+                }
+                if (!localStorage.getItem('user_tier')) {
+                    localStorage.setItem('user_tier', 'Standard Member');
+                }
 
-        window.dispatchEvent(new Event('storage'));
+                window.dispatchEvent(new Event('storage'));
 
-        // Show toast and redirect
-        showToast(`Đăng nhập Google thành công! Chào mừng ${name}`, 'success');
+                // Show toast and redirect
+                showToast(`Đăng nhập Google thành công! Chào mừng ${name}`, 'success');
 
-        setTimeout(() => {
-            window.location.href = '/Customer/Dashboard';
-        }, 1200);
+                setTimeout(() => {
+                    window.location.href = '/Customer/Dashboard';
+                }, 1200);
+            } else {
+                console.error("Google login failed on backend:", data.message);
+                showToast("Cơ sở dữ liệu báo lỗi: " + (data.message || ""), "error");
+            }
+        })
+        .catch(err => {
+            console.error("Network error during Google login:", err);
+            showToast("Không thể kết nối với máy chủ để xác thực!", "error");
+        });
 
     } catch (error) {
         console.error("Google authentication error:", error);
