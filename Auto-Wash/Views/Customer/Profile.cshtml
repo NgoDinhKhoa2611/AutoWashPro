@@ -98,7 +98,7 @@
                 </div>
 
                 <form id="password-form" onsubmit="handleSavePassword(event)">
-                    <div class="mb-3">
+                    <div id="curr-password-group">
                         <label class="form-label small fw-bold text-muted form-label-spaced">MẬT KHẨU HIỆN TẠI</label>
                         <div class="input-group glass-input-group bg-light form-group-disabled">
                             <span class="input-group-text bg-transparent border-0 text-muted"><i class="fas fa-lock"></i></span>
@@ -264,6 +264,55 @@
         </div>
     </div>
 </div>
+
+<!-- ── OTP Change Password Modal ────────────────────────────── -->
+<div class="modal fade" id="otpChangePasswordModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered mx-auto" style="max-width: 400px;">
+        <div class="modal-content border-0 overflow-hidden" style="border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); background-color: #ffffff;">
+            <div class="modal-header text-white border-0 px-4 pt-4 pb-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+                <h6 class="fw-bold mb-0 text-white">
+                    <i class="fas fa-shield-alt me-2 text-cyan"></i>XÁC THỰC OTP BẢO MẬT
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="clearInterval(profileOtpTimer)"></button>
+            </div>
+            <div class="modal-body p-4 pt-3 text-center">
+                <p class="text-secondary small mb-3" id="profile-otp-description">
+                    Mã xác thực 6 chữ số đã được gửi tới thông tin liên hệ của bạn.
+                </p>
+                
+                <!-- 6 Digits OTP Code Inputs -->
+                <div class="d-flex justify-content-center gap-2 mb-4">
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-0" oninput="handleProfOtpInput(0,this)" onkeydown="handleProfOtpKeydown(0,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-1" oninput="handleProfOtpInput(1,this)" onkeydown="handleProfOtpKeydown(1,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-2" oninput="handleProfOtpInput(2,this)" onkeydown="handleProfOtpKeydown(2,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-3" oninput="handleProfOtpInput(3,this)" onkeydown="handleProfOtpKeydown(3,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-4" oninput="handleProfOtpInput(4,this)" onkeydown="handleProfOtpKeydown(4,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-5" oninput="handleProfOtpInput(5,this)" onkeydown="handleProfOtpKeydown(5,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                </div>
+
+                <button class="app-btn-primary shadow-none py-3 w-100" id="profile-otp-verify-btn" onclick="handleVerifyProfileOtp()">
+                    XÁC MINH & CẬP NHẬT MẬT KHẨU <i class="fas fa-check-circle ms-2"></i>
+                </button>
+
+                <div class="mt-4 text-center">
+                    <p class="text-secondary small mb-0" id="profile-otp-resend-wrapper">
+                        Gửi lại mã sau <span class="text-cyan fw-bold" id="profile-otp-timer">300</span>s
+                    </p>
+                    <button id="profile-otp-resend-btn" class="btn btn-link text-cyan text-decoration-none small fw-bold p-0 mt-1" style="display:none;" onclick="handleResendProfileOtp()">
+                        Gửi lại mã OTP
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inject variables from ViewBag securely -->
+<script>
+    var isGoogleAccount = @(ViewBag.IsGoogleAccount == true ? "true" : "false");
+    var userEmail = "@ViewBag.UserEmail";
+    var userPhone = "@ViewBag.UserPhone";
+</script>
 
 @section Styles {
 <link rel="stylesheet" href="~/css/customer/profile.css" asp-append-version="true" />

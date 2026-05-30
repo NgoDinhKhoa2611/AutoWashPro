@@ -62,6 +62,7 @@ namespace Auto_Wash.Controllers
                 ViewBag.UserTier = account.Customer?.Tier?.TierName ?? "Gold Member";
                 ViewBag.UserPoints = account.Customer?.PointBalance ?? 1250;
                 ViewBag.UserAvatar = !string.IsNullOrEmpty(avatar) ? avatar : (account.GoogleId != null ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200" : "");
+                ViewBag.IsGoogleAccount = (account.GoogleId != null || string.IsNullOrEmpty(account.PasswordHash));
             }
             else
             {
@@ -71,6 +72,7 @@ namespace Auto_Wash.Controllers
                 ViewBag.UserTier = "Gold Member";
                 ViewBag.UserPoints = 1250;
                 ViewBag.UserAvatar = "";
+                ViewBag.IsGoogleAccount = false;
             }
         }
 
@@ -171,11 +173,157 @@ namespace Auto_Wash.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SendEmailOtp([FromBody] SendEmailOtpRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(new { success = false, message = "Email không hợp lệ!" });
+            }
+
+            try
+            {
+                var rnd = new Random();
+                string code = rnd.Next(100000, 999999).ToString();
+
+                var otp = new OtpVerification
+                {
+                    Email = request.Email.Trim(),
+                    Phone = "",
+                    Code = code,
+                    ExpiresAt = DateTime.Now.AddMinutes(5),
+                    IsUsed = false,
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.OtpVerifications.Add(otp);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine("\n==============================================");
+                Console.WriteLine($"[EMAIL OTP SIMULATION] To: {request.Email}");
+                Console.WriteLine($"Code: {code} (Valid for 5 minutes)");
+                Console.WriteLine("==============================================\n");
+
+                return Ok(new { success = true, message = $"Mã OTP đã được gửi đến email {request.Email}! (Mã mô phỏng: {code})" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> VerifyEmailAndChangePassword([FromBody] VerifyEmailAndChangePasswordRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.OtpCode) || string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ!" });
+            }
+
+            try
+            {
+                var otp = await _context.OtpVerifications
+                    .Where(o => o.Email == request.Email.Trim() && o.Code == request.OtpCode.Trim() && !o.IsUsed && o.ExpiresAt > DateTime.Now)
+                    .OrderByDescending(o => o.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (otp == null)
+                {
+                    return BadRequest(new { success = false, message = "Mã OTP không hợp lệ hoặc đã hết hạn!" });
+                }
+
+                var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == request.Email.Trim());
+                if (account == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy tài khoản tương ứng!" });
+                }
+
+                account.PasswordHash = HashPassword(request.NewPassword.Trim());
+                otp.IsUsed = true;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Thay đổi mật khẩu thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ChangePasswordWithPhoneOtp([FromBody] ChangePasswordWithPhoneOtpRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ!" });
+            }
+
+            try
+            {
+                var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Phone == request.Phone.Trim());
+                if (account == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy tài khoản tương ứng!" });
+                }
+
+                if (!string.IsNullOrEmpty(request.CurrentPassword))
+                {
+                    string hashedCurr = HashPassword(request.CurrentPassword.Trim());
+                    if (account.PasswordHash != hashedCurr && account.PasswordHash != request.CurrentPassword.Trim())
+                    {
+                        return BadRequest(new { success = false, message = "Mật khẩu hiện tại không chính xác!" });
+                    }
+                }
+
+                account.PasswordHash = HashPassword(request.NewPassword.Trim());
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Thay đổi mật khẩu thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        private string HashPassword(string password)
+        {
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+                var builder = new System.Text.StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
     }
 
     public class UpdateProfileRequest
     {
         public string FullName { get; set; } = string.Empty;
         public string? Phone { get; set; }
+    }
+
+    public class SendEmailOtpRequest
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class VerifyEmailAndChangePasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string OtpCode { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class ChangePasswordWithPhoneOtpRequest
+    {
+        public string Phone { get; set; } = string.Empty;
+        public string? CurrentPassword { get; set; }
+        public string NewPassword { get; set; } = string.Empty;
     }
 }
