@@ -117,7 +117,7 @@ export const CustomerHistory = () => {
       const notif = {
         id: 'notif_review_' + Date.now(),
         title: 'Nhận điểm đánh giá',
-        body: 'Chúc mừng! Bạn đã nhận được +50 PTS điểm thưởng Smember nhờ gửi đánh giá phản hồi dịch vụ.',
+        body: 'Chúc mừng! Bạn đã nhận được +50 PTS điểm thưởng AutoWash Loyalty nhờ gửi đánh giá phản hồi dịch vụ.',
         time: 'Vừa xong',
         type: 'points',
         read: false
@@ -289,7 +289,7 @@ export const CustomerHistory = () => {
               <div className="confirm-modal-body text-center py-5" id="survey-success-view">
                 <i className="fas fa-check-circle fa-4x text-success mb-3 animate-pulse"></i>
                 <h5 className="fw-bold text-success">GỬI PHẢN HỒI THÀNH CÔNG!</h5>
-                <p className="text-muted small mb-0 mt-2">Bạn nhận được +50 PTS điểm thưởng S-Member.</p>
+                <p className="text-muted small mb-0 mt-2">Bạn nhận được +50 PTS điểm thưởng AutoWash Loyalty.</p>
               </div>
             ) : (
               <div className="confirm-modal-body" id="survey-form-view">

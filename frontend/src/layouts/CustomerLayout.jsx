@@ -23,7 +23,8 @@ export const CustomerLayout = () => {
   // Lấy đường dẫn hiện tại để active link
   const activeNav = location.pathname.startsWith('/customer/dashboard') ? 'dashboard' :
                     location.pathname.startsWith('/customer/booking') ? 'booking' :
-                    location.pathname.startsWith('/customer/loyalty') ? 'loyalty' :
+                    location.pathname.startsWith('/customer/loyalty') ? 
+                      (location.search.includes('tab=vouchers') ? 'vouchers' : 'loyalty') :
                     location.pathname.startsWith('/customer/history') ? 'history' :
                     location.pathname.startsWith('/customer/profile') ? 'profile' : 'dashboard';
 
@@ -159,7 +160,10 @@ export const CustomerLayout = () => {
             <i className="fas fa-calendar-alt"></i><span>Đặt lịch rửa xe</span>
           </Link>
           <Link to="/customer/loyalty" className={`customer-sidebar-link ${activeNav === 'loyalty' ? 'active' : ''}`}>
-            <i className="fas fa-crown"></i><span>Hạng thành viên VIP</span>
+            <i className="fas fa-crown"></i><span>AutoWash Loyalty</span>
+          </Link>
+          <Link to="/customer/loyalty?tab=vouchers" className={`customer-sidebar-link ${activeNav === 'vouchers' ? 'active' : ''}`}>
+            <i className="fas fa-ticket-alt"></i><span>Ví Voucher</span>
           </Link>
           <Link to="/customer/history" className={`customer-sidebar-link ${activeNav === 'history' ? 'active' : ''}`}>
             <i className="fas fa-history"></i><span>Lịch sử & Đánh giá</span>
@@ -250,7 +254,7 @@ export const CustomerLayout = () => {
                     {user?.name || 'Khách hàng'}
                   </div>
                   <div className="text-muted text-truncate dropdown-profile-tier">
-                    {user?.tier || 'Gold Member'}
+                    {(user?.tier || 'Gold Member').replace(' Member', ' Loyalty')}
                   </div>
                 </div>
                 <Link to="/customer/profile" className="profile-dropdown-item" onClick={() => setProfileDropdownOpen(false)}>
@@ -302,7 +306,7 @@ export const CustomerLayout = () => {
 
           <Link to="/customer/loyalty" className={`mobile-bottom-nav-link ${activeNav === 'loyalty' ? 'active' : ''}`}>
             <i className="fas fa-crown"></i>
-            <span>Hạng VIP</span>
+            <span>Loyalty</span>
           </Link>
           <Link to="/customer/profile" className={`mobile-bottom-nav-link ${activeNav === 'profile' ? 'active' : ''}`}>
             <i className="fas fa-user-cog"></i>

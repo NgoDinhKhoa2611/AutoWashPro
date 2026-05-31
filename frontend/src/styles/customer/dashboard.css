@@ -1,143 +1,482 @@
 /* ============================================================
-   dashboard.css — Dashboard page styles
+   dashboard.css — Modern SaaS 2025 Dashboard Style
    AutoWash Pro — SWP391 FPT University
    ============================================================ */
 
-/* ── Premium 3D Membership Card ──────────────────────────── */
-.animate-spin-slow {
-    animation: spinSlow 12s linear infinite !important;
-    display: inline-block;
-}
-@keyframes spinSlow {
-    100% { transform: rotate(360deg); }
-}
-
-.member-card-3d {
-    position: relative !important;
-    overflow: hidden !important;
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08) !important;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
-}
-.member-card-3d:hover {
-    transform: translateY(-5px) scale(1.01) rotate(0.5deg) !important;
-    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.12) !important;
+:root {
+  --app-shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.03);
+  --app-shadow-hover: 0 20px 40px rgba(15, 23, 42, 0.07);
+  --app-border-light: 1px solid rgba(15, 23, 42, 0.06);
+  --app-border-active: 1px solid rgba(14, 165, 233, 0.25);
+  --app-transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card-gloss-overlay {
-    position: absolute !important;
-    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0) 100%) !important;
-    z-index: 1 !important;
-    pointer-events: none !important;
+/* ── Generic App Cards ────────────────────────────────────── */
+.app-card {
+  background: #ffffff !important;
+  border: var(--app-border-light) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--app-shadow-soft) !important;
+  transition: var(--app-transition) !important;
+  overflow: hidden;
+  position: relative;
 }
 
-.member-card-3d.tier-gold     { background: linear-gradient(135deg, #fffdf0 0%, #fcf0cd 50%, #eab308 100%) !important; border-color: rgba(255,255,255,0.4) !important; }
-.member-card-3d.tier-platinum { background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 45%, #e0f2fe 75%, #94a3b8 100%) !important; border-color: rgba(255,255,255,0.5) !important; }
-.member-card-3d.tier-silver   { background: linear-gradient(135deg, #94a3b8 0%, #64748b 50%, #475569 100%) !important; border-color: rgba(255,255,255,0.25) !important; }
-.member-card-3d.tier-standard { background: linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #374151 100%) !important; border-color: rgba(255,255,255,0.2) !important; }
-
-.card-chip-icon {
-    width: 32px !important; height: 24px !important;
-    background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%) !important;
-    border-radius: 4px !important; padding: 4px !important;
-    display: flex !important; flex-direction: column !important;
-    justify-content: space-between !important;
-    border: 1px solid rgba(15, 23, 42, 0.15) !important;
-    opacity: 0.85 !important;
-}
-.chip-line { height: 1px !important; background: rgba(15, 23, 42, 0.15) !important; width: 100% !important; }
-
-.font-monospace { font-family: 'Consolas', 'Courier New', monospace !important; letter-spacing: 0.5px !important; }
-
-/* ── Concierge Timeline Feed ──────────────────────────────── */
-.concierge-feed { position: relative !important; }
-.feed-timeline-line {
-    position: absolute !important;
-    top: 0 !important; bottom: 0 !important;
-    left: 25px !important;
-    width: 2px !important;
-    background: rgba(15, 23, 42, 0.05) !important;
-    z-index: 1 !important;
-}
-.concierge-feed-item {
-    z-index: 2 !important;
-    background: rgba(255, 255, 255, 0.75) !important;
-    backdrop-filter: blur(15px) !important;
-    -webkit-backdrop-filter: blur(15px) !important;
-    border: 1px solid rgba(15, 23, 42, 0.04) !important;
-    border-radius: 16px !important;
-    transition: all 0.25s ease-in-out !important;
-}
-.concierge-feed-item:hover {
-    transform: translateX(4px) !important;
-    background: #ffffff !important;
-    border-color: rgba(14, 165, 233, 0.15) !important;
-    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.04) !important;
-}
-.concierge-feed-item.border-cyan-light {
-    border-left: 3px solid var(--cyan-electric) !important;
-    background: rgba(14, 165, 233, 0.02) !important;
+.app-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--app-shadow-hover) !important;
+  border-color: rgba(14, 165, 233, 0.2) !important;
 }
 
-/* ── Dashboard.cshtml utility classes ────────────────────── */
-.concierge-greeting-text       { color: var(--navy-dark); }
-.concierge-subtitle            { font-size: 0.8rem; }
-.concierge-greeting-mobile     { font-size: 1.25rem; }
-.concierge-weather-chip        { font-size: 0.75rem; }
-.concierge-weather-chip-mobile { font-size: 0.65rem; box-shadow: 0 2px 8px rgba(0,0,0,0.015); }
-.concierge-weather-icon        { font-size: 1rem; }
-
-.member-card-layer     { position: relative; z-index: 2; }
-.member-card-pts-label { font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; }
-.member-card-pts-sub   { font-size: 0.65rem; letter-spacing: 0.5px; }
-.member-card-footer    { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
-.member-card-meta-label {
-    font-size: 0.6rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 1px;
-    opacity: 0.6; display: block;
+/* ── Top Summary Cards (SaaS Style) ────────────────────────── */
+.summary-widget-card {
+  padding: 1.25rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  text-decoration: none !important;
+  color: inherit !important;
+  height: 100% !important;
 }
-.member-card-tier-value { font-size: 0.8rem; }
-.member-card-code-value { font-size: 0.75rem; letter-spacing: 1.5px; }
 
-.quick-action-btn  { color: var(--navy-dark); font-weight: 700; font-size: 0.78rem; transition: all 0.2s; }
-.quick-action-icon { width: 24px; height: 24px; }
-.qa-icon-booking   { background: var(--cyan-electric) !important; }
-.qa-icon-loyalty   { background: #f59e0b !important; }
-.qa-icon-history   { background: #10b981 !important; }
-.qa-icon-profile   { background: #06b6d4 !important; }
-
-.stat-label         { font-size: 0.65rem; letter-spacing: 0.5px; }
-.stat-badge-count   { font-size: 0.65rem; }
-.stat-plates-mobile { font-size: 0.75rem; letter-spacing: -0.2px; }
-.stat-primary-value { font-size: 1.1rem; line-height: 1.1; }
-.stat-progress-track { height: 5px; }
-.stat-crown-purple  { color: #a855f7 !important; }
-.stat-tier-medal    { width: 36px; height: 36px; }
-.stat-tier-desc     { font-size: 0.65rem; }
-
-.booking-cta-card {
-    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-light) 100%) !important;
-    color: white !important;
-    min-height: 180px;
-    border-radius: 24px;
+.summary-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  transition: var(--app-transition);
 }
-.booking-cta-card h4,
-.booking-cta-card p,
-.booking-cta-card span,
-.booking-cta-card div { color: inherit !important; }
-.booking-cta-subtitle { color: rgba(255,255,255,0.5) !important; }
 
-.category-chevron     { font-size: 0.7rem; opacity: 0.5; }
-.category-title       { font-size: 1.1rem; line-height: 1.1; }
+.summary-widget-card:hover .summary-icon-wrapper {
+  transform: scale(1.1) rotate(-3deg);
+}
 
-.notif-widget-title    { color: var(--navy-dark); }
-.notif-widget-read-btn { font-size: 0.7rem; }
-.notif-feed-scroll     { max-height: 360px; overflow-y: auto; padding-left: 12px; position: relative; }
+.summary-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 2px;
+}
 
-.empty-state-title { color: var(--navy-dark); }
-.empty-state-desc  { max-width: 280px; }
-.empty-state-btn   { border-radius: 14px; font-size: 0.9rem; }
+.summary-value {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
 
-/* ── Points Expiry Warning ────────────────────────────────── */
-.stat-expiry-warning { font-size: 0.6rem; color: #dc2626; font-weight: 700; }
+/* ── Live Wash Tracking (Horizontal Steps) ─────────────────── */
+.live-tracking-header {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 1rem;
+}
+
+.pulse-dot-washing {
+  width: 8px;
+  height: 8px;
+  background-color: var(--cyan-electric);
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse-cyan 1.6s infinite;
+}
+
+@keyframes pulse-cyan {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(14, 165, 233, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0);
+  }
+}
+
+.tracking-steps-horizontal {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1.5rem 0;
+  padding: 0 10px;
+}
+
+.tracking-steps-line-bg {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  height: 4px;
+  background-color: #f1f5f9;
+  z-index: 1;
+}
+
+.tracking-steps-line-progress {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  height: 4px;
+  background: linear-gradient(90deg, #0ea5e9, #0284c7);
+  z-index: 2;
+  transition: width 0.6s ease;
+}
+
+.tracking-step-node {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 70px;
+}
+
+.step-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 3px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #94a3b8;
+  transition: var(--app-transition);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.tracking-step-node.completed .step-icon-circle {
+  background-color: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.tracking-step-node.active .step-icon-circle {
+  background-color: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2);
+  animation: pulse-node 2s infinite;
+}
+
+@keyframes pulse-node {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.step-node-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-top: 0.5rem;
+  white-space: nowrap;
+}
+
+.tracking-step-node.active .step-node-label {
+  color: #0f172a;
+}
+
+.tracking-step-node.completed .step-node-label {
+  color: #10b981;
+}
+
+.live-tracking-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  background-color: #f8fafc;
+  border: var(--app-border-light);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.meta-item-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+.meta-item-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* ── AutoWash Loyalty (Apple Wallet 3D Style) ─────────────── */
+.loyalty-card-3d {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 1.25rem;
+  min-height: 165px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 15px 30px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: var(--app-transition);
+}
+
+.loyalty-card-3d:hover {
+  transform: translateY(-4px) rotate(0.5deg);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+}
+
+.loyalty-card-3d.tier-gold {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+}
+
+.loyalty-card-3d.tier-platinum {
+  background: linear-gradient(135deg, #475569 0%, #0f172a 100%);
+}
+
+.loyalty-card-3d.tier-silver {
+  background: linear-gradient(135deg, #94a3b8 0%, #475569 100%);
+}
+
+.loyalty-card-3d.tier-standard {
+  background: linear-gradient(135deg, #64748b 0%, #334155 100%);
+}
+
+.loyalty-card-glass-glow {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 60%);
+  pointer-events: none;
+}
+
+.loyalty-card-badge {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.loyalty-card-points {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.loyalty-card-points-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  display: block;
+}
+
+.loyalty-progress-container {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 10px;
+}
+
+/* ── Personal Insights Stats Grid ────────────────────────── */
+.personal-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.personal-stat-box {
+  background-color: #f8fafc;
+  border: var(--app-border-light);
+  border-radius: 14px;
+  padding: 10px 12px;
+  text-align: left;
+  transition: var(--app-transition);
+}
+
+.personal-stat-box:hover {
+  background-color: #ffffff;
+  border-color: rgba(14, 165, 233, 0.2);
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.02);
+}
+
+.personal-stat-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+}
+
+.personal-stat-num {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: block;
+  line-height: 1.2;
+}
+
+.personal-stat-text {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* ── Upcoming Appointment & Vouchers Widget ────────────────── */
+.compact-action-link {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0284c7;
+  text-decoration: none;
+  transition: var(--app-transition);
+}
+
+.compact-action-link:hover {
+  color: #0369a1;
+}
+
+.appointment-badge-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background-color: rgba(2, 132, 199, 0.08);
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+/* ── Featured Voucher (Ticket design) ──────────────────────── */
+.ticket-dashed-box {
+  background: rgba(2, 132, 199, 0.01);
+  border: 1px dashed rgba(2, 132, 199, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: justify;
+  gap: 12px;
+}
+
+.ticket-tag {
+  background-color: #0284c7;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 70px;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);
+}
+
+/* ── Notifications Timelines ────────────────────────────── */
+.timeline-feed-widget {
+  position: relative;
+}
+
+.notif-timeline-line {
+  position: absolute;
+  top: 60px;
+  bottom: 25px;
+  left: 29px;
+  width: 2px;
+  background-color: #f1f5f9;
+  z-index: 1;
+}
+
+.notif-item-saas {
+  z-index: 2;
+  position: relative;
+  background: #ffffff;
+  border: var(--app-border-light);
+  border-radius: 14px;
+  padding: 10px 14px;
+  transition: var(--app-transition);
+  display: flex;
+  gap: 12px;
+  align-items: start;
+}
+
+.notif-item-saas:hover {
+  transform: translateX(4px);
+  border-color: rgba(14, 165, 233, 0.15);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.02);
+}
+
+.notif-item-saas.unread {
+  background-color: rgba(14, 165, 233, 0.015);
+  border-left: 3.5px solid #0ea5e9;
+}
+
+.notif-icon-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+  flex-shrink: 0;
+}
+
+/* ── Responsive Styling ────────────────────────────────────── */
+@media (max-width: 576px) {
+  .tracking-steps-horizontal {
+    margin: 1.25rem 0;
+    padding: 0;
+  }
+  
+  .tracking-steps-line-bg,
+  .tracking-steps-line-progress {
+    left: 10px;
+    right: 10px;
+  }
+
+  .tracking-step-node {
+    width: 60px;
+  }
+
+  .step-icon-circle {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+    border-width: 2px;
+  }
+
+  .step-node-label {
+    font-size: 0.58rem;
+    margin-top: 0.35rem;
+  }
+
+  .live-tracking-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}

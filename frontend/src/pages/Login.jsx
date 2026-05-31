@@ -666,7 +666,7 @@ export const Login = () => {
                   </svg>
                 </div>
                 <h3 className="overlay-title">Chưa có tài khoản?</h3>
-                <p className="overlay-desc">Tạo tài khoản AutoWash Pro miễn phí để nhận ngay đặc quyền tích điểm thưởng thành viên Smember.</p>
+                <p className="overlay-desc">Tạo tài khoản AutoWash Pro miễn phí để nhận ngay đặc quyền tích điểm thưởng thành viên AutoWash Loyalty.</p>
                 <button className="overlay-btn" onClick={() => setIsRegisterActive(true)}>ĐĂNG KÝ NGAY</button>
               </div>
             </div>

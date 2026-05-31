@@ -1,103 +1,188 @@
 /* ============================================================
-   booking.css — Booking page styles
+   booking.css — SaaS 2025 Booking Page Styles
    AutoWash Pro — SWP391 FPT University
    ============================================================ */
 
-/* ── Glass Time Chips Selector ───────────────────────────── */
+:root {
+  --booking-primary: #0ea5e9;
+  --booking-primary-dark: #0284c7;
+  --booking-navy: #0f172a;
+  --booking-bg-light: #f8fafc;
+  --booking-border-color: rgba(15, 23, 42, 0.06);
+  --booking-transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Step Indicators ──────────────────────────────────────── */
+.step-num-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--booking-primary);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+/* ── Service Card Styling ──────────────────────────────────── */
+.service-selectable-card {
+  background: #ffffff;
+  border: 1.5px solid var(--booking-border-color);
+  border-radius: 16px;
+  padding: 1.25rem;
+  position: relative;
+  cursor: pointer;
+  transition: var(--booking-transition);
+  height: 100%;
+}
+
+.service-selectable-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(14, 165, 233, 0.3);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.service-selectable-card.selected {
+  border-color: var(--booking-primary);
+  background: rgba(14, 165, 233, 0.02);
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.12);
+}
+
+.selected-tick-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: var(--booking-primary);
+  font-size: 1.15rem;
+  display: none;
+}
+
+.service-selectable-card.selected .selected-tick-badge {
+  display: block;
+}
+
+/* ── Add-on Card Grid ──────────────────────────────────────── */
+.addons-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.addon-selectable-card {
+  background: #ffffff;
+  border: 1.5px solid var(--booking-border-color);
+  border-radius: 16px;
+  padding: 1rem;
+  position: relative;
+  cursor: pointer;
+  transition: var(--booking-transition);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.addon-selectable-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.addon-selectable-card.selected {
+  border-color: var(--booking-primary);
+  background: rgba(14, 165, 233, 0.03);
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.08);
+}
+
+.addon-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.addon-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 0.95rem;
+  transition: var(--booking-transition);
+}
+
+.addon-selectable-card.selected .addon-card-icon {
+  background-color: rgba(14, 165, 233, 0.12);
+  color: var(--booking-primary);
+}
+
+.addon-card-checkbox {
+  font-size: 1.1rem;
+  color: #cbd5e1;
+}
+
+.addon-selectable-card.selected .addon-card-checkbox {
+  color: var(--booking-primary);
+}
+
+.addon-card-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--booking-navy);
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.addon-card-desc {
+  font-size: 0.68rem;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.addon-card-price {
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--booking-primary-dark);
+}
+
+/* ── Time Slots ───────────────────────────────────────────── */
 #time-slots .selectable-card {
-    border-radius: 99px !important;
-    padding: 10px 16px !important;
-    font-size: 0.82rem !important;
-    background: rgba(255, 255, 255, 0.6) !important;
-    border: 1.5px solid #e2e8f0 !important;
-    color: #64748b !important;
-    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  font-size: 0.82rem !important;
+  background: #ffffff !important;
+  border: 1.5px solid var(--booking-border-color) !important;
+  color: #64748b !important;
+  transition: var(--booking-transition) !important;
 }
+
 #time-slots .selectable-card:hover {
-    border-color: var(--cyan-electric) !important;
-    color: var(--navy-dark) !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    transform: translateY(-1.5px) !important;
+  border-color: var(--booking-primary) !important;
+  color: var(--booking-navy) !important;
 }
+
 #time-slots .selectable-card.selected {
-    background: rgba(14, 165, 233, 0.12) !important;
-    border-color: var(--cyan-electric) !important;
-    color: #0ea5e9 !important;
-    box-shadow: 0 0 12px rgba(14, 165, 233, 0.15) !important;
-    font-weight: 800 !important;
-    transform: scale(1.05) !important;
-}
-#time-slots .selectable-card.disabled-slot {
-    background: rgba(15, 23, 42, 0.02) !important;
-    border-color: rgba(15, 23, 42, 0.05) !important;
-    color: #cbd5e1 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
-    text-decoration: line-through !important;
+  background: rgba(14, 165, 233, 0.08) !important;
+  border-color: var(--booking-primary) !important;
+  color: var(--booking-primary-dark) !important;
+  font-weight: 700 !important;
 }
 
-/* ── Booking.cshtml utility classes ──────────────────────── */
-.booking-sticky-top { top: 100px; }
-.booking-summary-dark-card {
-    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-light) 100%) !important;
-    color: white !important;
-    border-radius: 24px;
+/* ── Receipt Summary Area ─────────────────────────────────── */
+.order-summary-sidebar {
+  border: var(--booking-border-color);
+  border-radius: 20px;
 }
-.booking-summary-dark-card h5,
-.booking-summary-dark-card h3,
-.booking-summary-dark-card span:not(.text-cyan):not(.text-white),
-.booking-summary-dark-card strong,
-.booking-summary-dark-card div { color: inherit !important; }
-.booking-summary-rows  { font-size: 0.85rem; color: rgba(255,255,255,0.6); }
-.booking-svc-name      { max-width: 180px; }
-.booking-border-subtle { border-color: rgba(255,255,255,0.1) !important; }
-.booking-addons-title  { color: rgba(255,255,255,0.5); }
-.booking-vip-box       { background: rgba(255,255,255,0.06); font-size: 0.82rem; }
-.booking-vip-label {
-    font-size: 0.68rem; font-weight: 700;
-    text-transform: uppercase; color: rgba(255,255,255,0.5);
-    display: block;
-}
-.booking-total-cost  { letter-spacing: 0.5px; }
-.booking-confirm-btn { border-radius: 14px; font-size: 0.92rem; font-weight: 700; }
-.booking-date-input  { font-size: 0.92rem; background: #f8fafc; color: var(--navy-dark); }
 
-/* ── Booking Window Info ──────────────────────────────────── */
-.booking-window-icon  { color: var(--cyan-electric); font-size: 0.72rem; }
-.booking-window-label { color: var(--cyan-electric); font-size: 0.72rem; }
-
-/* ── Perk Auto-apply Row ──────────────────────────────────── */
-.booking-perk-label { font-size: 0.82rem; color: rgba(255,255,255,0.65); }
-
-/* ── Promo Code Input ─────────────────────────────────────── */
-.booking-promo-input {
-    border-radius: 10px 0 0 10px !important;
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.85);
-    border: 1px solid rgba(255,255,255,0.15) !important;
-    background: rgba(255,255,255,0.08) !important;
-}
-.booking-promo-input::placeholder { color: rgba(255,255,255,0.35); }
-.booking-promo-input:focus {
-    outline: none !important;
-    box-shadow: none !important;
-    border-color: rgba(255,255,255,0.35) !important;
-    background: rgba(255,255,255,0.08) !important;
-    color: rgba(255,255,255,0.85) !important;
-}
-.booking-promo-btn {
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
-    color: #ffffff !important;
-    border-radius: 0 10px 10px 0 !important;
-    font-size: 0.72rem;
-    white-space: nowrap;
-    border: none !important;
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25) !important;
-    transition: all 0.3s ease !important;
-}
-.booking-promo-btn:hover {
-    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%) !important;
-    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4) !important;
-/*    transform: translateY(-2px) !important;*/
-    color: #ffffff !important;
+/* ── Responsive Adjustment ────────────────────────────────── */
+@media (max-width: 768px) {
+  .addons-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }

@@ -71,10 +71,21 @@ export const CustomerLoyalty = () => {
     syncData();
     window.addEventListener('storage', syncData);
 
+    const query = new URLSearchParams(window.location.search);
+    const tab = query.get('tab');
+    if (tab === 'vouchers') {
+      const el = document.getElementById('my-vouchers-section');
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 350);
+      }
+    }
+
     return () => {
       window.removeEventListener('storage', syncData);
     };
-  }, []);
+  }, [window.location.search]);
 
   const handleChangeTier = (tierName) => {
     localStorage.setItem('user_tier', tierName);
@@ -199,9 +210,9 @@ export const CustomerLoyalty = () => {
         <div className="col-lg-5">
           <div className="member-card-container mb-4" id="loyalty-member-card">
             <div className={`member-card ${nextTierDetails.cardClass}`}>
-              <span className="tier-label"><i className="fas fa-crown me-2"></i>{currentTier}</span>
+              <span className="tier-label"><i className="fas fa-crown me-2"></i>{currentTier.replace(' Member', ' Loyalty')}</span>
               <h2 className="fw-bold text-white mb-1" style={{ fontSize: '2.4rem' }}>{pts.toLocaleString()} <small style={{ fontSize: '1rem', fontWeight: 600 }}>PTS</small></h2>
-              <p className="text-white mb-3" style={{ opacity: 0.7, fontSize: '0.85rem' }}>S-Member Loyalty Points</p>
+              <p className="text-white mb-3" style={{ opacity: 0.7, fontSize: '0.85rem' }}>AutoWash Loyalty Points</p>
               <div className="d-flex justify-content-between align-items-center mt-4">
                 <div>
                   <small style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>HẠNG TIẾP THEO</small>
@@ -209,7 +220,7 @@ export const CustomerLoyalty = () => {
                 </div>
                 <div className="text-end">
                   <small style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>MÃ THÀNH VIÊN</small>
-                  <div className="fw-bold text-white mt-1 font-monospace" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>AW-2026-{currentTier.replace(' Member','').toUpperCase()}</div>
+                  <div className="fw-bold text-white mt-1 font-monospace" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>AW-LOYALTY-{currentTier.replace(' Member','').toUpperCase()}</div>
                 </div>
               </div>
             </div>

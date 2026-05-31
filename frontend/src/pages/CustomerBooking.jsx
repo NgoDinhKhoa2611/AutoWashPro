@@ -11,10 +11,10 @@ const DEFAULT_MAIN_SERVICES = [
 ];
 
 const DEFAULT_ADDON_SERVICES = [
-  { id: 'add_01', name: 'Vệ sinh sên chuyên nghiệp', price: 20000, icon: 'fa-link' },
-  { id: 'add_02', name: 'Wax bóng nano bảo vệ sơn', price: 25000, icon: 'fa-shield-alt' },
-  { id: 'add_03', name: 'Chăm sóc dưỡng nhựa nhám', price: 30000, icon: 'fa-spray-can' },
-  { id: 'add_04', name: 'Vệ sinh nội thất', price: 30000, icon: 'fa-couch' }
+  { id: 'add_04', name: 'Vệ sinh nội thất', price: 30000, icon: 'fa-couch', desc: 'Lau dọn ghế, khử mùi cabin' },
+  { id: 'add_02', name: 'Wax nano', price: 25000, icon: 'fa-shield-alt', desc: 'Bảo vệ sơn xe sáng bóng' },
+  { id: 'add_03', name: 'Chăm sóc dưỡng nhựa', price: 30000, icon: 'fa-spray-can', desc: 'Phục hồi và làm bóng nhựa nhám' },
+  { id: 'add_01', name: 'Vệ sinh sên xích', price: 20000, icon: 'fa-link', desc: 'Làm sạch và bôi trơn xích chuyên sâu' }
 ];
 
 const TIME_SLOTS = ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00'];
@@ -69,8 +69,8 @@ export const CustomerBooking = () => {
     } catch (e) {}
     if (savedVehicles.length === 0) {
       savedVehicles = [
-        { plate: '51G - 123.45', type: 'Honda Vision' },
-        { plate: '51A - 999.99', type: 'SH Mode' }
+        { plate: '51G - 123.45', type: 'Honda Vision', lastWash: '28/05/2026', totalWashes: 8 },
+        { plate: '51A - 999.99', type: 'SH Mode', lastWash: '22/05/2026', totalWashes: 12 }
       ];
       localStorage.setItem('user_vehicles', JSON.stringify(savedVehicles));
     }
@@ -78,6 +78,9 @@ export const CustomerBooking = () => {
     if (savedVehicles.length > 0) {
       setSelectedVehicle(savedVehicles[0].plate);
     }
+
+    // Set default main service to Combo Cao Cấp
+    setSelectedMain(DEFAULT_MAIN_SERVICES[1]);
 
     // Load services (checking custom services in local storage first)
     let appSvc = [];
@@ -105,7 +108,8 @@ export const CustomerBooking = () => {
         id: s.id,
         name: s.name,
         price: s.price,
-        icon: 'fa-plus-circle'
+        icon: 'fa-plus-circle',
+        desc: s.description || 'Dịch vụ nâng cao đi kèm'
       }));
     setAddonServices(customAddons.length > 0 ? customAddons : DEFAULT_ADDON_SERVICES);
 
@@ -171,7 +175,7 @@ export const CustomerBooking = () => {
       'SILVER10': { title: 'Silver ưu đãi 10%', rewardType: 'DiscountPercent', rewardValue: 10 },
       'GOLD15': { title: 'Gold special 15%', rewardType: 'DiscountPercent', rewardValue: 15 },
       'VIP20': { title: 'Platinum VIP 20%', rewardType: 'DiscountPercent', rewardValue: 20 },
-      'WASH50K': { title: 'Giảm 50.000đ', rewardType: 'FixedAmount', rewardValue: 50000 }
+      'WASH10K': { title: 'Giảm 10.000đ', rewardType: 'FixedAmount', rewardValue: 10000 }
     };
 
     if (hardcodedPromos[code]) {
@@ -198,13 +202,12 @@ export const CustomerBooking = () => {
   const mainPrice = selectedMain ? Number(selectedMain.price) : 0;
   const baseTotal = mainPrice + addonTotal;
 
-  // VIP discount
-  const tier = (user?.tier || 'Standard Member').toUpperCase();
+  // VIP discount (Tier-based Loyalty perks)
+  const tier = (user?.tier || 'Silver Member').toUpperCase();
   let tierDiscountPercent = 0;
-  let tierText = 'Standard';
-  if (tier.includes('PLATINUM')) { tierDiscountPercent = 10; tierText = 'Platinum'; }
-  else if (tier.includes('GOLD')) { tierDiscountPercent = 5; tierText = 'Gold'; }
-  else if (tier.includes('SILVER')) { tierDiscountPercent = 2; tierText = 'Silver'; }
+  if (tier.includes('PLATINUM')) tierDiscountPercent = 10;
+  else if (tier.includes('GOLD')) tierDiscountPercent = 5;
+  else if (tier.includes('SILVER')) tierDiscountPercent = 2;
   const tierDiscountAmount = Math.round(baseTotal * (tierDiscountPercent / 100));
 
   // Voucher discount
@@ -220,12 +223,8 @@ export const CustomerBooking = () => {
   const totalDiscount = tierDiscountAmount + promoDiscountAmount;
   const finalTotal = Math.max(0, baseTotal - totalDiscount);
 
-  // Points multiplier
-  let multiplier = 1.0;
-  if (tier.includes('PLATINUM')) multiplier = 1.5;
-  else if (tier.includes('GOLD')) multiplier = 1.2;
-  else if (tier.includes('SILVER')) multiplier = 1.1;
-  const earnedPoints = Math.round((finalTotal / 1000) * multiplier);
+  // Earned points (+1 point for every 10,000đ spent to match "+13 PTS" for "130.000đ")
+  const earnedPoints = Math.round(finalTotal / 10000);
 
   // Confirm booking
   const handleConfirmBooking = () => {
@@ -242,34 +241,18 @@ export const CustomerBooking = () => {
       return;
     }
 
+    // Creating booking object linking to dashboard dynamic progress
     const booking = {
       id: 'book_' + Date.now(),
-      name: user?.name || 'Khách hàng',
-      plate: selectedVehicle,
-      service: selectedMain.name,
+      vehicle: selectedVehicle,
+      mainService: selectedMain.name,
       addons: Object.values(selectedAddons).map(a => a.name),
-      price: finalTotal,
-      points: earnedPoints,
-      bookingTime: bookingTime,
+      status: 'Booked',
       bookingDate: bookingDate,
-      tier: tier.replace(' MEMBER', ''),
-      status: 'Arrived',
-      queueStatus: 'Waiting',
-      overallProgress: 0,
-      currentServiceId: null,
-      services: [
-        { id: 'sub_0', name: 'Quét LPR', status: 'Waiting', duration: '2 phút', startedAt: null, completedAt: null },
-        { id: 'sub_1', name: selectedMain.name, status: 'Waiting', duration: selectedMain.time || '20 phút', startedAt: null, completedAt: null },
-        { id: 'sub_2', name: 'Sấy khô khí nén', status: 'Waiting', duration: '5 phút', startedAt: null, completedAt: null },
-        ...Object.values(selectedAddons).map((a, i) => ({
-          id: 'sub_addon_' + i,
-          name: a.name,
-          status: 'Waiting',
-          duration: '10 phút',
-          startedAt: null,
-          completedAt: null
-        }))
-      ]
+      bookingTime: bookingTime,
+      staffName: 'Nguyễn Văn A',
+      price: finalTotal,
+      points: earnedPoints
     };
 
     // Mark claimed voucher as used in local storage
@@ -285,15 +268,15 @@ export const CustomerBooking = () => {
       }
     }
 
-    // Save booking state
+    // Save booking states
     localStorage.setItem('active_booking', JSON.stringify(booking));
     localStorage.setItem('wash_step', '0');
 
-    // Create notifications
+    // Create notification
     const notif = {
       id: 'notif_book_' + Date.now(),
       title: 'Đặt lịch thành công',
-      body: `Xe ${selectedVehicle} đã được thêm vào hàng đợi ưu tiên ${tier.replace(' MEMBER', '')}. Giờ hẹn: ${bookingTime}.`,
+      body: `Xe ${selectedVehicle} đã đặt lịch lúc ${bookingTime} - ngày ${bookingDate.split('-').reverse().join('/')}.`,
       time: 'Vừa xong',
       type: 'status',
       read: false
@@ -305,7 +288,7 @@ export const CustomerBooking = () => {
     localStorage.setItem('user_notifications', JSON.stringify([notif, ...notifications]));
     window.dispatchEvent(new Event('storage'));
 
-    if (window.showToast) window.showToast(`Đặt lịch thành công! Xe ${selectedVehicle} đã vào hàng đợi.`, 'success');
+    if (window.showToast) window.showToast(`Đặt lịch thành công cho xe ${selectedVehicle}!`, 'success');
     
     setTimeout(() => {
       navigate('/customer/dashboard');
@@ -313,10 +296,12 @@ export const CustomerBooking = () => {
   };
 
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid py-4 text-start">
       <div className="row g-4">
         {/* Left Column: Form booking */}
         <div className="col-lg-8">
+          
+          {/* Step 1: Chọn phương tiện */}
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
             <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
               <span className="step-num-badge">1</span> Chọn phương tiện rửa
@@ -344,85 +329,102 @@ export const CustomerBooking = () => {
             </div>
           </div>
 
+          {/* Step 2: Chọn gói chính */}
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
             <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
               <span className="step-num-badge">2</span> Chọn gói dịch vụ chính
             </h5>
             <div className="row g-3" id="main-services-list">
-              {mainServices.map((s) => (
-                <div key={s.id} className="col-md-6">
-                  <div
-                    className={`selectable-card p-3 rounded-4 border h-100 ${selectedMain?.id === s.id ? 'selected' : 'bg-light border-light'}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleSelectMain(s)}
-                  >
-                    <div className="d-flex align-items-start gap-3">
-                      <div className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style={{ background: 'rgba(15,23,42,0.06)', width: '42px', height: '42px' }}>
-                        <i className={`fas ${s.icon || 'fa-soap'} text-cyan`}></i>
+              {mainServices.map((s) => {
+                const isSelected = selectedMain?.id === s.id;
+                return (
+                  <div key={s.id} className="col-md-6">
+                    <div
+                      className={`service-selectable-card ${isSelected ? 'selected' : ''}`}
+                      onClick={() => handleSelectMain(s)}
+                    >
+                      <div className="selected-tick-badge">
+                        <i className="fas fa-check-circle"></i>
                       </div>
-                      <div className="flex-grow-1">
-                        <div className="fw-bold small text-start" style={{ color: 'var(--navy-dark)' }}>{s.name}</div>
-                        <div className="text-muted text-start" style={{ fontSize: '0.72rem' }}>{s.desc}</div>
-                        <div className="d-flex justify-content-between align-items-center mt-2">
-                          <span className="fw-bold text-cyan">{Number(s.price).toLocaleString()}đ</span>
-                          <span className="text-muted small"><i className="far fa-clock me-1"></i>{s.time}</span>
+                      <div className="d-flex align-items-start gap-3">
+                        <div className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style={{ background: 'rgba(15,23,42,0.06)', width: '42px', height: '42px' }}>
+                          <i className={`fas ${s.icon || 'fa-soap'} text-cyan`}></i>
+                        </div>
+                        <div className="flex-grow-1">
+                          <div className="fw-bold small" style={{ color: 'var(--navy-dark)' }}>{s.name}</div>
+                          <div className="text-muted" style={{ fontSize: '0.72rem', lineHeight: '1.3' }}>{s.desc}</div>
+                          <div className="d-flex justify-content-between align-items-center mt-2">
+                            <span className="fw-bold text-cyan" style={{ fontSize: '0.85rem' }}>{Number(s.price).toLocaleString()}đ</span>
+                            <span className="text-muted small" style={{ fontSize: '0.7rem' }}><i className="far fa-clock me-1"></i>{s.time}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
+          {/* Step 3: Chọn dịch vụ đi kèm (Add-ons Cards Grid) */}
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
             <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
               <span className="step-num-badge">3</span> Chọn dịch vụ đi kèm (Add-ons)
             </h5>
-            <div className="d-flex flex-column gap-2" id="addon-services-list">
-              {addonServices.map((a) => (
-                <div
-                  key={a.id}
-                  className={`d-flex align-items-center justify-content-between p-3 rounded-4 border addon-row ${
-                    selectedAddons[a.id] ? 'border-cyan bg-navy-light' : 'border-light bg-light'
-                  }`}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => handleToggleAddon(a)}
-                >
-                  <div className="d-flex align-items-center gap-3">
-                    <div className="form-check m-0" style={{ pointerEvents: 'none' }}>
-                      <input className="form-check-input" type="checkbox" checked={!!selectedAddons[a.id]} readOnly />
+            <div className="addons-grid-layout" id="addon-services-list">
+              {addonServices.map((a) => {
+                const isSelected = !!selectedAddons[a.id];
+                return (
+                  <div
+                    key={a.id}
+                    className={`addon-selectable-card ${isSelected ? 'selected' : ''}`}
+                    onClick={() => handleToggleAddon(a)}
+                  >
+                    <div>
+                      <div className="addon-card-header">
+                        <div className="addon-card-icon">
+                          <i className={`fas ${a.icon || 'fa-plus-circle'}`}></i>
+                        </div>
+                        <div className="addon-card-checkbox">
+                          {isSelected ? (
+                            <i className="fas fa-check-circle"></i>
+                          ) : (
+                            <i className="far fa-circle text-muted"></i>
+                          )}
+                        </div>
+                      </div>
+                      <div className="addon-card-name">{a.name}</div>
+                      <div className="addon-card-desc">{a.desc}</div>
                     </div>
-                    <i className={`fas ${a.icon || 'fa-plus-circle'} text-cyan`}></i>
-                    <span className="fw-bold small" style={{ color: 'var(--navy-dark)' }}>{a.name}</span>
+                    <div className="addon-card-price">+{Number(a.price).toLocaleString()}đ</div>
                   </div>
-                  <span className="fw-bold text-cyan small">+{Number(a.price).toLocaleString()}đ</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
+          {/* Step 4: Chọn ngày & giờ */}
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
             <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
               <span className="step-num-badge">4</span> Chọn ngày & khung giờ hẹn
             </h5>
             <div className="row g-3">
-              <div className="col-md-6 text-start">
+              <div className="col-md-6">
                 <label className="form-label small fw-bold text-secondary">NGÀY HẸN RỬA</label>
                 <input
                   type="date"
                   id="booking-date"
-                  className="form-control bg-light border-0 py-2.5 rounded-3 fw-semibold"
+                  className="form-control bg-light border-0 py-2.5 rounded-3 fw-semibold text-dark"
                   min={minDateStr}
                   max={maxDateStr}
                   value={bookingDate}
                   onChange={(e) => setBookingDate(e.target.value)}
                 />
-                <small className="text-muted d-block mt-2" id="booking-window-text">
-                  Hạng {user?.tier.replace(' Member', '') || 'Member'}: đặt trước tối đa {bookingDaysWindow} ngày
+                <small className="text-muted d-block mt-2">
+                  AutoWash Loyalty (hạng {user?.tier.replace(' Member', '') || 'Silver'}): đặt trước tối đa {bookingDaysWindow} ngày
                 </small>
               </div>
-              <div className="col-md-6 text-start">
+              <div className="col-md-6">
                 <label className="form-label small fw-bold text-secondary mb-2">KHUNG GIỜ</label>
                 <div className="row g-2" id="time-slots">
                   {TIME_SLOTS.map((t) => (
@@ -444,36 +446,29 @@ export const CustomerBooking = () => {
           </div>
         </div>
 
-        {/* Right Column: Checkout summary */}
+        {/* Right Column: Order Summary (Realtime updates) */}
         <div className="col-lg-4">
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 sticky-lg-top" style={{ top: '90px' }}>
-            <h5 className="fw-bold mb-4 border-bottom pb-2.5" style={{ color: 'var(--navy-dark)', fontSize: '0.95rem' }}>
+            <h5 className="fw-bold mb-3 border-bottom pb-2.5" style={{ color: 'var(--navy-dark)', fontSize: '0.95rem' }}>
               <i className="fas fa-receipt text-cyan me-2"></i> TÓM TẮT ĐƠN HÀNG
             </h5>
 
             <div className="d-flex flex-column gap-3 mb-4">
               <div className="d-flex justify-content-between align-items-center">
-                <span className="text-muted small">Biển số xe:</span>
-                <span className="fw-bold" id="summary-vehicle" style={{ color: 'var(--navy-dark)' }}>
-                  {selectedVehicle || '—'}
+                <span className="text-muted small">Xe:</span>
+                <span className="fw-bold text-dark font-monospace" id="summary-vehicle" style={{ fontSize: '0.88rem' }}>
+                  {selectedVehicle || 'Chưa chọn'}
                 </span>
               </div>
-              <div className="d-flex justify-content-between align-items-center">
-                <span className="text-muted small">Khách hàng VIP:</span>
-                <span className="badge bg-cyan text-dark fw-bold" id="summary-vip-status" style={{ fontSize: '0.65rem' }}>
-                  {user?.tier || 'Gold Member'}
-                </span>
-              </div>
-              <hr className="my-1 opacity-5" />
-
+              
               <div className="d-flex justify-content-between align-items-start">
                 <div className="text-start">
                   <span className="text-muted small d-block">Gói dịch vụ chính:</span>
-                  <strong className="small" id="summary-main-service" style={{ color: 'var(--navy-dark)' }}>
+                  <strong className="small text-dark" id="summary-main-service">
                     {selectedMain ? selectedMain.name : 'Chưa chọn'}
                   </strong>
                 </div>
-                <span className="fw-bold text-cyan" id="summary-main-price">
+                <span className="fw-bold text-cyan" id="summary-main-price" style={{ fontSize: '0.85rem' }}>
                   {selectedMain ? `${Number(selectedMain.price).toLocaleString()}đ` : '0đ'}
                 </span>
               </div>
@@ -484,7 +479,7 @@ export const CustomerBooking = () => {
                   <div id="summary-addons-list" className="d-flex flex-column gap-1 border-start ps-3">
                     {Object.values(selectedAddons).map((a, idx) => (
                       <div key={idx} className="d-flex justify-content-between" style={{ fontSize: '0.78rem', color: '#475569' }}>
-                        <span>{a.name}</span>
+                        <span>✓ {a.name}</span>
                         <span>+{Number(a.price).toLocaleString()}đ</span>
                       </div>
                     ))}
@@ -492,22 +487,27 @@ export const CustomerBooking = () => {
                 </div>
               )}
 
-              <hr className="my-1 opacity-5" />
+              <hr className="my-0 opacity-5" />
+              
               <div className="d-flex justify-content-between align-items-center">
-                <span className="text-muted small">Thời gian hẹn rửa:</span>
-                <span className="fw-bold" id="summary-time" style={{ color: 'var(--navy-dark)', fontSize: '0.8rem' }}>
-                  {bookingDate && bookingTime
-                    ? `${bookingDate.split('-').reverse().join('/')} — ${bookingTime}`
-                    : '—'}
+                <span className="text-muted small">Ngày đặt:</span>
+                <span className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>
+                  {bookingDate ? bookingDate.split('-').reverse().join('/') : '—'}
+                </span>
+              </div>
+              <div className="d-flex justify-content-between align-items-center">
+                <span className="text-muted small">Khung giờ:</span>
+                <span className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>
+                  {bookingTime || '—'}
                 </span>
               </div>
             </div>
 
-            {/* Loyalty and voucher discount rows */}
-            <div className="d-flex flex-column gap-2 mb-4 bg-light p-3 rounded-3" style={{ background: 'rgba(15,23,42,0.02)' }}>
+            {/* Discounts and Loyalty calculations */}
+            <div className="d-flex flex-column gap-2 mb-4 bg-light p-3 rounded-3" style={{ background: '#f8fafc', border: '1px solid #f1f5f9' }}>
               {tierDiscountAmount > 0 && baseTotal > 0 && (
                 <div className="d-flex justify-content-between align-items-center" id="tier-perk-row">
-                  <small className="text-muted fw-bold" style={{ fontSize: '0.68rem' }}>ĐẶC QUYỀN VIP TIER ({tierDiscountPercent}%):</small>
+                  <small className="text-muted fw-bold" style={{ fontSize: '0.68rem' }}>ĐẶC QUYỀN {tier.replace(' MEMBER', '')} ({tierDiscountPercent}%):</small>
                   <span className="fw-bold text-success" id="tier-perk-value" style={{ fontSize: '0.78rem' }}>
                     -{Number(tierDiscountAmount).toLocaleString()}đ
                   </span>
@@ -516,18 +516,16 @@ export const CustomerBooking = () => {
 
               {appliedVoucher && baseTotal > 0 && (
                 <div className="d-flex justify-content-between align-items-center" id="promo-applied-msg">
-                  <small className="text-muted fw-bold" style={{ fontSize: '0.68rem' }}>
-                    MÃ ĐÃ ÁP DỤNG (<span id="promo-applied-label">{appliedVoucher.title}</span>):
-                  </small>
+                  <small className="text-muted fw-bold" style={{ fontSize: '0.68rem' }}>VOUCHER ({appliedVoucher.code}):</small>
                   <span className="fw-bold text-success" id="promo-discount-display" style={{ fontSize: '0.78rem' }}>
-                    {appliedVoucher.rewardType === 'DiscountPercent' ? `-${appliedVoucher.rewardValue}%` : `-${Number(promoDiscountAmount).toLocaleString()}đ`}
+                    -{Number(promoDiscountAmount).toLocaleString()}đ
                   </span>
                 </div>
               )}
 
               <div className="d-flex justify-content-between align-items-center">
-                <span className="text-muted small">Tổng hóa đơn gốc:</span>
-                <span className="fw-semibold" style={{ fontSize: '0.8rem' }}>{Number(baseTotal).toLocaleString()}đ</span>
+                <span className="text-muted small">Tạm tính:</span>
+                <span className="fw-semibold text-dark" style={{ fontSize: '0.8rem' }}>{Number(baseTotal).toLocaleString()}đ</span>
               </div>
             </div>
 
@@ -541,7 +539,7 @@ export const CustomerBooking = () => {
                   style={{ fontSize: '0.75rem' }}
                   onClick={() => setVoucherModalOpen(true)}
                 >
-                  <i className="fas fa-ticket-alt me-1"></i>Ví Voucher của tôi
+                  <i className="fas fa-ticket-alt me-1"></i>Ví Voucher
                 </button>
               </div>
               <div className="input-group">
@@ -549,7 +547,7 @@ export const CustomerBooking = () => {
                   type="text"
                   id="promo-code-input"
                   className="form-control bg-light border-0 py-2 font-monospace"
-                  placeholder="VÍ DỤ: SILVER10"
+                  placeholder="VÍ DỤ: WASH10K"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
                 />
@@ -562,26 +560,17 @@ export const CustomerBooking = () => {
             {/* Final Cost & Points */}
             <div className="d-flex justify-content-between align-items-center border-top pt-4 mb-4">
               <div>
-                <span className="text-muted small d-block">TỔNG CHI PHÍ</span>
+                <span className="text-muted small d-block">TỔNG CỘNG</span>
                 <span className="small text-secondary fw-bold" style={{ fontSize: '0.7rem' }}>
-                  Tích điểm VIP: <strong className="text-warning">+{earnedPoints} PTS</strong>
+                  Điểm nhận: <strong className="text-warning">+{earnedPoints} PTS</strong>
                 </span>
               </div>
-              <h3 className="fw-bold text-dark mb-0" id="summary-total" style={{ fontFamily: "'Be Vietnam Pro', sans-serif" }}>
-                {totalDiscount > 0 && baseTotal > 0 ? (
-                  <>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', textDecoration: 'line-through', display: 'block', lineHeight: 1.2 }}>
-                      {Number(baseTotal).toLocaleString()}đ
-                    </span>
-                    {Number(finalTotal).toLocaleString()}đ
-                  </>
-                ) : (
-                  `${Number(baseTotal).toLocaleString()}đ`
-                )}
+              <h3 className="fw-bold text-dark mb-0">
+                {Number(finalTotal).toLocaleString()}đ
               </h3>
             </div>
 
-            <button onClick={handleConfirmBooking} className="app-btn-primary w-100 py-3 shadow-lg fs-6">
+            <button onClick={handleConfirmBooking} className="app-btn-primary w-100 py-3 shadow-lg fs-6 border-0 text-dark fw-bold" style={{ borderRadius: '14px' }}>
               XÁC NHẬN ĐẶT LỊCH <i className="fas fa-chevron-right ms-1"></i>
             </button>
           </div>
@@ -603,7 +592,7 @@ export const CustomerBooking = () => {
                 <div className="text-center py-4 text-muted small">
                   <i className="fas fa-info-circle mb-2 fa-lg d-block" style={{ color: 'var(--cyan-electric)' }}></i>
                   Bạn không có voucher khả dụng nào trong ví.<br />
-                  Hãy vào trang <strong>Hạng thành viên VIP</strong> để đổi quà!
+                  Hãy tích điểm để đổi quà nhé!
                 </div>
               ) : (
                 myVouchers.map((v, i) => {

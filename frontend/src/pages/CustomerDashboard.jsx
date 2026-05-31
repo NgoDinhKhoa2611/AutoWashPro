@@ -4,20 +4,6 @@ import { useAuth } from '../hooks/useAuth';
 import '../styles/shared.css';
 import '../styles/customer/dashboard.css';
 
-const STEP_BADGES = [
-  'Đã nhận diện LPR',
-  'Đang phun rửa vỏ',
-  'Đang sấy khí áp lực',
-  'Đã rửa sạch & Check-out'
-];
-
-const STEP_NAMES = [
-  'Nhận diện LPR tự động',
-  'Rửa bọt tuyết vỏ xe',
-  'Sấy khô khí nén cao áp',
-  'Hoàn tất & Checkout xe'
-];
-
 export const CustomerDashboard = () => {
   const { user, updateUser } = useAuth();
   const [greeting, setGreeting] = useState('Xin chào');
@@ -26,9 +12,11 @@ export const CustomerDashboard = () => {
   const [washStep, setWashStep] = useState(0);
   const [vehicles, setVehicles] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [claimedVouchers, setClaimedVouchers] = useState([]);
+  const [showAllNotifs, setShowAllNotifs] = useState(false);
 
   useEffect(() => {
-    // 1. Concierge Greeting
+    // 1. Greeting header based on hour
     const hour = new Date().getHours();
     let prefix = 'Xin chào';
     if (hour >= 5 && hour < 12) prefix = 'Chào buổi sáng ☀️';
@@ -36,23 +24,24 @@ export const CustomerDashboard = () => {
     else prefix = 'Chào buổi tối 🌙';
     setGreeting(prefix);
 
-    // 2. Weather status
+    // 2. Weather status chip
     const statuses = [
-      'Thời tiết nắng ráo lý tưởng để rửa xe hôm nay! ☀️✨',
-      'Trời dịu mát thích hợp dưỡng nhựa nhám và wax bóng! 🌤️🛡️',
-      'Độ ẩm cao - Rửa sấy khí áp lực giữ bóng sơn hiệu quả! 💧✨',
-      'Hàng đợi VIP đang mở - Đặt lịch rửa nhanh chỉ mất 30s! ⚡🚗'
+      'Thời tiết hôm nay rất ráo, cực kỳ thích hợp để đi chăm sóc và bảo vệ xế yêu! ☀️🚗',
+      'Đo độ ẩm tương đối dễ chịu, ghé trạm rửa xe nhận diện LPR siêu tốc chỉ 5 phút! 🌤️✨',
+      'Hôm nay trời có thể nhiều bụi mịn, đặt trước lịch hẹn rửa xe để tránh chờ đợi! 🌪️💧',
+      'Làn rửa xe thông minh đang thông thoáng, camera quét biển số mở 24/7 đón bạn! ⚡🛡'
     ];
     const index = new Date().getDate() % statuses.length;
     setWeatherStatus(statuses[index]);
 
-    // 3. Load data
+    // 3. Load dashboard data
     const loadDashboardData = () => {
-      // Booking
+      // Current active booking (dynamic loading)
       const activeStr = localStorage.getItem('active_booking');
       if (activeStr) {
         try {
-          setActiveBooking(JSON.parse(activeStr));
+          const bookingObj = JSON.parse(activeStr);
+          setActiveBooking(bookingObj);
           setWashStep(Number(localStorage.getItem('wash_step') || 0));
         } catch (e) {
           setActiveBooking(null);
@@ -68,18 +57,22 @@ export const CustomerDashboard = () => {
       } catch (e) {}
       if (savedVehicles.length === 0) {
         savedVehicles = [
-          { plate: '51G - 123.45', type: 'Honda Vision' },
-          { plate: '51A - 999.99', type: 'SH Mode' }
+          { plate: '51G - 123.45', type: 'Honda Vision', lastWash: '28/05/2026', totalWashes: 8 }
         ];
         localStorage.setItem('user_vehicles', JSON.stringify(savedVehicles));
       }
       setVehicles(savedVehicles);
 
-      // Points & Tier Sync with LocalStorage
-      const pts = Number(localStorage.getItem('user_points') || 550);
-      const tier = localStorage.getItem('user_tier') || 'Gold Member';
-      const nextTier = localStorage.getItem('user_next_tier') || 'Platinum';
-      const remaining = localStorage.getItem('user_remaining_spend') || '250k';
+      // Claimed vouchers
+      let savedVouchers = [];
+      try {
+        savedVouchers = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
+      } catch (e) {}
+      setClaimedVouchers(savedVouchers);
+
+      // Points & Tier Sync (Defaults to 217 and Silver Member for exact match of request)
+      const pts = Number(localStorage.getItem('user_points') || 217);
+      const tier = localStorage.getItem('user_tier') || 'Silver Member';
 
       if (user && (user.points !== pts || user.tier !== tier)) {
         updateUser({ points: pts, tier });
@@ -114,9 +107,9 @@ export const CustomerDashboard = () => {
     if (t.includes('PLATINUM')) {
       return {
         icon: 'fa-crown',
-        bg: 'rgba(14, 165, 233, 0.12)',
-        color: '#0ea5e9',
-        perk: 'Đặc quyền nhân hệ số x1.5 điểm',
+        bg: 'rgba(2, 132, 199, 0.12)',
+        color: '#0284c7',
+        perk: 'Đặc quyền tích điểm x1.5 dịch vụ',
         cardClass: 'tier-platinum'
       };
     } else if (t.includes('GOLD')) {
@@ -124,7 +117,7 @@ export const CustomerDashboard = () => {
         icon: 'fa-award',
         bg: 'rgba(245, 158, 11, 0.12)',
         color: '#f59e0b',
-        perk: 'Đặc quyền nhân hệ số x1.2 điểm',
+        perk: 'Đặc quyền tích điểm x1.2 dịch vụ',
         cardClass: 'tier-gold'
       };
     } else if (t.includes('SILVER')) {
@@ -132,7 +125,7 @@ export const CustomerDashboard = () => {
         icon: 'fa-medal',
         bg: 'rgba(148, 163, 184, 0.12)',
         color: '#64748b',
-        perk: 'Đặc quyền nhân hệ số x1.1 điểm',
+        perk: 'Đặc quyền tích điểm x1.1 dịch vụ',
         cardClass: 'tier-silver'
       };
     } else {
@@ -140,343 +133,600 @@ export const CustomerDashboard = () => {
         icon: 'fa-user',
         bg: 'rgba(15, 23, 42, 0.05)',
         color: '#475569',
-        perk: 'Hạng tiêu chuẩn tích lũy điểm',
+        perk: 'Tích lũy điểm thưởng theo lượt',
         cardClass: 'tier-standard'
       };
     }
   };
 
-  const points = user?.points || 550;
-  const tier = user?.tier || 'Gold Member';
-  const nextTier = localStorage.getItem('user_next_tier') || 'Platinum';
-  const remaining = localStorage.getItem('user_remaining_spend') || '250k';
-  const cardCode = `AW-2026-${(tier || '').replace(' Member', '').toUpperCase()}`;
-  const tierInfo = getTierDetails(tier);
+  // Progression calculation based on Silver (100-499), Gold (500-999), Platinum (1000+)
+  const calculateProgress = () => {
+    const currentPts = user?.points || 217;
+    const tierName = user?.tier || 'Silver Member';
+    
+    if (tierName.toUpperCase().includes('PLATINUM')) {
+      return {
+        pct: 100,
+        label: 'HẠNG CAO NHẤT',
+        next: 'Platinum VIP',
+        rem: 'Bạn đã đạt hạng Bạch Kim cao nhất!'
+      };
+    } else if (tierName.toUpperCase().includes('GOLD')) {
+      const start = 500;
+      const target = 1000;
+      const pct = Math.min(Math.max(((currentPts - start) / (target - start)) * 100, 0), 99); // max 99% if not reached
+      const rem = Math.max(target - currentPts, 0);
+      return {
+        pct: Math.round(pct),
+        label: `${currentPts}/${target} điểm`,
+        next: 'Platinum',
+        rem: `Còn ${rem} điểm để lên Platinum`
+      };
+    } else if (tierName.toUpperCase().includes('SILVER')) {
+      const start = 100;
+      const target = 500;
+      const pct = Math.min(Math.max(((currentPts - start) / (target - start)) * 100, 0), 99); // max 99% if not reached
+      const rem = Math.max(target - currentPts, 0);
+      return {
+        pct: Math.round(pct),
+        label: `${currentPts}/${target} điểm`,
+        next: 'Gold',
+        rem: `Còn ${rem} điểm để lên Gold`
+      };
+    } else {
+      const start = 0;
+      const target = 100;
+      const pct = Math.min(Math.max(((currentPts - start) / (target - start)) * 100, 0), 99); // max 99% if not reached
+      const rem = Math.max(target - currentPts, 0);
+      return {
+        pct: Math.round(pct),
+        label: `${currentPts}/${target} điểm`,
+        next: 'Silver',
+        rem: `Còn ${rem} điểm để lên Silver`
+      };
+    }
+  };
 
-  const progressPct = Math.min((points / 1000) * 100, 100);
-  const activeProgress = activeBooking ? Math.round((washStep / 3) * 100) : 0;
-  const activeBadge = activeBooking ? (STEP_BADGES[Math.min(washStep, 3)] || STEP_BADGES[0]) : '';
+  // Generate steps list dynamically based on booking addons
+  const getDynamicSteps = () => {
+    if (!activeBooking) return [];
+    return [
+      'Nhận diện LPR',
+      'Rửa bọt tuyết',
+      'Sấy khô',
+      ...(activeBooking.addons || []),
+      'Hoàn tất'
+    ];
+  };
+
+  const steps = getDynamicSteps();
+  const totalSteps = steps.length;
+  const progressPercent = totalSteps > 1 ? Math.min(100, Math.round((washStep / (totalSteps - 1)) * 100)) : 0;
+  
+  // Calculate text progress bar like "███████░░░░ 45%"
+  const renderTextProgressBar = (pct) => {
+    const totalChars = 10;
+    const filledChars = Math.round((pct / 100) * totalChars);
+    const emptyChars = totalChars - filledChars;
+    return '█'.repeat(filledChars) + '░'.repeat(emptyChars) + ` ${pct}%`;
+  };
+
+  // Calculate ETA dynamically (e.g. 5 mins per remaining step)
+  const remainingSteps = activeBooking ? Math.max(0, totalSteps - 1 - washStep) : 0;
+  const minutesLeft = remainingSteps * 5;
+  const etaText = washStep === totalSteps - 1 ? 'Đã xong' : `${minutesLeft} phút`;
+
+  const getStepIcon = (name) => {
+    const n = name.toUpperCase();
+    if (n.includes('LPR')) return 'fa-fingerprint';
+    if (n.includes('BỌT TUYẾT') || n.includes('RỬA')) return 'fa-spray-can';
+    if (n.includes('SẤY')) return 'fa-wind';
+    if (n.includes('NỘI THẤT')) return 'fa-couch';
+    if (n.includes('NANO') || n.includes('WAX')) return 'fa-shield-alt';
+    if (n.includes('NHỰA')) return 'fa-magic';
+    if (n.includes('SÊN')) return 'fa-link';
+    if (n.includes('HOÀN TẤT')) return 'fa-check-double';
+    return 'fa-plus-circle';
+  };
+
+  const points = user?.points || 217;
+  const tier = user?.tier || 'Silver Member';
+  const displayTier = (tier || '').replace(' Member', ' Loyalty');
+  const tierInfo = getTierDetails(tier);
+  const progression = calculateProgress();
+
+  const activeVouchers = claimedVouchers.filter(v => v.status === 1);
+  const displayedNotifications = showAllNotifs ? notifications : notifications.slice(0, 3);
 
   const typeIcons = {
     points: 'fa-coins text-warning',
-    status: 'fa-car-side text-cyan',
-    info: 'fa-info-circle text-info'
+    status: 'fa-car-side text-info',
+    info: 'fa-info-circle text-primary'
   };
 
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid py-3 px-2 px-lg-3">
       {/* Concierge Greeting */}
-      <div className="row mb-4">
+      <div className="row mb-3">
         <div className="col-12 text-start">
-          <h3 className="fw-bold mb-1" id="concierge-greeting" style={{ color: 'var(--navy-dark)' }}>
+          <h3 className="fw-bold mb-1" style={{ color: 'var(--navy-dark)', letterSpacing: '-0.5px' }}>
             {greeting}, {user?.name || 'Khách hàng'}!
           </h3>
-          <p className="text-secondary small mb-0" id="concierge-weather" style={{ fontSize: '0.85rem' }}>
+          <p className="text-secondary small mb-0" style={{ fontSize: '0.82rem' }}>
             {weatherStatus}
           </p>
         </div>
       </div>
 
-      <div className="row g-4">
-        {/* Left Column: Member Card & Stats */}
-        <div className="col-lg-7">
-          {/* Metallic 3D Member Card */}
-          <div className={`member-card mb-4 member-card-3d ${tierInfo.cardClass}`} id="member-card">
-            <span className="tier-label">
-              <i className="fas fa-crown me-2"></i>
-              {tier}
-            </span>
-            <h2 className="fw-bold text-white mb-1" style={{ fontSize: '2.5rem' }}>
-              <span id="dashboard-points">{points.toLocaleString()}</span>{' '}
-              <small style={{ fontSize: '1rem', fontWeight: 600 }}>PTS</small>
-            </h2>
-            <p className="text-white mb-4" style={{ opacity: 0.7, fontSize: '0.85rem' }}>
-              S-Member Loyalty Card
-            </p>
-            <div className="d-flex justify-content-between align-items-center mt-4">
-              <div>
-                <small style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
-                  HẠNG TIẾP THEO
-                </small>
-                <div className="fw-bold text-cyan mt-1" id="dashboard-next-tier" style={{ fontSize: '0.88rem' }}>
-                  {nextTier} — còn {remaining}
-                </div>
-              </div>
-              <div className="text-end">
-                <small style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
-                  MÃ THÀNH VIÊN
-                </small>
-                <div className="fw-bold text-white mt-1 font-monospace" id="dashboard-card-code" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>
-                  {cardCode}
-                </div>
-              </div>
+      {/* ── TOP SUMMARY CARDS (4 horizontally aligned widgets) ── */}
+      <div className="row g-3 mb-4">
+        {/* Card 1: Xe của tôi */}
+        <div className="col-6 col-md-3">
+          <Link to="/customer/profile" className="app-card summary-widget-card">
+            <div className="summary-icon-wrapper" style={{ background: 'rgba(2, 132, 199, 0.08)', color: '#0284c7' }}>
+              <i className="fas fa-motorcycle"></i>
             </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="row g-3">
-            {/* VIP Tier Details */}
-            <div className="col-md-6">
-              <div className="app-card border-0 shadow-sm p-4 bg-white h-100 rounded-4 d-flex align-items-center gap-3">
-                <div
-                  className="d-flex align-items-center justify-content-center rounded-circle"
-                  id="stat-tier-medal"
-                  style={{
-                    width: '46px',
-                    height: '46px',
-                    fontSize: '1.2rem',
-                    background: tierInfo.bg,
-                    color: tierInfo.color,
-                    flexShrink: 0
-                  }}
-                >
-                  <i className={`fas ${tierInfo.icon}`}></i>
-                </div>
-                <div>
-                  <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>
-                    PHÂN HẠNG CỦA BẠN
-                  </small>
-                  <span className="fw-bold text-dark fs-6" id="stat-tier">
-                    {tier.replace(' Member', '')}
-                  </span>
-                  <small className="text-muted d-block mt-0.5" id="stat-tier-desc" style={{ fontSize: '0.68rem' }}>
-                    {tierInfo.perk}
-                  </small>
-                </div>
-              </div>
+            <div className="text-start">
+              <span className="summary-title">Xe của tôi</span>
+              <div className="summary-value">{vehicles.length} Phương tiện</div>
             </div>
-
-            {/* Garage Plates */}
-            <div className="col-md-6">
-              <div className="app-card border-0 shadow-sm p-4 bg-white h-100 rounded-4 d-flex align-items-center gap-3">
-                <div
-                  className="d-flex align-items-center justify-content-center rounded-circle"
-                  style={{ width: '46px', height: '46px', fontSize: '1.2rem', background: 'rgba(6, 182, 212, 0.08)', color: 'var(--cyan-electric)', flexShrink: 0 }}
-                >
-                  <i className="fas fa-motorcycle"></i>
-                </div>
-                <div className="flex-grow-1">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <small className="text-muted fw-bold" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>
-                      GARAGE PHƯƠNG TIỆN
-                    </small>
-                    <span className="badge bg-light text-dark border px-2 py-0.5 fw-bold" id="stat-vehicles-count" style={{ fontSize: '0.62rem' }}>
-                      {vehicles.length} xe
-                    </span>
-                  </div>
-                  <div className="d-flex flex-wrap gap-1 mt-1.5" id="stat-garage-plates">
-                    {vehicles.map((v, idx) => (
-                      <span
-                        key={idx}
-                        className="badge bg-light text-dark border font-monospace py-1.5 px-2.5"
-                        style={{ fontSize: '0.65rem', borderColor: 'rgba(15,23,42,0.08)' }}
-                      >
-                        <i className="fas fa-motorcycle text-muted me-1"></i>
-                        {v.plate}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          </Link>
         </div>
 
-        {/* Right Column: Live Booking Progress / Empty State & Feed */}
-        <div className="col-lg-5">
-          {/* Active Booking status */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white mb-4 rounded-4" style={{ minHeight: '320px' }}>
-            <h5 className="fw-bold mb-3 border-bottom pb-2.5" style={{ color: 'var(--navy-dark)', fontSize: '0.95rem' }}>
-              <i className="fas fa-satellite-dish text-cyan me-2"></i>TIẾN ĐỘ THEO DÕI LIVE
-            </h5>
+        {/* Card 2: Voucher khả dụng */}
+        <div className="col-6 col-md-3">
+          <Link to="/customer/loyalty?tab=vouchers" className="app-card summary-widget-card">
+            <div className="summary-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }}>
+              <i className="fas fa-ticket-alt"></i>
+            </div>
+            <div className="text-start">
+              <span className="summary-title">Voucher khả dụng</span>
+              <div className="summary-value">{activeVouchers.length || 1} Voucher</div>
+            </div>
+          </Link>
+        </div>
 
-            {!activeBooking ? (
-              <div id="empty-state-block" className="text-center py-5">
-                <div
-                  className="rounded-circle d-flex align-items-center justify-content-center bg-light mx-auto mb-3"
-                  style={{ width: '64px', height: '64px', border: '1px solid rgba(15,23,42,0.05)' }}
-                >
-                  <i className="fas fa-car-side text-muted opacity-40 fa-lg"></i>
+        {/* Card 3: Lịch hẹn sắp tới */}
+        <div className="col-6 col-md-3">
+          <a
+            href="#upcoming-appointment-widget"
+            className="app-card summary-widget-card"
+            onClick={(e) => {
+              e.preventDefault();
+              const el = document.getElementById('upcoming-appointment-widget');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+          >
+            <div className="summary-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981' }}>
+              <i className="fas fa-calendar-check"></i>
+            </div>
+            <div className="text-start">
+              <span className="summary-title">Lịch hẹn sắp tới</span>
+              <div className="summary-value">{activeBooking ? '1 Lịch hẹn' : '0 Lịch hẹn'}</div>
+            </div>
+          </a>
+        </div>
+
+        {/* Card 4: Tổng lượt rửa */}
+        <div className="col-6 col-md-3">
+          <Link to="/customer/history" className="app-card summary-widget-card">
+            <div className="summary-icon-wrapper" style={{ background: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4' }}>
+              <i className="fas fa-hands-wash"></i>
+            </div>
+            <div className="text-start">
+              <span className="summary-title">Tổng lượt rửa</span>
+              <div className="summary-value">12 Lượt rửa</div>
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      <div className="row g-4">
+        {/* ── LEFT COLUMN: MAIN OPERATIONS (col-lg-8) ── */}
+        <div className="col-lg-8">
+          
+          {/* 1. Garage xe của tôi */}
+          <div className="app-card border-0 p-4 mb-4 text-start">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
+                <i className="fas fa-motorcycle text-cyan me-2"></i>GARAGE XE CỦA TÔI
+              </h5>
+              <Link to="/customer/profile" className="compact-action-link">
+                Quản lý garage ➔
+              </Link>
+            </div>
+
+            {vehicles.length === 1 ? (
+              // If only 1 vehicle
+              <div className="p-3 rounded-4 border bg-light bg-opacity-50">
+                <div className="row align-items-center">
+                  <div className="col-sm-6 mb-2 mb-sm-0">
+                    <div className="d-flex align-items-center gap-3">
+                      <div className="rounded-circle bg-white border d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px', color: '#64748b' }}>
+                        <i className="fas fa-motorcycle fa-lg"></i>
+                      </div>
+                      <div>
+                        <div className="fw-bold font-monospace text-dark" style={{ fontSize: '1rem' }}>{vehicles[0].plate}</div>
+                        <small className="text-secondary">{vehicles[0].type}</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-sm-3 col-6 text-start">
+                    <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>LẦN RỬA GẦN NHẤT</small>
+                    <span className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>{vehicles[0].lastWash || '3 ngày trước'}</span>
+                  </div>
+                  <div className="col-sm-3 col-6 text-start">
+                    <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>TỔNG SỐ LƯỢT RỬA</small>
+                    <span className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>{vehicles[0].totalWashes || 12} lượt rửa</span>
+                  </div>
                 </div>
-                <h6 className="fw-bold text-dark small mb-1">Không có xe đang rửa</h6>
-                <p className="text-muted small mb-4 px-4" style={{ fontSize: '0.72rem', lineHeight: '1.4' }}>
-                  Bạn không có lịch rửa xe nào đang chạy lúc này. Hãy đặt lịch ngay để trải nghiệm quy trình AI LPR nhé!
-                </p>
-                <Link
-                  to="/customer/booking"
-                  className="app-btn-primary w-auto px-4 py-2 text-dark fw-bold"
-                  style={{ fontSize: '0.8rem', borderRadius: '10px', textDecoration: 'none', display: 'inline-block' }}
-                >
-                  ĐẶT LỊCH RỬA XE <i className="fas fa-calendar-alt ms-1"></i>
-                </Link>
               </div>
             ) : (
-              <div id="active-booking-block" className="animate-up">
-                <div className="d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
-                  <div className="d-flex align-items-center">
-                    <div
-                      className="rounded-4 p-3 me-3 d-flex align-items-center justify-content-center"
-                      style={{
-                        background: 'rgba(15, 23, 42, 0.04)',
-                        width: '52px',
-                        height: '52px',
-                        border: '1px solid rgba(15, 23, 42, 0.06)'
-                      }}
-                    >
-                      <i className="fas fa-car-side fa-lg text-cyan"></i>
-                    </div>
-                    <div>
-                      <div className="fw-bold fs-5" style={{ color: 'var(--navy-dark)' }}>
-                        {activeBooking.plate}
+              // If multiple vehicles
+              <div className="row g-2">
+                {vehicles.map((v, idx) => (
+                  <div key={idx} className="col-sm-6">
+                    <div className="d-flex justify-content-between align-items-center p-2.5 rounded-3 border bg-white" style={{ borderColor: '#e2e8f0' }}>
+                      <div className="d-flex align-items-center gap-2">
+                        <i className="fas fa-motorcycle text-secondary" style={{ fontSize: '0.85rem' }}></i>
+                        <span className="fw-bold text-dark font-monospace" style={{ fontSize: '0.8rem' }}>{v.plate}</span>
                       </div>
-                      <small className="text-muted">{activeBooking.service}</small>
+                      <span className="badge bg-light text-secondary border px-2 py-1" style={{ fontSize: '0.65rem' }}>{v.type}</span>
                     </div>
                   </div>
-                  <span className="badge bg-info bg-opacity-10 text-cyan px-3 py-2 rounded-pill small fw-bold d-flex align-items-center gap-2">
-                    <span className="pulse-dot-washing"></span>
-                    {activeBadge}
-                  </span>
-                </div>
-
-                {/* Circular Wash Progress Ring */}
-                <div className="progress-ring-container mt-4 mb-4">
-                  <div
-                    className="progress-ring-outer"
-                    style={{
-                      background: `conic-gradient(var(--cyan-electric) ${activeProgress}%, rgba(15, 23, 42, 0.05) 0deg)`
-                    }}
-                  >
-                    <div className="progress-ring-inner">
-                      <div className="progress-ring-pct">{activeProgress}%</div>
-                      <div className="progress-ring-label">{activeBadge}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Wash Checklist */}
-                <div className="d-flex flex-column gap-2 mb-4">
-                  {[0, 1, 2, 3].map(i => {
-                    const isCompleted = i < washStep;
-                    const isActive = i === washStep;
-                    return (
-                      <div
-                        key={i}
-                        className="d-flex align-items-center justify-content-between p-2.5 rounded-3"
-                        style={{
-                          background: 'rgba(15, 23, 42, 0.02)',
-                          border: `1px solid ${isActive ? 'rgba(14, 165, 233, 0.2)' : 'rgba(15, 23, 42, 0.03)'}`
-                        }}
-                      >
-                        <div className="d-flex align-items-center gap-2">
-                          <div
-                            className="rounded-circle d-flex align-items-center justify-content-center"
-                            style={{
-                              width: '20px',
-                              height: '20px',
-                              fontSize: '0.65rem',
-                              background: isCompleted ? 'var(--cyan-electric)' : isActive ? 'rgba(14, 165, 233, 0.15)' : 'rgba(15, 23, 42, 0.06)',
-                              color: isCompleted ? '#fff' : isActive ? 'var(--cyan-electric)' : '#94a3b8'
-                            }}
-                          >
-                            {isCompleted ? <i className="fas fa-check" style={{ fontSize: '0.55rem' }}></i> : (i + 1)}
-                          </div>
-                          <span className={`small fw-semibold ${isActive ? 'text-dark' : isCompleted ? 'text-secondary' : 'text-muted'}`}>
-                            {STEP_NAMES[i]}
-                          </span>
-                        </div>
-                        <span
-                          className={`badge ${
-                            isCompleted ? 'bg-success bg-opacity-10 text-success' :
-                            isActive ? 'bg-info bg-opacity-10 text-cyan animate-pulse' : 'bg-secondary bg-opacity-10 text-muted'
-                          } px-2 py-1`}
-                          style={{ fontSize: '0.6rem' }}
-                        >
-                          {isCompleted ? 'Xong' : isActive ? 'Đang chạy' : 'Đang chờ'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="row g-3 bg-light p-3 rounded-4" style={{ background: 'rgba(15, 23, 42, 0.02) !important', border: '1px solid rgba(15, 23, 42, 0.04)' }}>
-                  <div className="col-sm-4 col-6">
-                    <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>GIỜ HẸN GIAO XE</small>
-                    <span className="fw-bold" style={{ color: 'var(--navy-dark)', fontSize: '0.85rem' }}>
-                      {activeBooking.bookingTime}
-                    </span>
-                  </div>
-                  <div className="col-sm-4 col-6">
-                    <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>DỊCH VỤ RỬA</small>
-                    <span className="fw-bold text-truncate d-block" style={{ color: 'var(--navy-dark)', fontSize: '0.85rem', maxWidth: '140px' }}>
-                      {activeBooking.service}
-                    </span>
-                  </div>
-                  <div className="col-sm-4 col-12">
-                    <small className="text-muted d-block fw-bold mb-1" style={{ fontSize: '0.65rem' }}>HÀNG ĐỢI ƯU TIÊN</small>
-                    <span className="badge fw-bold px-2.5 py-1.5 rounded" style={{ fontSize: '0.68rem', background: 'var(--cyan-electric)', color: '#fff' }}>
-                      VIP {activeBooking.tier}
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Timeline Feed widget */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 timeline-feed-widget position-relative">
-            <h5 className="fw-bold mb-3 border-bottom pb-2.5" style={{ color: 'var(--navy-dark)', fontSize: '0.95rem' }}>
-              <i className="fas fa-concierge-bell text-cyan me-2"></i>NHẬT KÝ THÔNG BÁO GẦN ĐÂY
-            </h5>
-            <div className="position-relative" id="notif-widget-list" style={{ minHeight: '120px' }}>
-              <div className="feed-timeline-line"></div>
+          {/* 2. Ví Voucher Khả Dụng */}
+          <div className="app-card border-0 p-4 mb-4 text-start">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
+                <i className="fas fa-ticket-alt text-cyan me-2"></i>VÍ VOUCHER KHẢ DỤNG
+              </h5>
+              <Link to="/customer/loyalty" className="compact-action-link">
+                Đổi thêm voucher ➔
+              </Link>
+            </div>
+            {activeVouchers.length === 0 ? (
+              <div className="text-center py-4 text-muted small" style={{ fontSize: '0.8rem', background: '#f8fafc', borderRadius: '14px', border: '1px dashed #e2e8f0' }}>
+                Bạn chưa có voucher khả dụng nào.{' '}
+                <Link to="/customer/loyalty" className="text-cyan text-decoration-none fw-bold">Đổi điểm lấy quà ngay</Link>
+              </div>
+            ) : (
+              <div className="row g-3">
+                {activeVouchers.map((v, idx) => (
+                  <div key={idx} className="col-sm-4">
+                    <div className="p-2.5 rounded-4 border d-flex align-items-center justify-content-between bg-white" style={{ borderColor: 'rgba(2, 132, 199, 0.15)', background: 'rgba(2, 132, 199, 0.01)' }}>
+                      <div className="overflow-hidden">
+                        <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.78rem', maxWidth: '140px' }}>{v.title}</div>
+                        <small className="text-muted font-monospace d-block" style={{ fontSize: '0.65rem' }}>{v.code}</small>
+                      </div>
+                      <Link to="/customer/loyalty?tab=vouchers" className="badge bg-success bg-opacity-10 text-success text-decoration-none fw-bold" style={{ fontSize: '0.62rem', padding: '6px 10px', borderRadius: '6px' }}>
+                        DÙNG
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 3. Live Wash Tracking (Tesla Car Care Premium design - 100% dynamic timeline) */}
+          {activeBooking && (
+            <div className="app-card border-0 p-4 mb-4 text-start" style={{ borderLeft: '4px solid #0ea5e9' }}>
+              <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                <div className="d-flex align-items-center gap-2">
+                  <div className="pulse-dot-washing"></div>
+                  <h5 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
+                    TIẾN ĐỘ RỬA XE TRỰC TIẾP
+                  </h5>
+                </div>
+                <span className="badge bg-info bg-opacity-10 text-cyan px-2.5 py-1 rounded-pill small fw-bold">
+                  Làn LPR
+                </span>
+              </div>
+
+              {/* Tesla Dashboard Style Layout */}
+              <div className="p-3 rounded-4 mb-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <div className="row">
+                  <div className="col-sm-6 mb-2.5 mb-sm-0">
+                    <small className="text-secondary d-block" style={{ fontSize: '0.65rem' }}>XE ĐANG RỬA</small>
+                    <strong className="text-dark font-monospace" style={{ fontSize: '1rem' }}>{activeBooking.vehicle}</strong>
+                  </div>
+                  <div className="col-sm-6 text-sm-end mb-2.5 mb-sm-0">
+                    <small className="text-secondary d-block" style={{ fontSize: '0.65rem' }}>GÓI DỊCH VỤ</small>
+                    <strong className="text-dark">{activeBooking.mainService}</strong>
+                  </div>
+                  <div className="col-sm-6 mb-2.5 mb-sm-0 mt-sm-2">
+                    <small className="text-secondary d-block" style={{ fontSize: '0.65rem' }}>NHÂN VIÊN PHỤ TRÁCH</small>
+                    <strong className="text-dark"><i className="far fa-user me-1"></i>{activeBooking.staffName || 'Nguyễn Văn A'}</strong>
+                  </div>
+                  <div className="col-sm-6 text-sm-end mt-sm-2">
+                    <small className="text-secondary d-block" style={{ fontSize: '0.65rem' }}>THỜI GIAN CÒN LẠI (ETA)</small>
+                    <strong className="text-cyan">{etaText}</strong>
+                  </div>
+                </div>
+                <hr className="my-2" style={{ borderStyle: 'dashed' }} />
+                <div className="d-flex justify-content-between align-items-center">
+                  <small className="text-secondary fw-bold" style={{ fontSize: '0.68rem' }}>TIẾN ĐỘ THỰC TẾ</small>
+                  <strong className="font-monospace text-dark" style={{ fontSize: '0.82rem' }}>
+                    {renderTextProgressBar(progressPercent)}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Dynamic Service Timeline Flow */}
+              <div className="d-flex flex-column gap-2 mb-2">
+                {steps.map((name, i) => {
+                  const isCompleted = i < washStep;
+                  const isActive = i === washStep;
+                  
+                  let iconElement = null;
+                  let itemBg = 'rgba(15, 23, 42, 0.01)';
+                  let itemBorder = 'rgba(15, 23, 42, 0.03)';
+                  let labelClass = 'text-muted';
+                  let badgeText = 'Chờ';
+                  let badgeClass = 'bg-secondary bg-opacity-10 text-muted';
+
+                  if (isCompleted) {
+                    iconElement = <i className="fas fa-check-circle text-success me-2 fs-6"></i>;
+                    labelClass = 'text-secondary text-decoration-line-through';
+                    badgeText = 'Xong';
+                    badgeClass = 'bg-success bg-opacity-10 text-success';
+                  } else if (isActive) {
+                    iconElement = <i className="fas fa-spinner fa-spin text-primary me-2 fs-6"></i>;
+                    itemBg = 'rgba(14, 165, 233, 0.03)';
+                    itemBorder = 'rgba(14, 165, 233, 0.2)';
+                    labelClass = 'text-dark fw-bold';
+                    badgeText = 'Đang chạy';
+                    badgeClass = 'bg-info bg-opacity-10 text-cyan';
+                  } else {
+                    iconElement = <i className="far fa-circle text-muted me-2 fs-6"></i>;
+                  }
+
+                  return (
+                    <div
+                      key={i}
+                      className="d-flex align-items-center justify-content-between p-2.5 rounded-3"
+                      style={{
+                        background: itemBg,
+                        border: `1px solid ${itemBorder}`
+                      }}
+                    >
+                      <div className="d-flex align-items-center">
+                        {iconElement}
+                        <span className={`small ${labelClass}`} style={{ fontSize: '0.8rem' }}>
+                          {name}
+                        </span>
+                      </div>
+                      <span className={`badge ${badgeClass} px-2.5 py-1 fw-bold`} style={{ fontSize: '0.6rem', borderRadius: '5px' }}>
+                        {badgeText}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Nhật Ký Thông Báo */}
+          <div className="app-card border-0 p-4 mb-4 timeline-feed-widget text-start">
+            <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+              <h5 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
+                <i className="fas fa-concierge-bell text-cyan me-2"></i>NHẬT KÝ THÔNG BÁO
+              </h5>
+              {notifications.length > 3 && (
+                <button
+                  className="btn btn-link p-0 text-cyan text-decoration-none small fw-bold"
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={() => setShowAllNotifs(!showAllNotifs)}
+                >
+                  {showAllNotifs ? 'Thu gọn' : `Xem tất cả (${notifications.length})`}
+                </button>
+              )}
+            </div>
+
+            <div className="position-relative d-flex flex-column gap-2" style={{ minHeight: '100px' }}>
+              <div className="notif-timeline-line"></div>
               {notifications.length === 0 ? (
-                <div className="text-center py-4 text-muted small" style={{ zIndex: 2, position: 'relative' }}>
+                <div className="text-center py-4 text-muted small">
                   Không có thông báo hoạt động nào
                 </div>
               ) : (
-                notifications.slice(0, 5).map(n => (
+                displayedNotifications.map(n => (
                   <div
                     key={n.id}
-                    className={`concierge-feed-item d-flex gap-3 align-items-start p-3 rounded-4 shadow-sm position-relative mb-2 ${
-                      n.read ? 'bg-white bg-opacity-70' : 'bg-white border-cyan-light'
-                    }`}
-                    style={{ fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.25s' }}
+                    className={`notif-item-saas ${n.read ? '' : 'unread'}`}
+                    style={{ cursor: 'pointer' }}
                     onClick={() => markNotifRead(n.id)}
                   >
-                    <div
-                      className="feed-timeline-dot d-flex align-items-center justify-content-center rounded-circle bg-white border"
-                      style={{
-                        width: '28px',
-                        height: '28px',
-                        zIndex: 2,
-                        boxShadow: '0 4px 10px rgba(15,23,42,0.03)',
-                        flexShrink: 0,
-                        borderColor: 'rgba(15,23,42,0.06)'
-                      }}
-                    >
-                      <i className={`fas ${typeIcons[n.type] || 'fa-bell text-muted'}`} style={{ fontSize: '0.75rem' }}></i>
+                    <div className="notif-icon-circle">
+                      <i className={`fas ${typeIcons[n.type] || 'fa-bell text-muted'}`}></i>
                     </div>
-                    <div className="flex-grow-1 overflow-hidden" style={{ marginTop: '2px' }}>
-                      <div className="fw-bold d-flex justify-content-between align-items-center mb-1">
-                        <span style={{ color: 'var(--navy-dark)', fontSize: '0.8rem' }}>{n.title}</span>
-                        <small className="text-muted" style={{ fontSize: '0.62rem', fontWeight: 'normal' }}>{n.time}</small>
+                    <div className="flex-grow-1 overflow-hidden">
+                      <div className="d-flex justify-content-between align-items-center mb-0.5">
+                        <span className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>{n.title}</span>
+                        <small className="text-muted" style={{ fontSize: '0.62rem' }}>{n.time}</small>
                       </div>
-                      <div className="text-muted" style={{ fontSize: '0.7rem', lineHeight: '1.4' }}>{n.body}</div>
+                      <div className="text-secondary" style={{ fontSize: '0.72rem', lineHeight: '1.4' }}>{n.body}</div>
                     </div>
-                    {!n.read && (
-                      <span
-                        className="rounded-circle bg-cyan position-absolute"
-                        style={{ width: '6px', height: '6px', top: '15px', right: '15px', background: 'var(--cyan-electric)' }}
-                      ></span>
-                    )}
                   </div>
                 ))
               )}
             </div>
           </div>
         </div>
+
+        {/* ── RIGHT COLUMN: SIDEBAR WIDGETS (col-lg-4) ── */}
+        <div className="col-lg-4">
+          
+          {/* 1. AutoWash Loyalty Card */}
+          <div className="app-card border-0 p-4 mb-4 text-start">
+            <h6 className="fw-bold text-secondary mb-3 small" style={{ letterSpacing: '0.5px' }}>AUTOWASH LOYALTY</h6>
+            
+            <div className={`loyalty-card-3d ${tierInfo.cardClass} mb-3`} id="member-card">
+              <div className="loyalty-card-glass-glow"></div>
+              <div className="d-flex justify-content-between align-items-start">
+                <span className="loyalty-card-badge">
+                  <i className="fas fa-crown"></i>
+                  {displayTier}
+                </span>
+                <i className="fas fa-satellite-dish text-white opacity-40 animate-pulse"></i>
+              </div>
+              
+              <div className="my-2">
+                <span className="loyalty-card-points-label">ĐIỂM HIỆN TẠI</span>
+                <div className="loyalty-card-points">
+                  <span id="dashboard-points">{points.toLocaleString()}</span>{' '}
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>PTS</span>
+                </div>
+              </div>
+              
+              <div className="loyalty-progress-container">
+                <div className="d-flex justify-content-between align-items-center mb-1 text-white" style={{ fontSize: '0.68rem', fontWeight: 'bold' }}>
+                  <span>Tiến độ lên {progression.next}</span>
+                  <span>{progression.pct}%</span>
+                </div>
+                <div className="progress" style={{ height: '6px', background: 'rgba(255,255,255,0.22)', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div className="progress-bar bg-white" role="progressbar" style={{ width: `${progression.pct}%`, borderRadius: '10px' }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Loyalty Perks Description */}
+            <div className="p-2.5 rounded-3 d-flex align-items-center gap-2.5 mb-2" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div className="d-flex align-items-center justify-content-center rounded-circle bg-white shadow-sm border" style={{ width: '32px', height: '32px', color: tierInfo.color, flexShrink: 0 }}>
+                <i className={`fas ${tierInfo.icon}`} style={{ fontSize: '0.8rem' }}></i>
+              </div>
+              <div style={{ fontSize: '0.75rem', lineHeight: '1.3' }}>
+                <span className="fw-bold text-dark d-block">Quyền lợi {displayTier}</span>
+                <span className="text-secondary" style={{ fontSize: '0.68rem' }}>{tierInfo.perk}</span>
+              </div>
+            </div>
+
+            <p className="text-muted small mt-2 mb-0 text-center px-1" style={{ fontSize: '0.68rem', lineHeight: '1.4', fontWeight: 600 }}>
+              {progression.rem}
+            </p>
+          </div>
+
+          {/* 2. Lịch Hẹn Tiếp Theo */}
+          <div className="app-card border-0 p-4 mb-4 text-start" id="upcoming-appointment-widget">
+            <h5 className="fw-bold mb-3 text-dark" style={{ fontSize: '0.9rem' }}>
+              <i className="fas fa-calendar-alt text-cyan me-2"></i>LỊCH HẸN TIẾP THEO
+            </h5>
+
+            {activeBooking ? (
+              <div className="p-3 rounded-4 border bg-light bg-opacity-50">
+                <div className="d-flex align-items-start gap-2.5 mb-3">
+                  <div className="appointment-badge-icon">
+                    <i className="fas fa-clock"></i>
+                  </div>
+                  <div>
+                    <div className="fw-bold text-dark" style={{ fontSize: '0.85rem' }}>Hôm nay, {activeBooking.bookingDate ? activeBooking.bookingDate.split('-').reverse().join('/') : '31/05/2026'}</div>
+                    <span className="badge bg-cyan bg-opacity-10 text-cyan font-monospace mt-1" style={{ fontSize: '0.7rem' }}>
+                      {activeBooking.bookingTime}
+                    </span>
+                  </div>
+                </div>
+                <div className="mb-3 small">
+                  <div className="text-secondary mb-1">
+                    <i className="fas fa-hands-wash me-1.5 text-muted"></i>
+                    Dịch vụ: <strong className="text-dark">{activeBooking.mainService}</strong>
+                  </div>
+                  <div className="text-secondary mb-1">
+                    <i className="fas fa-motorcycle me-1.5 text-muted"></i>
+                    Biển số: <strong className="text-dark font-monospace">{activeBooking.vehicle}</strong>
+                  </div>
+                  <div className="text-secondary">
+                    <i className="fas fa-info-circle me-1.5 text-muted"></i>
+                    Trạng thái: <strong className="text-success">Đã xác nhận</strong>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4 rounded-4 border bg-light bg-opacity-50">
+                <i className="far fa-calendar-minus text-muted opacity-40 fa-2x mb-2"></i>
+                <h6 className="fw-bold text-dark small mb-1">Chưa có lịch hẹn nào</h6>
+                <p className="text-secondary small mb-3 px-3" style={{ fontSize: '0.7rem' }}>Lên lịch rửa ngay để trải nghiệm quy trình nhận diện LPR cực nhanh.</p>
+                <Link
+                  to="/customer/booking"
+                  className="app-btn-primary px-3 py-1.5 text-dark fw-bold text-decoration-none d-inline-block"
+                  style={{ fontSize: '0.72rem', borderRadius: '8px' }}
+                >
+                  ĐẶT LỊCH NGAY
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* 3. Thống Kê Cá Nhân */}
+          <div className="app-card border-0 p-4 mb-4 text-start">
+            <h5 className="fw-bold mb-3 text-dark" style={{ fontSize: '0.9rem' }}>
+              <i className="fas fa-chart-pie text-cyan me-2"></i>THỐNG KÊ CÁ NHÂN
+            </h5>
+            
+            <div className="personal-stats-grid">
+              <div className="personal-stat-box">
+                <div className="personal-stat-icon" style={{ background: 'rgba(14, 165, 233, 0.08)', color: '#0ea5e9' }}>
+                  <i className="fas fa-hands-wash"></i>
+                </div>
+                <span className="personal-stat-num">12</span>
+                <span className="personal-stat-text">Lượt rửa xe</span>
+              </div>
+
+              <div className="personal-stat-box">
+                <div className="personal-stat-icon" style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }}>
+                  <i className="fas fa-ticket-alt"></i>
+                </div>
+                <span className="personal-stat-num">3</span>
+                <span className="personal-stat-text">Voucher đã dùng</span>
+              </div>
+
+              <div className="personal-stat-box">
+                <div className="personal-stat-icon" style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981' }}>
+                  <i className="fas fa-award"></i>
+                </div>
+                <span className="personal-stat-num">{points}</span>
+                <span className="personal-stat-text">Điểm tích luỹ</span>
+              </div>
+
+              <div className="personal-stat-box">
+                <div className="personal-stat-icon" style={{ background: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' }}>
+                  <i className="fas fa-motorcycle"></i>
+                </div>
+                <span className="personal-stat-num">{vehicles.length}</span>
+                <span className="personal-stat-text">Xe quản lý</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Voucher Gần Hết Hạn */}
+          <div className="app-card border-0 p-4 mb-2 text-start">
+            <h5 className="fw-bold mb-3 text-dark" style={{ fontSize: '0.9rem' }}>
+              <i className="fas fa-hourglass-end text-danger me-2 animate-pulse"></i>VOUCHER GẦN HẾT HẠN
+            </h5>
+
+            <div className="ticket-dashed-box mb-2" style={{ borderLeft: '4px solid #dc2626' }}>
+              <div className="d-flex justify-content-between align-items-center w-100">
+                <div className="overflow-hidden">
+                  <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.8rem' }}>Voucher Giảm 10%</div>
+                  <small className="text-secondary d-block" style={{ fontSize: '0.68rem' }}>Mã: WASH10K</small>
+                </div>
+                <span className="badge bg-danger text-white fw-bold px-2 py-1" style={{ fontSize: '0.62rem' }}>
+                  Còn 3 ngày
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
 };
+
 export default CustomerDashboard;
