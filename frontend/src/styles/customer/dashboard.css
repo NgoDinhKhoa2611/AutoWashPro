@@ -1,0 +1,143 @@
+/* ============================================================
+   dashboard.css — Dashboard page styles
+   AutoWash Pro — SWP391 FPT University
+   ============================================================ */
+
+/* ── Premium 3D Membership Card ──────────────────────────── */
+.animate-spin-slow {
+    animation: spinSlow 12s linear infinite !important;
+    display: inline-block;
+}
+@keyframes spinSlow {
+    100% { transform: rotate(360deg); }
+}
+
+.member-card-3d {
+    position: relative !important;
+    overflow: hidden !important;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08) !important;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+}
+.member-card-3d:hover {
+    transform: translateY(-5px) scale(1.01) rotate(0.5deg) !important;
+    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.12) !important;
+}
+
+.card-gloss-overlay {
+    position: absolute !important;
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0) 100%) !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+}
+
+.member-card-3d.tier-gold     { background: linear-gradient(135deg, #fffdf0 0%, #fcf0cd 50%, #eab308 100%) !important; border-color: rgba(255,255,255,0.4) !important; }
+.member-card-3d.tier-platinum { background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 45%, #e0f2fe 75%, #94a3b8 100%) !important; border-color: rgba(255,255,255,0.5) !important; }
+.member-card-3d.tier-silver   { background: linear-gradient(135deg, #94a3b8 0%, #64748b 50%, #475569 100%) !important; border-color: rgba(255,255,255,0.25) !important; }
+.member-card-3d.tier-standard { background: linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #374151 100%) !important; border-color: rgba(255,255,255,0.2) !important; }
+
+.card-chip-icon {
+    width: 32px !important; height: 24px !important;
+    background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%) !important;
+    border-radius: 4px !important; padding: 4px !important;
+    display: flex !important; flex-direction: column !important;
+    justify-content: space-between !important;
+    border: 1px solid rgba(15, 23, 42, 0.15) !important;
+    opacity: 0.85 !important;
+}
+.chip-line { height: 1px !important; background: rgba(15, 23, 42, 0.15) !important; width: 100% !important; }
+
+.font-monospace { font-family: 'Consolas', 'Courier New', monospace !important; letter-spacing: 0.5px !important; }
+
+/* ── Concierge Timeline Feed ──────────────────────────────── */
+.concierge-feed { position: relative !important; }
+.feed-timeline-line {
+    position: absolute !important;
+    top: 0 !important; bottom: 0 !important;
+    left: 25px !important;
+    width: 2px !important;
+    background: rgba(15, 23, 42, 0.05) !important;
+    z-index: 1 !important;
+}
+.concierge-feed-item {
+    z-index: 2 !important;
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(15, 23, 42, 0.04) !important;
+    border-radius: 16px !important;
+    transition: all 0.25s ease-in-out !important;
+}
+.concierge-feed-item:hover {
+    transform: translateX(4px) !important;
+    background: #ffffff !important;
+    border-color: rgba(14, 165, 233, 0.15) !important;
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.04) !important;
+}
+.concierge-feed-item.border-cyan-light {
+    border-left: 3px solid var(--cyan-electric) !important;
+    background: rgba(14, 165, 233, 0.02) !important;
+}
+
+/* ── Dashboard.cshtml utility classes ────────────────────── */
+.concierge-greeting-text       { color: var(--navy-dark); }
+.concierge-subtitle            { font-size: 0.8rem; }
+.concierge-greeting-mobile     { font-size: 1.25rem; }
+.concierge-weather-chip        { font-size: 0.75rem; }
+.concierge-weather-chip-mobile { font-size: 0.65rem; box-shadow: 0 2px 8px rgba(0,0,0,0.015); }
+.concierge-weather-icon        { font-size: 1rem; }
+
+.member-card-layer     { position: relative; z-index: 2; }
+.member-card-pts-label { font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; }
+.member-card-pts-sub   { font-size: 0.65rem; letter-spacing: 0.5px; }
+.member-card-footer    { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
+.member-card-meta-label {
+    font-size: 0.6rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    opacity: 0.6; display: block;
+}
+.member-card-tier-value { font-size: 0.8rem; }
+.member-card-code-value { font-size: 0.75rem; letter-spacing: 1.5px; }
+
+.quick-action-btn  { color: var(--navy-dark); font-weight: 700; font-size: 0.78rem; transition: all 0.2s; }
+.quick-action-icon { width: 24px; height: 24px; }
+.qa-icon-booking   { background: var(--cyan-electric) !important; }
+.qa-icon-loyalty   { background: #f59e0b !important; }
+.qa-icon-history   { background: #10b981 !important; }
+.qa-icon-profile   { background: #06b6d4 !important; }
+
+.stat-label         { font-size: 0.65rem; letter-spacing: 0.5px; }
+.stat-badge-count   { font-size: 0.65rem; }
+.stat-plates-mobile { font-size: 0.75rem; letter-spacing: -0.2px; }
+.stat-primary-value { font-size: 1.1rem; line-height: 1.1; }
+.stat-progress-track { height: 5px; }
+.stat-crown-purple  { color: #a855f7 !important; }
+.stat-tier-medal    { width: 36px; height: 36px; }
+.stat-tier-desc     { font-size: 0.65rem; }
+
+.booking-cta-card {
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-light) 100%) !important;
+    color: white !important;
+    min-height: 180px;
+    border-radius: 24px;
+}
+.booking-cta-card h4,
+.booking-cta-card p,
+.booking-cta-card span,
+.booking-cta-card div { color: inherit !important; }
+.booking-cta-subtitle { color: rgba(255,255,255,0.5) !important; }
+
+.category-chevron     { font-size: 0.7rem; opacity: 0.5; }
+.category-title       { font-size: 1.1rem; line-height: 1.1; }
+
+.notif-widget-title    { color: var(--navy-dark); }
+.notif-widget-read-btn { font-size: 0.7rem; }
+.notif-feed-scroll     { max-height: 360px; overflow-y: auto; padding-left: 12px; position: relative; }
+
+.empty-state-title { color: var(--navy-dark); }
+.empty-state-desc  { max-width: 280px; }
+.empty-state-btn   { border-radius: 14px; font-size: 0.9rem; }
+
+/* ── Points Expiry Warning ────────────────────────────────── */
+.stat-expiry-warning { font-size: 0.6rem; color: #dc2626; font-weight: 700; }

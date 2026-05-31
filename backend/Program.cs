@@ -13,6 +13,18 @@ namespace Auto_Wash
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
+            // Register CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("ReactPolicy", policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173")
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials();
+                });
+            });
+
             // Register database context
             builder.Services.AddDbContext<AutoWashDbContext>(options =>
             {
@@ -50,6 +62,7 @@ namespace Auto_Wash
             app.UseStaticFiles();
             app.UseSession();
             app.UseRouting();
+            app.UseCors("ReactPolicy");
             app.UseAuthorization();
 
             app.MapControllerRoute(
