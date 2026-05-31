@@ -172,20 +172,18 @@
             </div>
             <h4 class="fw-bold mt-2">Xác Thực Mã OTP</h4>
             <p class="text-secondary small px-2 mt-2">
-                Chúng tôi đã gửi mã xác thực 4 chữ số tới số điện thoại
+                Chúng tôi đã gửi mã xác thực 6 chữ số tới số điện thoại
                 <span class="text-cyan fw-bold" id="otp-phone-display"></span>
             </p>
         </div>
 
-        <div class="d-flex justify-content-center gap-3 mb-4">
-            <input type="text" maxlength="1" class="otp-input" id="otp-0"
-                   oninput="handleOtpInput(0,this)" onkeydown="handleOtpKeydown(0,event)" />
-            <input type="text" maxlength="1" class="otp-input" id="otp-1"
-                   oninput="handleOtpInput(1,this)" onkeydown="handleOtpKeydown(1,event)" />
-            <input type="text" maxlength="1" class="otp-input" id="otp-2"
-                   oninput="handleOtpInput(2,this)" onkeydown="handleOtpKeydown(2,event)" />
-            <input type="text" maxlength="1" class="otp-input" id="otp-3"
-                   oninput="handleOtpInput(3,this)" onkeydown="handleOtpKeydown(3,event)" />
+        <div class="d-flex justify-content-center gap-2 mb-4">
+            <input type="text" maxlength="1" class="otp-input" id="otp-0" oninput="handleOtpInput(0,this)" onkeydown="handleOtpKeydown(0,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-1" oninput="handleOtpInput(1,this)" onkeydown="handleOtpKeydown(1,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-2" oninput="handleOtpInput(2,this)" onkeydown="handleOtpKeydown(2,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-3" oninput="handleOtpInput(3,this)" onkeydown="handleOtpKeydown(3,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-4" oninput="handleOtpInput(4,this)" onkeydown="handleOtpKeydown(4,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-5" oninput="handleOtpInput(5,this)" onkeydown="handleOtpKeydown(5,event)" />
         </div>
 
         <button onclick="handleVerifyOtp()"
@@ -239,9 +237,9 @@
                 <div class="input-group glass-input-group">
                     <span class="input-group-text"><i class="fas fa-phone"></i></span>
                     <input type="tel" id="google-complete-phone" class="form-control"
-                           placeholder="Ví dụ: +84901234567" required />
+                           placeholder="Ví dụ: 0901234567" required />
                 </div>
-                <small class="text-muted d-block mt-1" style="font-size:0.7rem;">Số điện thoại cần có mã quốc gia (+84)</small>
+                <small class="text-muted d-block mt-1" style="font-size:0.7rem;">Định dạng 10 chữ số: 0912345678</small>
             </div>
             <div class="mb-3">
                 <label class="form-label small fw-bold text-secondary">MẬT KHẨU ĐĂNG NHẬP</label>

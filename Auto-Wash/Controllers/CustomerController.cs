@@ -8,10 +8,12 @@ namespace Auto_Wash.Controllers
     public class CustomerController : Controller
     {
         private readonly AutoWashDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public CustomerController(AutoWashDbContext context)
+        public CustomerController(AutoWashDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         private async Task PopulateUserProfileAsync()
@@ -287,6 +289,277 @@ namespace Auto_Wash.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetVehicles()
+        {
+            string? email = Request.Cookies["UserEmail"];
+            string? phone = Request.Cookies["UserPhone"];
+
+            Account? account = null;
+            if (!string.IsNullOrEmpty(email))
+            {
+                account = await _context.Accounts
+                    .Include(a => a.Customer)
+                    .FirstOrDefaultAsync(a => a.Email == email.Trim());
+            }
+            else if (!string.IsNullOrEmpty(phone))
+            {
+                account = await _context.Accounts
+                    .Include(a => a.Customer)
+                    .FirstOrDefaultAsync(a => a.Phone == phone.Trim());
+            }
+
+            if (account == null)
+            {
+                // Fallback to first customer
+                account = await _context.Accounts
+                    .Include(a => a.Customer)
+                    .FirstOrDefaultAsync(a => a.Role == 3);
+            }
+
+            if (account == null || account.Customer == null)
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy khách hàng!" });
+            }
+
+            var list = await _context.Vehicles
+                .Where(v => v.CustomerId == account.Customer.CustomerId)
+                .Select(v => new {
+                    plate = v.LicensePlate,
+                    type = v.Name ?? v.Brand ?? "Xe ga"
+                })
+                .ToListAsync();
+
+            return Ok(new { success = true, vehicles = list });
+        }
+
+        private async Task SendRealEmailAsync(string toEmail, string subject, string body)
+        {
+            try
+            {
+                var smtpHost = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
+                var smtpPortStr = _configuration["Smtp:Port"] ?? "587";
+                int smtpPort = int.TryParse(smtpPortStr, out var port) ? port : 587;
+                var smtpUser = _configuration["Smtp:Username"] ?? "";
+                var smtpPass = _configuration["Smtp:Password"] ?? "";
+                var fromEmail = _configuration["Smtp:FromEmail"] ?? "autowashpro.service@gmail.com";
+
+                if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPass))
+                {
+                    Console.WriteLine($"[SMTP NOT CONFIG] Email could not be sent to {toEmail} because SMTP is not configured in appsettings.json.");
+                    return;
+                }
+
+                var message = new MimeKit.MimeMessage();
+                message.From.Add(new MimeKit.MailboxAddress("AutoWash Pro Support", fromEmail));
+                message.To.Add(new MimeKit.MailboxAddress("", toEmail));
+                message.Subject = subject;
+
+                var bodyBuilder = new MimeKit.BodyBuilder
+                {
+                    HtmlBody = body
+                };
+                message.Body = bodyBuilder.ToMessageBody();
+
+                using (var client = new MailKit.Net.Smtp.SmtpClient())
+                {
+                    var socketOption = smtpPort == 465 
+                        ? MailKit.Security.SecureSocketOptions.SslOnConnect 
+                        : MailKit.Security.SecureSocketOptions.StartTls;
+
+                    await client.ConnectAsync(smtpHost, smtpPort, socketOption);
+                    await client.AuthenticateAsync(smtpUser, smtpPass);
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
+
+                    Console.WriteLine($"[SMTP SUCCESS] MailKit successfully dispatched Email OTP to {toEmail}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SMTP ERROR] MailKit failed to send email to {toEmail}: {ex.Message}");
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendVehicleOtp([FromBody] SendVehicleOtpRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.LicensePlate))
+            {
+                return BadRequest(new { success = false, message = "Thông tin không hợp lệ!" });
+            }
+
+            if (!IsValidVietnameseLicensePlate(request.LicensePlate))
+            {
+                return BadRequest(new { success = false, message = "Biển số xe không hợp lệ hoặc đầu số tỉnh thành không tồn tại!" });
+            }
+
+            var exists = await _context.Vehicles.AnyAsync(v => v.LicensePlate == request.LicensePlate.Trim());
+            if (exists)
+            {
+                return BadRequest(new { success = false, message = "Biển số xe này đã được đăng ký trên hệ thống!" });
+            }
+
+            var email = Request.Cookies["UserEmail"] ?? "kien.le@example.com";
+            var phone = Request.Cookies["UserPhone"] ?? "";
+
+            var rnd = new Random();
+            string code = rnd.Next(100000, 999999).ToString();
+
+            var otp = new OtpVerification
+            {
+                Email = email,
+                Phone = phone,
+                Code = code,
+                ExpiresAt = DateTime.Now.AddMinutes(5),
+                IsUsed = false,
+                CreatedAt = DateTime.Now
+            };
+
+            _context.OtpVerifications.Add(otp);
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine("\n==============================================");
+            Console.WriteLine($"[VEHICLE ADD OTP SIMULATION] Plate: {request.LicensePlate}");
+            Console.WriteLine($"Code: {code} (Valid for 5 minutes)");
+            Console.WriteLine("==============================================\n");
+
+            // Dispatch real Email OTP via SMTP
+            string subject = "AutoWash Pro - Xác thực đăng ký phương tiện";
+            string body = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #cbd5e1; border-radius: 12px; background-color: #f8fafc;'>
+                    <div style='text-align: center; margin-bottom: 20px;'>
+                        <h2 style='color: #0f172a; margin: 0;'>AutoWash <span style='color: #06b6d4;'>Pro</span></h2>
+                        <p style='color: #64748b; font-size: 0.85rem; margin: 5px 0 0 0;'>Hệ Thống Quản Lý Rửa Xe Thông Minh</p>
+                    </div>
+                    <hr style='border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;' />
+                    <p style='color: #334155;'>Xin chào khách hàng,</p>
+                    <p style='color: #334155;'>Bạn đang thực hiện đăng ký biển số xe mới <strong>{request.LicensePlate.ToUpper()}</strong> vào tài khoản cá nhân tại hệ thống AutoWash Pro.</p>
+                    <p style='color: #334155;'>Vui lòng sử dụng mã xác thực OTP 6 chữ số dưới đây để hoàn tất thủ tục:</p>
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <span style='font-size: 2rem; font-weight: bold; letter-spacing: 5px; color: #06b6d4; background-color: #0f172a; padding: 10px 25px; border-radius: 8px; display: inline-block;'>{code}</span>
+                    </div>
+                    <p style='color: #64748b; font-size: 0.8rem; text-align: center;'>Mã OTP này có giá trị trong vòng 5 phút và chỉ được sử dụng một lần. Vui lòng không cung cấp mã này cho bất kỳ ai.</p>
+                    <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;' />
+                    <p style='font-size: 0.8rem; color: #64748b; text-align: center;'>Đây là email tự động từ hệ thống AutoWash Pro. Vui lòng không trả lời email này.</p>
+                </div>";
+
+            await SendRealEmailAsync(email, subject, body);
+
+            return Ok(new { success = true, message = $"Mã OTP đã được gửi đến email {email}! (Mã mô phỏng: {code})" });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> VerifyVehicleOtpAndSave([FromBody] VerifyVehicleOtpRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.LicensePlate) || string.IsNullOrWhiteSpace(request.OtpCode))
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ!" });
+            }
+
+            if (!IsValidVietnameseLicensePlate(request.LicensePlate))
+            {
+                return BadRequest(new { success = false, message = "Biển số xe không hợp lệ hoặc đầu số tỉnh thành không tồn tại!" });
+            }
+
+            var email = Request.Cookies["UserEmail"] ?? "kien.le@example.com";
+            var otp = await _context.OtpVerifications
+                .Where(o => o.Email == email && o.Code == request.OtpCode.Trim() && !o.IsUsed && o.ExpiresAt > DateTime.Now)
+                .OrderByDescending(o => o.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (otp == null)
+            {
+                return BadRequest(new { success = false, message = "Mã OTP không hợp lệ hoặc đã hết hạn!" });
+            }
+
+            var phone = Request.Cookies["UserPhone"];
+            Account? account = null;
+            if (!string.IsNullOrEmpty(email))
+            {
+                account = await _context.Accounts.Include(a => a.Customer).FirstOrDefaultAsync(a => a.Email == email.Trim());
+            }
+            else if (!string.IsNullOrEmpty(phone))
+            {
+                account = await _context.Accounts.Include(a => a.Customer).FirstOrDefaultAsync(a => a.Phone == phone.Trim());
+            }
+
+            if (account == null)
+            {
+                account = await _context.Accounts.Include(a => a.Customer).FirstOrDefaultAsync(a => a.Role == 3);
+            }
+
+            if (account == null || account.Customer == null)
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy thông tin khách hàng tương ứng!" });
+            }
+
+            var exists = await _context.Vehicles.AnyAsync(v => v.LicensePlate == request.LicensePlate.Trim());
+            if (exists)
+            {
+                return BadRequest(new { success = false, message = "Biển số xe này đã được đăng ký trên hệ thống!" });
+            }
+
+            var vehicle = new Vehicle
+            {
+                CustomerId = account.Customer.CustomerId,
+                LicensePlate = request.LicensePlate.Trim().ToUpper(),
+                Brand = request.Type?.Trim() ?? "Honda",
+                Name = request.Type?.Trim() ?? "Xe ga",
+                RegisteredAt = DateTime.Now
+            };
+
+            _context.Vehicles.Add(vehicle);
+            otp.IsUsed = true;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Đăng ký phương tiện thành công!" });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteVehicle([FromBody] DeleteVehicleRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.LicensePlate))
+            {
+                return BadRequest(new { success = false, message = "Thông tin không hợp lệ!" });
+            }
+
+            var email = Request.Cookies["UserEmail"];
+            var phone = Request.Cookies["UserPhone"];
+            Account? account = null;
+            if (!string.IsNullOrEmpty(email))
+            {
+                account = await _context.Accounts.Include(a => a.Customer).FirstOrDefaultAsync(a => a.Email == email.Trim());
+            }
+            else if (!string.IsNullOrEmpty(phone))
+            {
+                account = await _context.Accounts.Include(a => a.Customer).FirstOrDefaultAsync(a => a.Phone == phone.Trim());
+            }
+
+            if (account == null)
+            {
+                account = await _context.Accounts.Include(a => a.Customer).FirstOrDefaultAsync(a => a.Role == 3);
+            }
+
+            if (account == null || account.Customer == null)
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy khách hàng!" });
+            }
+
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v => v.CustomerId == account.Customer.CustomerId && v.LicensePlate == request.LicensePlate.Trim());
+
+            if (vehicle == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy phương tiện tương ứng của bạn!" });
+            }
+
+            _context.Vehicles.Remove(vehicle);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Xoá phương tiện thành công!" });
+        }
+
         private string HashPassword(string password)
         {
             using (var sha256 = System.Security.Cryptography.SHA256.Create())
@@ -299,6 +572,29 @@ namespace Auto_Wash.Controllers
                 }
                 return builder.ToString();
             }
+        }
+
+        private bool IsValidVietnameseLicensePlate(string? licensePlate)
+        {
+            if (string.IsNullOrWhiteSpace(licensePlate)) return false;
+
+            // Normalize: remove space, dash, dot, and convert to uppercase
+            string cleanPlate = licensePlate.Replace(" ", "").Replace("-", "").Replace(".", "").Trim().ToUpper();
+
+            // Match format XXA12345 (3 alphanumeric characters + 5 digits)
+            var match = System.Text.RegularExpressions.Regex.Match(cleanPlate, @"^([A-Z0-9]{3})(\d{5})$");
+            if (!match.Success) return false;
+
+            string prefix = match.Groups[1].Value;
+            if (prefix.Length < 2) return false;
+
+            string provinceCode = prefix.Substring(0, 2);
+            var validProvinces = new System.Collections.Generic.HashSet<string>
+            {
+                "11", "12", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "40", "41", "43", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "88", "89", "90", "92", "93", "94", "95", "97", "98", "99"
+            };
+
+            return validProvinces.Contains(provinceCode);
         }
     }
 
@@ -325,5 +621,22 @@ namespace Auto_Wash.Controllers
         public string Phone { get; set; } = string.Empty;
         public string? CurrentPassword { get; set; }
         public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class SendVehicleOtpRequest
+    {
+        public string LicensePlate { get; set; } = string.Empty;
+    }
+
+    public class VerifyVehicleOtpRequest
+    {
+        public string LicensePlate { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string OtpCode { get; set; } = string.Empty;
+    }
+
+    public class DeleteVehicleRequest
+    {
+        public string LicensePlate { get; set; } = string.Empty;
     }
 }

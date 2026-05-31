@@ -131,7 +131,7 @@ let otpTimer = null;
 
 function handleOtpInput(idx, el) {
     el.value = el.value.replace(/\D/, '');
-    if (el.value.length === 1 && idx < 3) {
+    if (el.value.length === 1 && idx < 5) {
         const next = document.getElementById('otp-' + (idx + 1));
         if (next) next.focus();
     }
@@ -149,14 +149,14 @@ function handleOtpKeydown(idx, e) {
 }
 
 function handleVerifyOtp() {
-    const digits = [0, 1, 2, 3].map(i => {
+    const digits = [0, 1, 2, 3, 4, 5].map(i => {
         const el = document.getElementById('otp-' + i);
         return el ? el.value : '';
     });
     const code = digits.join('');
 
-    if (code.length < 4) {
-        showToast('Vui lòng nhập đầy đủ mã 4 chữ số!', 'warning');
+    if (code.length < 6) {
+        showToast('Vui lòng nhập đầy đủ mã 6 chữ số!', 'warning');
         return;
     }
 
@@ -345,6 +345,14 @@ async function handleGoogleCompleteSubmit(e) {
         showToast('Vui lòng nhập đầy đủ các trường!', 'warning');
         return;
     }
+
+    // Validate standard local Vietnamese phone format (10 digits starting with 0)
+    const cleanPhone = phone.replace(/[-\s]/g, '');
+    if (!/^0\d{9}$/.test(cleanPhone)) {
+        showToast('Số điện thoại không hợp lệ! Vui lòng nhập định dạng 10 chữ số (ví dụ: 0912345678).', 'warning');
+        return;
+    }
+
     if (password !== confirm) {
         showToast('Mật khẩu xác nhận không trùng khớp!', 'error');
         return;
@@ -354,17 +362,24 @@ async function handleGoogleCompleteSubmit(e) {
         return;
     }
 
-    googleCompleteUserData.Phone = phone;
+    // Save standard clean local format to database payload (B-2 Item 2)
+    googleCompleteUserData.Phone = cleanPhone;
     googleCompleteUserData.Password = password;
+
+    // Dynamically format local number to E.164 (+84...) format strictly for Firebase Auth
+    let formattedPhone = cleanPhone;
+    if (formattedPhone.startsWith('0')) {
+        formattedPhone = '+84' + formattedPhone.substring(1);
+    }
 
     const submitBtn = document.getElementById('google-complete-submit-btn');
     if (submitBtn) submitBtn.disabled = true;
-    showToast('Đang gửi mã OTP đến số điện thoại ' + phone + '...', 'info');
+    showToast('Đang gửi mã OTP đến số điện thoại ' + cleanPhone + '...', 'info');
 
     if (isFirebaseMockMode || !firebaseAuth) {
         setTimeout(() => {
             showToast('Mã OTP (Firebase Sandbox) đã gửi: 123456', 'success');
-            document.getElementById('firebase-otp-phone-display').textContent = phone;
+            document.getElementById('firebase-otp-phone-display').textContent = cleanPhone;
             showPanel('firebase-otp');
             startFirebaseOtpTimer();
             if (submitBtn) submitBtn.disabled = false;
@@ -382,16 +397,16 @@ async function handleGoogleCompleteSubmit(e) {
             });
         }
 
-        confirmationResult = await firebaseAuth.signInWithPhoneNumber(phone, window.recaptchaVerifier);
+        confirmationResult = await firebaseAuth.signInWithPhoneNumber(formattedPhone, window.recaptchaVerifier);
         showToast('Đã gửi mã xác thực thành công!', 'success');
-        document.getElementById('firebase-otp-phone-display').textContent = phone;
+        document.getElementById('firebase-otp-phone-display').textContent = cleanPhone;
         showPanel('firebase-otp');
         startFirebaseOtpTimer();
     } catch (err) {
         console.error("Firebase SMS dispatch failed, launching mock sandbox:", err);
         showToast('Không thể kết nối Firebase SMS. Sử dụng mã giả lập Sandbox: 123456', 'warning');
         
-        document.getElementById('firebase-otp-phone-display').textContent = phone;
+        document.getElementById('firebase-otp-phone-display').textContent = cleanPhone;
         showPanel('firebase-otp');
         startFirebaseOtpTimer();
     } finally {
@@ -495,6 +510,9 @@ async function finalizeGoogleSignup() {
 
             document.cookie = "UserEmail=" + googleCompleteUserData.Email + "; path=/; max-age=" + (30*24*60*60);
             document.cookie = "UserPhone=" + googleCompleteUserData.Phone + "; path=/; max-age=" + (30*24*60*60);
+            if (googleCompleteUserData.Avatar) {
+                document.cookie = "UserAvatar=" + encodeURIComponent(googleCompleteUserData.Avatar) + "; path=/; max-age=" + (30*24*60*60);
+            }
 
             // Show success screen
             const successMsg = document.getElementById('success-msg');
