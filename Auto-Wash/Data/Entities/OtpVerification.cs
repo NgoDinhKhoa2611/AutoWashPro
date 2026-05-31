@@ -10,9 +10,11 @@ namespace Auto_Wash.Data.Entities
         [Key]
         public int OtpId { get; set; }
 
-        [Required]
-        [MaxLength(15)]
-        public string Phone { get; set; } = string.Empty;
+        [MaxLength(10)]
+        public string? Phone { get; set; }
+
+        [MaxLength(150)]
+        public string? Email { get; set; }
 
         [Required]
         [MaxLength(6)]
