@@ -98,7 +98,7 @@
                 </div>
 
                 <form id="password-form" onsubmit="handleSavePassword(event)">
-                    <div class="mb-3">
+                    <div id="curr-password-group">
                         <label class="form-label small fw-bold text-muted form-label-spaced">MẬT KHẨU HIỆN TẠI</label>
                         <div class="input-group glass-input-group bg-light form-group-disabled">
                             <span class="input-group-text bg-transparent border-0 text-muted"><i class="fas fa-lock"></i></span>
@@ -225,50 +225,138 @@
 </div>
 
 <!-- ── Add Vehicle Modal ──────────────────────────────────── -->
-<div class="modal fade" id="addVehicleModal" tabindex="-1">
+<div class="modal fade" id="addVehicleModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered mx-auto modal-vehicle">
-        <div class="modal-content border-0 overflow-hidden">
-            <div class="modal-header text-white border-0 px-4 pt-4 pb-3">
-                <h6 class="fw-bold mb-0 modal-vehicle-title">
-                    <i class="fas fa-motorcycle me-2"></i>THÊM PHƯƠNG TIỆN MỚI
+        <div class="modal-content border-0 overflow-hidden" style="border-radius: 24px;">
+            <div class="modal-header text-white border-0 px-4 pt-4 pb-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+                <h6 class="fw-bold mb-0 modal-vehicle-title" id="add-vehicle-modal-title">
+                    <i class="fas fa-motorcycle me-2 text-cyan"></i>THÊM PHƯƠNG TIỆN MỚI
                 </h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="resetVehicleModal()"></button>
             </div>
-            <div class="modal-body p-4 pt-3">
-                <div class="mb-3">
-                    <label class="form-label small fw-bold text-muted">BIỂN SỐ XE</label>
-                    <input type="text" id="new-plate" class="form-control custom-input border-light bg-light input-rounded-sm"
-                           placeholder="Ví dụ: 51H-123.45" />
-                    <small class="text-muted mt-1 d-block password-note">
-                        Ví dụ format: 51G - 123.45 hoặc 59K1 - 999.99
-                    </small>
+            
+            <!-- Step 1: Input Info -->
+            <div id="add-vehicle-step-input">
+                <div class="modal-body p-4 pt-3">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">BIỂN SỐ XE</label>
+                        <input type="text" id="new-plate" class="form-control custom-input border-light bg-light input-rounded-sm"
+                               placeholder="Ví dụ: 51H-123.45" />
+                        <small class="text-muted mt-1 d-block password-note">
+                            Ví dụ format: 51G - 123.45 hoặc 59K1 - 999.99
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">LOẠI XE (HÃNG & DÒNG XE)</label>
+                        <select id="new-type" class="form-select custom-input border-light bg-light input-rounded-sm">
+                            <option value="Honda Vision">Honda Vision (Xe ga)</option>
+                            <option value="SH Mode">SH Mode (Xe ga)</option>
+                            <option value="Honda Wave">Honda Wave (Xe số)</option>
+                            <option value="Exciter 150">Exciter 150 (Xe tay côn)</option>
+                            <option value="Kawasaki Z1000">Kawasaki Z1000 (Phân khối lớn)</option>
+                            <option value="Honda Lead">Honda Lead (Xe ga)</option>
+                            <option value="Yamaha Grande">Yamaha Grande (Xe ga)</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-bold text-muted">LOẠI XE (HÃNG & DÒNG XE)</label>
-                    <select id="new-type" class="form-select custom-input border-light bg-light input-rounded-sm">
-                        <option value="Honda Vision">Honda Vision (Xe ga)</option>
-                        <option value="SH Mode">SH Mode (Xe ga)</option>
-                        <option value="Honda Wave">Honda Wave (Xe số)</option>
-                        <option value="Exciter 150">Exciter 150 (Xe tay côn)</option>
-                        <option value="Kawasaki Z1000">Kawasaki Z1000 (Phân khối lớn)</option>
-                        <option value="Honda Lead">Honda Lead (Xe ga)</option>
-                        <option value="Yamaha Grande">Yamaha Grande (Xe ga)</option>
-                    </select>
+                <div class="p-4 pt-0">
+                    <button class="app-btn-primary shadow-none py-3 w-100 input-rounded-sm" id="btn-request-vehicle-otp" onclick="handleRequestVehicleOtp()">
+                        GỬI MÃ XÁC THỰC OTP <i class="fas fa-paper-plane ms-2"></i>
+                    </button>
                 </div>
             </div>
-            <div class="p-4 pt-0">
-                <button class="app-btn-primary shadow-none py-3 w-100 input-rounded-sm" onclick="handleAddVehicle()">
-                    <i class="fas fa-save me-2"></i>ĐĂNG KÝ PHƯƠNG TIỆN
-                </button>
+
+            <!-- Step 2: Verify OTP -->
+            <div id="add-vehicle-step-otp" style="display: none;">
+                <div class="modal-body p-4 pt-3 text-center">
+                    <p class="text-secondary small mb-3" id="vehicle-otp-description">
+                        Mã xác thực 6 chữ số đã được gửi để xác thực đăng ký xe.
+                    </p>
+                    
+                    <!-- 6 Digits OTP Code Inputs -->
+                    <div class="d-flex justify-content-center gap-2 mb-4">
+                        <input type="text" maxlength="1" class="otp-input vehicle-otp-digit" id="veh-otp-0" oninput="handleVehOtpInput(0,this)" onkeydown="handleVehOtpKeydown(0,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                        <input type="text" maxlength="1" class="otp-input vehicle-otp-digit" id="veh-otp-1" oninput="handleVehOtpInput(1,this)" onkeydown="handleVehOtpKeydown(1,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                        <input type="text" maxlength="1" class="otp-input vehicle-otp-digit" id="veh-otp-2" oninput="handleVehOtpInput(2,this)" onkeydown="handleVehOtpKeydown(2,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                        <input type="text" maxlength="1" class="otp-input vehicle-otp-digit" id="veh-otp-3" oninput="handleVehOtpInput(3,this)" onkeydown="handleVehOtpKeydown(3,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                        <input type="text" maxlength="1" class="otp-input vehicle-otp-digit" id="veh-otp-4" oninput="handleVehOtpInput(4,this)" onkeydown="handleVehOtpKeydown(4,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                        <input type="text" maxlength="1" class="otp-input vehicle-otp-digit" id="veh-otp-5" oninput="handleVehOtpInput(5,this)" onkeydown="handleVehOtpKeydown(5,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    </div>
+
+                    <button class="app-btn-primary shadow-none py-3 w-100 input-rounded-sm" id="btn-verify-vehicle-otp" onclick="handleVerifyVehicleOtpAndSave()">
+                        XÁC MINH & ĐĂNG KÝ XE <i class="fas fa-check-circle ms-2"></i>
+                    </button>
+
+                    <div class="mt-4 text-center">
+                        <p class="text-secondary small mb-0" id="vehicle-otp-resend-wrapper">
+                            Gửi lại mã sau <span class="text-cyan fw-bold" id="vehicle-otp-timer">300</span>s
+                        </p>
+                        <button id="vehicle-otp-resend-btn" class="btn btn-link text-cyan text-decoration-none small fw-bold p-0 mt-1" style="display:none;" onclick="handleRequestVehicleOtp()">
+                            Gửi lại mã OTP
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ── OTP Change Password Modal ────────────────────────────── -->
+<div class="modal fade" id="otpChangePasswordModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered mx-auto" style="max-width: 400px;">
+        <div class="modal-content border-0 overflow-hidden" style="border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); background-color: #ffffff;">
+            <div class="modal-header text-white border-0 px-4 pt-4 pb-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+                <h6 class="fw-bold mb-0 text-white">
+                    <i class="fas fa-shield-alt me-2 text-cyan"></i>XÁC THỰC OTP BẢO MẬT
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="clearInterval(profileOtpTimer)"></button>
+            </div>
+            <div class="modal-body p-4 pt-3 text-center">
+                <p class="text-secondary small mb-3" id="profile-otp-description">
+                    Mã xác thực 6 chữ số đã được gửi tới thông tin liên hệ của bạn.
+                </p>
+                
+                <!-- 6 Digits OTP Code Inputs -->
+                <div class="d-flex justify-content-center gap-2 mb-4">
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-0" oninput="handleProfOtpInput(0,this)" onkeydown="handleProfOtpKeydown(0,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-1" oninput="handleProfOtpInput(1,this)" onkeydown="handleProfOtpKeydown(1,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-2" oninput="handleProfOtpInput(2,this)" onkeydown="handleProfOtpKeydown(2,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-3" oninput="handleProfOtpInput(3,this)" onkeydown="handleProfOtpKeydown(3,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-4" oninput="handleProfOtpInput(4,this)" onkeydown="handleProfOtpKeydown(4,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                    <input type="text" maxlength="1" class="otp-input profile-otp-digit" id="prof-otp-5" oninput="handleProfOtpInput(5,this)" onkeydown="handleProfOtpKeydown(5,event)" style="width: 40px; height: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;" />
+                </div>
+
+                <button class="app-btn-primary shadow-none py-3 w-100" id="profile-otp-verify-btn" onclick="handleVerifyProfileOtp()">
+                    XÁC MINH & CẬP NHẬT MẬT KHẨU <i class="fas fa-check-circle ms-2"></i>
+                </button>
+
+                <div class="mt-4 text-center">
+                    <p class="text-secondary small mb-0" id="profile-otp-resend-wrapper">
+                        Gửi lại mã sau <span class="text-cyan fw-bold" id="profile-otp-timer">300</span>s
+                    </p>
+                    <button id="profile-otp-resend-btn" class="btn btn-link text-cyan text-decoration-none small fw-bold p-0 mt-1" style="display:none;" onclick="handleResendProfileOtp()">
+                        Gửi lại mã OTP
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inject variables from ViewBag securely -->
+<script>
+    var isGoogleAccount = @(ViewBag.IsGoogleAccount == true ? "true" : "false");
+    var userEmail = "@ViewBag.UserEmail";
+    var userPhone = "@ViewBag.UserPhone";
+</script>
 
 @section Styles {
 <link rel="stylesheet" href="~/css/customer/profile.css" asp-append-version="true" />
 }
 
 @section Scripts {
+<!-- Firebase App and Auth SDKs (Compat version matches login page for consistency) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="~/js/profile.js"></script>
 }

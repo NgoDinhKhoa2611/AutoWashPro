@@ -15,6 +15,9 @@
     <link rel="stylesheet" href="~/css/login.css" />
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Firebase App and Auth SDKs (Compat version is best for straightforward script tags in HTML) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -169,20 +172,18 @@
             </div>
             <h4 class="fw-bold mt-2">Xác Thực Mã OTP</h4>
             <p class="text-secondary small px-2 mt-2">
-                Chúng tôi đã gửi mã xác thực 4 chữ số tới số điện thoại
+                Chúng tôi đã gửi mã xác thực 6 chữ số tới số điện thoại
                 <span class="text-cyan fw-bold" id="otp-phone-display"></span>
             </p>
         </div>
 
-        <div class="d-flex justify-content-center gap-3 mb-4">
-            <input type="text" maxlength="1" class="otp-input" id="otp-0"
-                   oninput="handleOtpInput(0,this)" onkeydown="handleOtpKeydown(0,event)" />
-            <input type="text" maxlength="1" class="otp-input" id="otp-1"
-                   oninput="handleOtpInput(1,this)" onkeydown="handleOtpKeydown(1,event)" />
-            <input type="text" maxlength="1" class="otp-input" id="otp-2"
-                   oninput="handleOtpInput(2,this)" onkeydown="handleOtpKeydown(2,event)" />
-            <input type="text" maxlength="1" class="otp-input" id="otp-3"
-                   oninput="handleOtpInput(3,this)" onkeydown="handleOtpKeydown(3,event)" />
+        <div class="d-flex justify-content-center gap-2 mb-4">
+            <input type="text" maxlength="1" class="otp-input" id="otp-0" oninput="handleOtpInput(0,this)" onkeydown="handleOtpKeydown(0,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-1" oninput="handleOtpInput(1,this)" onkeydown="handleOtpKeydown(1,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-2" oninput="handleOtpInput(2,this)" onkeydown="handleOtpKeydown(2,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-3" oninput="handleOtpInput(3,this)" onkeydown="handleOtpKeydown(3,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-4" oninput="handleOtpInput(4,this)" onkeydown="handleOtpKeydown(4,event)" />
+            <input type="text" maxlength="1" class="otp-input" id="otp-5" oninput="handleOtpInput(5,this)" onkeydown="handleOtpKeydown(5,event)" />
         </div>
 
         <button onclick="handleVerifyOtp()"
@@ -204,6 +205,110 @@
             </button>
         </div>
     </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         PANEL: HOÀN TẤT THÔNG TIN GOOGLE
+         ══════════════════════════════════════════════════════ -->
+    <div id="panel-google-complete" class="glass-card animate-up" style="width:100%;max-width:420px;z-index:10;display:none;">
+        <h4 class="mb-4 text-center fw-bold" style="letter-spacing:1px;font-size:1.15rem;">
+            HOÀN TẤT ĐĂNG KÝ
+        </h4>
+        <p class="text-secondary text-center small mb-4">
+            Vui lòng cung cấp số điện thoại và mật khẩu để hoàn tất liên kết tài khoản Google của bạn.
+        </p>
+
+        <form id="google-complete-form" onsubmit="handleGoogleCompleteSubmit(event)">
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">HỌ VÀ TÊN (GOOGLE)</label>
+                <div class="input-group glass-input-group form-group-disabled" style="opacity: 0.8; background-color: rgba(255,255,255,0.05) !important;">
+                    <span class="input-group-text"><i class="fas fa-user-circle"></i></span>
+                    <input type="text" id="google-complete-name" class="form-control" readonly style="pointer-events: none;" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">ĐỊA CHỈ EMAIL</label>
+                <div class="input-group glass-input-group form-group-disabled" style="opacity: 0.8; background-color: rgba(255,255,255,0.05) !important;">
+                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                    <input type="email" id="google-complete-email" class="form-control" readonly style="pointer-events: none;" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">SỐ ĐIỆN THOẠI</label>
+                <div class="input-group glass-input-group">
+                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                    <input type="tel" id="google-complete-phone" class="form-control"
+                           placeholder="Ví dụ: 0901234567" required />
+                </div>
+                <small class="text-muted d-block mt-1" style="font-size:0.7rem;">Định dạng 10 chữ số: 0912345678</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">MẬT KHẨU ĐĂNG NHẬP</label>
+                <div class="input-group glass-input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" id="google-complete-password" class="form-control"
+                           placeholder="Nhập mật khẩu tối thiểu 6 ký tự" required />
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-secondary">XÁC NHẬN MẬT KHẨU</label>
+                <div class="input-group glass-input-group">
+                    <span class="input-group-text"><i class="fas fa-shield-alt"></i></span>
+                    <input type="password" id="google-complete-confirm" class="form-control"
+                           placeholder="Nhập lại mật khẩu mới" required />
+                </div>
+            </div>
+            <button type="submit" class="app-btn-primary mb-3 py-3" style="font-size:0.85rem;" id="google-complete-submit-btn">
+                GỬI MÃ XÁC THỰC OTP <i class="fas fa-paper-plane ms-2"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         PANEL: FIREBASE PHONE OTP VERIFICATION
+         ══════════════════════════════════════════════════════ -->
+    <div id="panel-firebase-otp" class="glass-card animate-up" style="width:100%;max-width:420px;z-index:10;display:none;">
+        <div class="text-center mb-4">
+            <div class="login-brand-icon d-inline-flex align-items-center justify-content-center"
+                 style="width:65px;height:65px;">
+                <i class="fas fa-shield-alt text-cyan fa-lg"></i>
+            </div>
+            <h4 class="fw-bold mt-2">Xác Thực Firebase OTP</h4>
+            <p class="text-secondary small px-2 mt-2">
+                Chúng tôi đã gửi mã xác thực 6 chữ số tới số điện thoại
+                <span class="text-cyan fw-bold" id="firebase-otp-phone-display"></span>
+            </p>
+        </div>
+
+        <div class="d-flex justify-content-center gap-2 mb-4">
+            <input type="text" maxlength="1" class="otp-input firebase-otp-input" id="fb-otp-0" oninput="handleFbOtpInput(0,this)" onkeydown="handleFbOtpKeydown(0,event)" />
+            <input type="text" maxlength="1" class="otp-input firebase-otp-input" id="fb-otp-1" oninput="handleFbOtpInput(1,this)" onkeydown="handleFbOtpKeydown(1,event)" />
+            <input type="text" maxlength="1" class="otp-input firebase-otp-input" id="fb-otp-2" oninput="handleFbOtpInput(2,this)" onkeydown="handleFbOtpKeydown(2,event)" />
+            <input type="text" maxlength="1" class="otp-input firebase-otp-input" id="fb-otp-3" oninput="handleFbOtpInput(3,this)" onkeydown="handleFbOtpKeydown(3,event)" />
+            <input type="text" maxlength="1" class="otp-input firebase-otp-input" id="fb-otp-4" oninput="handleFbOtpInput(4,this)" onkeydown="handleFbOtpKeydown(4,event)" />
+            <input type="text" maxlength="1" class="otp-input firebase-otp-input" id="fb-otp-5" oninput="handleFbOtpInput(5,this)" onkeydown="handleFbOtpKeydown(5,event)" />
+        </div>
+
+        <button onclick="handleVerifyFirebaseOtp()" class="app-btn-primary mb-3 py-3" style="font-size:0.85rem;" id="firebase-otp-verify-btn">
+            XÁC NHẬN MÃ <i class="fas fa-check-circle ms-2"></i>
+        </button>
+
+        <div class="text-center mt-3">
+            <p class="text-secondary small" id="fb-otp-resend-msg">
+                Gửi lại mã sau <span class="text-cyan fw-bold" id="fb-otp-timer">300</span>s
+            </p>
+            <button id="fb-otp-resend-btn" class="btn btn-link text-cyan text-decoration-none small fw-bold p-0"
+                    onclick="handleResendFirebaseOtp()" style="display:none;">
+                Gửi lại mã OTP qua SMS
+            </button>
+            <br />
+            <button onclick="showPanel('google-complete')" class="btn btn-link text-secondary text-decoration-none small mt-2 p-0">
+                <i class="fas fa-edit me-1"></i> Thay đổi thông tin liên hệ
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase Recaptcha Container -->
+    <div id="recaptcha-container" style="display:none;"></div>
 
 </div><!-- /.login-page-wrapper -->
 
