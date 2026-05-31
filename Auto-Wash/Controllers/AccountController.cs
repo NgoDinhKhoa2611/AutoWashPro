@@ -28,7 +28,7 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                var hash = HashSHA256(request.Password);
+                var hash = HashPassword(request.Password);
                 var account = await _context.Accounts
                     .FirstOrDefaultAsync(a =>
                         (a.Email == request.Identifier.Trim() || a.Phone == request.Identifier.Trim())
@@ -219,11 +219,6 @@ namespace Auto_Wash.Controllers
             }
         }
 
-        private static string HashSHA256(string input)
-        {
-            using var sha = System.Security.Cryptography.SHA256.Create();
-            var bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
-            return Convert.ToHexString(bytes).ToLower();
         private string HashPassword(string password)
         {
             using (var sha256 = System.Security.Cryptography.SHA256.Create())
@@ -249,12 +244,15 @@ namespace Auto_Wash.Controllers
     public class PhoneLoginRequest
     {
         public string Identifier { get; set; } = string.Empty;
+        public string Password   { get; set; } = string.Empty;
+    }
+
     public class CompleteGoogleSignupRequest
     {
-        public string Email { get; set; } = string.Empty;
+        public string Email    { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string GoogleId { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
+        public string Phone    { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
 }
