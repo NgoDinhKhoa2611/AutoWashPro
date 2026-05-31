@@ -13,23 +13,29 @@
         <h4 class="fw-bold mb-1" style="color:var(--navy-dark);">Live Queue Management</h4>
         <p class="text-muted small mb-0 fw-medium">Theo dõi hàng đợi xe, cập nhật trạng thái hoạt động và thanh toán check-out.</p>
     </div>
-    <button class="app-btn-primary py-2 px-4 w-auto shadow-none"
-            style="font-size:0.82rem;border-radius:12px;"
-            data-bs-toggle="modal" data-bs-target="#lprScannerModal"
-            onclick="startScanner()">
-        <i class="fas fa-camera me-1"></i>MÔ PHỎNG QUÉT LPR
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-sm bg-white border shadow-sm px-3 fw-bold"
+                style="border-radius:12px;font-size:0.82rem;" onclick="loadQueue()">
+            <i class="fas fa-sync-alt me-1 text-muted"></i>Làm mới
+        </button>
+        <button class="app-btn-primary py-2 px-4 w-auto shadow-none"
+                style="font-size:0.82rem;border-radius:12px;"
+                data-bs-toggle="modal" data-bs-target="#lprScannerModal"
+                onclick="startScanner()">
+            <i class="fas fa-camera me-1"></i>QUÉT LPR
+        </button>
+    </div>
 </header>
 
 <!-- Priority Info Banner -->
-<div class="alert d-flex align-items-center mb-4 border-0 py-3 animate-up"
-     style="background:var(--navy-dark);color:white;border-radius:16px;animation-delay:0.05s;">
-    <i class="fas fa-info-circle fa-lg me-3" style="color:var(--cyan-electric);"></i>
+<div class="d-flex align-items-center mb-4 py-3 px-4 animate-up"
+     style="background:#0b1121;color:#ffffff;border-radius:16px;animation-delay:0.05s;">
+    <i class="fas fa-info-circle fa-lg me-3" style="color:#0ea5e9;flex-shrink:0;"></i>
     <div class="small fw-medium">
         Hàng đợi AutoWash Pro tự động sắp xếp theo thứ tự ưu tiên:
-        <span class="fw-bold" style="color:var(--cyan-electric);">PLATINUM</span> &gt;
-        <span class="fw-bold text-warning">GOLD</span> &gt;
-        <span class="fw-bold text-secondary">SILVER</span>.
+        <span class="fw-bold" style="color:#0ea5e9;">PLATINUM</span> &gt;
+        <span class="fw-bold" style="color:#ffcf33;">GOLD</span> &gt;
+        <span class="fw-bold" style="color:#94a3b8;">SILVER</span>.
         Các xe cùng hạng được sắp xếp theo thời gian đặt lịch.
     </div>
 </div>
@@ -45,19 +51,19 @@
         </div>
     </div>
     <div class="col-md-5">
-        <div class="bg-white p-1 shadow-sm d-flex justify-content-between text-center" style="border-radius:14px;">
-            <button onclick="setQueueFilter('ALL')" id="qf-ALL"
-                    class="btn border-0 py-2 px-3 fw-bold flex-fill rounded-3 queue-filter-btn active"
-                    style="font-size:0.78rem;">Tất cả (<span id="cnt-ALL">0</span>)</button>
-            <button onclick="setQueueFilter('Waiting')" id="qf-Waiting"
-                    class="btn border-0 py-2 px-3 fw-bold flex-fill rounded-3 queue-filter-btn text-muted"
-                    style="font-size:0.78rem;">Đang chờ (<span id="cnt-Waiting">0</span>)</button>
-            <button onclick="setQueueFilter('In Progress')" id="qf-InProgress"
-                    class="btn border-0 py-2 px-3 fw-bold flex-fill rounded-3 queue-filter-btn text-muted"
-                    style="font-size:0.78rem;">Đang làm (<span id="cnt-InProgress">0</span>)</button>
-            <button onclick="setQueueFilter('Ready')" id="qf-Ready"
-                    class="btn border-0 py-2 px-3 fw-bold flex-fill rounded-3 queue-filter-btn text-muted"
-                    style="font-size:0.78rem;">Sẵn sàng (<span id="cnt-Ready">0</span>)</button>
+        <div class="d-flex flex-wrap gap-2">
+            <button onclick="setQueueFilter('ALL')" id="qf-ALL" class="queue-filter-btn active">
+                Tất cả <span class="filter-count" id="cnt-ALL">0</span>
+            </button>
+            <button onclick="setQueueFilter('Waiting')" id="qf-Waiting" class="queue-filter-btn">
+                Đang chờ <span class="filter-count" id="cnt-Waiting">0</span>
+            </button>
+            <button onclick="setQueueFilter('Active')" id="qf-Active" class="queue-filter-btn">
+                Đang xử lý <span class="filter-count" id="cnt-Active">0</span>
+            </button>
+            <button onclick="setQueueFilter('Completed')" id="qf-Completed" class="queue-filter-btn">
+                Hoàn tất <span class="filter-count" id="cnt-Completed">0</span>
+            </button>
         </div>
     </div>
 </div>
@@ -84,13 +90,13 @@
         <table class="table table-hover align-middle mb-0">
             <thead class="bg-light">
                 <tr class="small text-uppercase text-muted" style="letter-spacing:0.5px;">
-                    <th class="ps-4 py-3">Thứ tự</th>
+                    <th class="ps-4 py-3">#</th>
                     <th>Khách hàng</th>
                     <th>Biển số xe</th>
-                    <th>Hạng thành viên</th>
-                    <th>Trạng thái xe</th>
-                    <th>Gói dịch vụ</th>
-                    <th>Dịch vụ hiện tại</th>
+                    <th>Hạng</th>
+                    <th>Trạng thái</th>
+                    <th>Dịch vụ</th>
+                    <th>Tổng tiền</th>
                     <th class="text-end pe-4">Hành động</th>
                 </tr>
             </thead>
@@ -160,7 +166,7 @@
             </div>
             <div class="p-4 pt-0 d-flex gap-2">
                 <button type="button" class="app-btn-primary shadow-none py-3"
-                        onclick="saveServices()" data-bs-dismiss="modal">LƯU THAY ĐỔI</button>
+                        onclick="saveQueueUpdate()" data-bs-dismiss="modal">LƯU THAY ĐỔI</button>
                 <button type="button" class="btn btn-light w-100 py-3 text-muted border-0 fw-bold"
                         style="border-radius:14px;" data-bs-dismiss="modal">HỦY BỎ</button>
             </div>
@@ -192,5 +198,5 @@
 </div>
 
 @section Scripts {
-<script src="~/js/queue.js"></script>
+<script src="~/js/queue.js" asp-append-version="true"></script>
 }
