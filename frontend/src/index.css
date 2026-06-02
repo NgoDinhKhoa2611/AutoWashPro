@@ -1,0 +1,6 @@
+/* Minimal base CSS - most styles come from the migrated AutoWash stylesheets */
+body {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f8fafc;
+}

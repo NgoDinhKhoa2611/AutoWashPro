@@ -1,0 +1,79 @@
+/* ============================================================
+   history.css — History / Survey page styles
+   AutoWash Pro — SWP391 FPT University
+   ============================================================ */
+
+/* ── Survey Stars ─────────────────────────────────────────── */
+.survey-star {
+    background: none; border: none;
+    font-size: 2rem; color: #e2e8f0;
+    cursor: pointer; padding: 0 4px;
+    transition: color 0.15s ease, transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    line-height: 1;
+}
+.survey-star:hover  { transform: scale(1.2); }
+.survey-star.active { color: var(--gold); text-shadow: 0 0 12px rgba(255,207,51,0.45); }
+
+/* Enhanced star interaction */
+.survey-star { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important; }
+.survey-star:hover { transform: scale(1.25) rotate(8deg) !important; color: #fbbf24 !important; }
+.survey-star.active {
+    color: #f59e0b !important;
+    text-shadow: 0 0 15px rgba(245,158,11,0.6), 0 0 5px rgba(245,158,11,0.3) !important;
+    animation: starPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+}
+@keyframes starPop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.35) rotate(-10deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+/* ── Survey Emoji ─────────────────────────────────────────── */
+.survey-emoji-item {
+    cursor: pointer; padding: 6px 10px; border-radius: 12px;
+    transition: background 0.15s ease, transform 0.18s ease;
+    text-align: center; user-select: none;
+}
+.survey-emoji-item:hover    { background: rgba(14,165,233,0.08); transform: scale(1.08); }
+.survey-emoji-item.selected { background: rgba(14,165,233,0.12); }
+.survey-emoji-item .emoji-icon  { font-size: 1.6rem; display: block; line-height: 1; }
+.survey-emoji-item .emoji-label { font-size: 0.6rem; font-weight: 700; color: #94a3b8; margin-top: 3px; }
+
+/* Enhanced emoji interaction */
+.survey-emoji-item { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important; }
+.survey-emoji-item:hover { background: rgba(14,165,233,0.08) !important; transform: scale(1.15) !important; }
+.survey-emoji-item.selected {
+    background: rgba(14,165,233,0.12) !important;
+    border: 1px solid rgba(14,165,233,0.2) !important;
+    transform: scale(1.08) !important;
+    animation: emojiSelect 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}
+.survey-emoji-item.selected .survey-emoji { animation: emojiBounce 0.5s ease-in-out infinite alternate !important; }
+@keyframes emojiSelect {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.2) translateY(-2px); }
+    100% { transform: scale(1.08) translateY(0); }
+}
+@keyframes emojiBounce {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-4px); }
+}
+
+/* ── Survey Tags ──────────────────────────────────────────── */
+.survey-tag {
+    display: inline-block; padding: 6px 14px; border-radius: 999px;
+    background: #f1f5f9; color: #64748b; font-size: 0.72rem; font-weight: 600;
+    cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s ease; user-select: none;
+}
+.survey-tag:hover    { border-color: var(--cyan-electric); color: var(--navy-dark); }
+.survey-tag.selected { background: rgba(14,165,233,0.1); border-color: var(--cyan-electric); color: var(--navy-dark); }
+
+/* ── Notification Items ───────────────────────────────────── */
+.notif-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; border-radius: 12px;
+    transition: background 0.15s ease; cursor: default;
+}
+.notif-item:hover         { background: rgba(14,165,233,0.05); }
+.notif-item.notif-unread  { background: rgba(14,165,233,0.06); }
+.notif-item .notif-dot    { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan-electric); flex-shrink: 0; margin-top: 5px; }
