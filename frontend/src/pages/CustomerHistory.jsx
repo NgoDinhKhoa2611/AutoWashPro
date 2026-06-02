@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/history.css';
 
@@ -33,8 +34,35 @@ export const CustomerHistory = () => {
   const [submittingSurvey, setSubmittingSurvey] = useState(false);
 
   useEffect(() => {
-    const loadHistoryData = () => {
-      // History List
+    const fetchHistory = async () => {
+      try {
+        const response = await customerService.getWashHistory();
+        if (response.success && response.history) {
+          const list = response.history.map(b => ({
+            id: b.id,
+            date: b.bookingDate.split('-').reverse().join('/'),
+            plate: b.vehicle,
+            type: 'Xe ga',
+            service: b.mainService + (b.addons && b.addons.length > 0 ? ` + ${b.addons.join(', ')}` : ''),
+            price: b.price,
+            points: b.points,
+            status: b.status === 'Completed' ? 'Hoàn tất' : 'Đang xử lý',
+            surveyStatus: 'pending'
+          }));
+          setHistory(list);
+          setTotalWashes(list.length);
+          setTotalSpent(list.reduce((s, i) => s + i.price, 0));
+          setTotalPoints(list.reduce((s, i) => s + i.points, 0));
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+
+      loadLocalStorageHistory();
+    };
+
+    const loadLocalStorageHistory = () => {
       let saved = [];
       try {
         const str = localStorage.getItem('user_history_bookings');
@@ -49,12 +77,23 @@ export const CustomerHistory = () => {
       }
       setHistory(saved);
 
-      // Calc stats
       setTotalWashes(saved.length);
       setTotalSpent(saved.reduce((s, i) => s + i.price, 0));
       setTotalPoints(saved.reduce((s, i) => s + i.points, 0));
+    };
 
-      // Active booking
+    const fetchActive = async () => {
+      try {
+        const response = await customerService.getActiveBooking();
+        if (response.success && response.booking) {
+          setActiveBooking(response.booking);
+          setWashStep(response.washStep || 0);
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      
       try {
         const activeStr = localStorage.getItem('active_booking');
         if (activeStr) {
@@ -64,6 +103,11 @@ export const CustomerHistory = () => {
           setActiveBooking(null);
         }
       } catch (e) {}
+    };
+
+    const loadHistoryData = () => {
+      fetchHistory();
+      fetchActive();
     };
 
     loadHistoryData();

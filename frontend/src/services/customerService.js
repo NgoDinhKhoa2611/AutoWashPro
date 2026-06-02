@@ -60,5 +60,25 @@ export const customerService = {
       LicensePlate: licensePlate
     });
     return response.data;
+  },
+
+  getServices: async () => {
+    const response = await api.get('/Customer/GetServices');
+    return response.data;
+  },
+
+  createBooking: async (bookingData) => {
+    const response = await api.post('/Customer/CreateBooking', bookingData);
+    return response.data;
+  },
+
+  getWashHistory: async () => {
+    const response = await api.get('/Customer/GetWashHistory');
+    return response.data;
+  },
+
+  getActiveBooking: async () => {
+    const response = await api.get('/Customer/GetActiveBooking');
+    return response.data;
   }
 };

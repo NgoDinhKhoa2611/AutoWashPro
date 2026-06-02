@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/booking.css';
 
@@ -63,55 +64,120 @@ export const CustomerBooking = () => {
     setMaxDateStr(maxDateStr);
 
     // Load vehicles
-    let savedVehicles = [];
-    try {
-      savedVehicles = JSON.parse(localStorage.getItem('user_vehicles') || '[]');
-    } catch (e) {}
-    if (savedVehicles.length === 0) {
-      savedVehicles = [
-        { plate: '51G - 123.45', type: 'Honda Vision', lastWash: '28/05/2026', totalWashes: 8 },
-        { plate: '51A - 999.99', type: 'SH Mode', lastWash: '22/05/2026', totalWashes: 12 }
-      ];
-      localStorage.setItem('user_vehicles', JSON.stringify(savedVehicles));
-    }
-    setVehicles(savedVehicles);
-    if (savedVehicles.length > 0) {
-      setSelectedVehicle(savedVehicles[0].plate);
-    }
+    const fetchVehicles = async () => {
+      try {
+        const response = await customerService.getVehicles();
+        if (response.success && response.vehicles && response.vehicles.length > 0) {
+          const list = response.vehicles.map(v => ({
+            plate: v.plate,
+            type: v.type,
+            lastWash: 'Vừa xong',
+            totalWashes: 0
+          }));
+          setVehicles(list);
+          setSelectedVehicle(list[0].plate);
+        } else {
+          loadLocalStorageVehicles();
+        }
+      } catch (err) {
+        console.error(err);
+        loadLocalStorageVehicles();
+      }
+    };
 
-    // Set default main service to Combo Cao Cấp
+    const loadLocalStorageVehicles = () => {
+      let savedVehicles = [];
+      try {
+        savedVehicles = JSON.parse(localStorage.getItem('user_vehicles') || '[]');
+      } catch (e) {}
+      if (savedVehicles.length === 0) {
+        savedVehicles = [
+          { plate: '51G - 123.45', type: 'Honda Vision', lastWash: '28/05/2026', totalWashes: 8 },
+          { plate: '51A - 999.99', type: 'SH Mode', lastWash: '22/05/2026', totalWashes: 12 }
+        ];
+        localStorage.setItem('user_vehicles', JSON.stringify(savedVehicles));
+      }
+      setVehicles(savedVehicles);
+      if (savedVehicles.length > 0) {
+        setSelectedVehicle(savedVehicles[0].plate);
+      }
+    };
+
+    fetchVehicles();
+
+    // Set default main service
     setSelectedMain(DEFAULT_MAIN_SERVICES[1]);
 
-    // Load services (checking custom services in local storage first)
-    let appSvc = [];
-    try {
-      appSvc = JSON.parse(localStorage.getItem('app_services') || '[]');
-    } catch (e) {}
+    // Load services (checking Custom services in DB/LocalStorage)
+    const fetchServices = async () => {
+      try {
+        const response = await customerService.getServices();
+        if (response.success && response.services && response.services.length > 0) {
+          const mains = response.services.filter(s => s.category.includes('cơ bản') || s.category.includes('cao cấp'))
+            .map(s => ({
+              id: s.id,
+              name: s.name,
+              desc: s.desc,
+              price: s.price,
+              time: s.estimatedMinutes + ' phút',
+              icon: 'fa-soap'
+            }));
+          setMainServices(mains);
+          if (mains.length > 0) {
+            setSelectedMain(mains[0]);
+          }
 
-    const customMains = appSvc
-      .filter(s => (s.isActive !== undefined ? s.isActive : s.status === 'Active') && 
-                   (s.category === 'Rửa xe cơ bản' || s.category === 'Rửa xe cao cấp'))
-      .map(s => ({
-        id: s.id,
-        name: s.name,
-        desc: s.description || '',
-        price: s.price,
-        time: (s.estimatedMinutes || 15) + ' phút',
-        icon: 'fa-soap'
-      }));
-    setMainServices(customMains.length > 0 ? customMains : DEFAULT_MAIN_SERVICES);
+          const addons = response.services.filter(s => s.category.includes('đi kèm'))
+            .map(s => ({
+              id: s.id,
+              name: s.name,
+              desc: s.desc,
+              price: s.price,
+              icon: 'fa-plus-circle'
+            }));
+          setAddonServices(addons);
+        } else {
+          loadLocalStorageServices();
+        }
+      } catch (err) {
+        console.error(err);
+        loadLocalStorageServices();
+      }
+    };
 
-    const customAddons = appSvc
-      .filter(s => (s.isActive !== undefined ? s.isActive : s.status === 'Active') && 
-                   (s.category === 'Dịch vụ đi kèm' || s.category === 'Chăm sóc nội thất' || s.category === 'Phủ bóng / Wax'))
-      .map(s => ({
-        id: s.id,
-        name: s.name,
-        price: s.price,
-        icon: 'fa-plus-circle',
-        desc: s.description || 'Dịch vụ nâng cao đi kèm'
-      }));
-    setAddonServices(customAddons.length > 0 ? customAddons : DEFAULT_ADDON_SERVICES);
+    const loadLocalStorageServices = () => {
+      let appSvc = [];
+      try {
+        appSvc = JSON.parse(localStorage.getItem('app_services') || '[]');
+      } catch (e) {}
+
+      const customMains = appSvc
+        .filter(s => (s.isActive !== undefined ? s.isActive : s.status === 'Active') && 
+                     (s.category === 'Rửa xe cơ bản' || s.category === 'Rửa xe cao cấp'))
+        .map(s => ({
+          id: s.id,
+          name: s.name,
+          desc: s.description || '',
+          price: s.price,
+          time: (s.estimatedMinutes || 15) + ' phút',
+          icon: 'fa-soap'
+        }));
+      setMainServices(customMains.length > 0 ? customMains : DEFAULT_MAIN_SERVICES);
+
+      const customAddons = appSvc
+        .filter(s => (s.isActive !== undefined ? s.isActive : s.status === 'Active') && 
+                     (s.category === 'Dịch vụ đi kèm' || s.category === 'Chăm sóc nội thất' || s.category === 'Phủ bóng / Wax'))
+        .map(s => ({
+          id: s.id,
+          name: s.name,
+          price: s.price,
+          icon: 'fa-plus-circle',
+          desc: s.description || 'Dịch vụ nâng cao đi kèm'
+        }));
+      setAddonServices(customAddons.length > 0 ? customAddons : DEFAULT_ADDON_SERVICES);
+    };
+
+    fetchServices();
 
     // Load claimed vouchers
     try {
@@ -227,7 +293,7 @@ export const CustomerBooking = () => {
   const earnedPoints = Math.round(finalTotal / 10000);
 
   // Confirm booking
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
     if (!selectedVehicle) {
       if (window.showToast) window.showToast('Vui lòng chọn phương tiện!', 'warning');
       return;
@@ -255,6 +321,27 @@ export const CustomerBooking = () => {
       points: earnedPoints
     };
 
+    try {
+      // Call real backend booking API
+      const result = await customerService.createBooking({
+        LicensePlate: selectedVehicle,
+        MainServiceName: selectedMain.name,
+        AddonServiceNames: Object.values(selectedAddons).map(a => a.name),
+        BookingDate: bookingDate,
+        BookingTime: bookingTime,
+        FinalPrice: finalTotal,
+        PointsEarned: earnedPoints,
+        Notes: ''
+      });
+
+      if (result.success) {
+        booking.id = 'book_' + result.bookingId;
+      }
+    } catch (err) {
+      console.error(err);
+      if (window.showToast) window.showToast('Đặt lịch thất bại lên cơ sở dữ liệu! Đang chạy chế độ offline dự phòng...', 'warning');
+    }
+
     // Mark claimed voucher as used in local storage
     if (appliedVoucher && appliedVoucher.redemptionId) {
       let claimedList = [];
@@ -268,7 +355,7 @@ export const CustomerBooking = () => {
       }
     }
 
-    // Save booking states
+    // Save booking states (local backup)
     localStorage.setItem('active_booking', JSON.stringify(booking));
     localStorage.setItem('wash_step', '0');
 

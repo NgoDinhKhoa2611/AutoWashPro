@@ -219,6 +219,84 @@ namespace Auto_Wash.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.FullName))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ tất cả các trường!" });
+            }
+
+            try
+            {
+                var existingEmail = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == request.Email.Trim());
+                if (existingEmail != null)
+                {
+                    return BadRequest(new { success = false, message = "Email này đã được sử dụng bởi một tài khoản khác!" });
+                }
+
+                var existingPhone = await _context.Accounts.FirstOrDefaultAsync(a => a.Phone == request.Phone.Trim());
+                if (existingPhone != null)
+                {
+                    return BadRequest(new { success = false, message = "Số điện thoại này đã được sử dụng bởi một tài khoản khác!" });
+                }
+
+                var account = new Account
+                {
+                    Email = request.Email.Trim(),
+                    FullName = request.FullName.Trim(),
+                    Phone = request.Phone.Trim(),
+                    PasswordHash = HashPassword(request.Password.Trim()),
+                    Role = 3, // 3 = Customer
+                    IsActive = true,
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.Accounts.Add(account);
+                await _context.SaveChangesAsync();
+
+                var customer = new Customer
+                {
+                    AccountId = account.AccountId,
+                    MembershipCode = "MEM" + DateTime.Now.ToString("yyMMddHHmmss"),
+                    TierId = 1, // Default Tier: Member
+                    PointBalance = 100, // Gift 100 points
+                    LifetimePoints = 100,
+                    RankingBalance = 0,
+                    TotalVisits = 0,
+                    TotalSpend = 0,
+                    JoinedAt = DateTime.Now
+                };
+
+                _context.Customers.Add(customer);
+                await _context.SaveChangesAsync();
+
+                Response.Cookies.Append("UserEmail", account.Email, new CookieOptions {
+                    Expires = DateTime.Now.AddDays(7),
+                    SameSite = SameSiteMode.Lax
+                });
+                Response.Cookies.Append("UserPhone", account.Phone, new CookieOptions {
+                    Expires = DateTime.Now.AddDays(7),
+                    SameSite = SameSiteMode.Lax
+                });
+
+                return Ok(new
+                {
+                    success = true,
+                    role = "customer",
+                    name = account.FullName,
+                    email = account.Email,
+                    phone = account.Phone,
+                    tier = "Member",
+                    points = 100
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
         private string HashPassword(string password)
         {
             using (var sha256 = System.Security.Cryptography.SHA256.Create())
@@ -253,6 +331,14 @@ namespace Auto_Wash.Controllers
         public string FullName { get; set; } = string.Empty;
         public string GoogleId { get; set; } = string.Empty;
         public string Phone    { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public class RegisterRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
 }

@@ -6,7 +6,7 @@ import '../styles/shared.css';
 import '../styles/login.css';
 
 export const Login = () => {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
   // Panels: 'login' (controls both signin/signup sliders) | 'otp' | 'google-complete' | 'firebase-otp'
@@ -52,7 +52,7 @@ export const Login = () => {
     const initGoogle = () => {
       if (window.google && panel === 'login') {
         window.google.accounts.id.initialize({
-          client_id: "40329422268-s3m1sqlniabg1f8o7roo5pmfckb4j3te.apps.googleusercontent.com",
+          client_id: "822970711625-j7g9i1mvivrff2djnv0gi96bsqn28t4c.apps.googleusercontent.com",
           callback: handleGoogleCredential
         });
 
@@ -265,7 +265,7 @@ export const Login = () => {
     }
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     const code = otpDigits.join('');
     if (code.length < 6) {
       if (window.showToast) window.showToast('Vui lòng nhập đầy đủ mã 6 chữ số!', 'warning');
@@ -278,28 +278,30 @@ export const Login = () => {
     const phone = localStorage.getItem('reg_phone_temp') || regPhone;
     const email = localStorage.getItem('reg_email_temp') || regEmail;
 
-    localStorage.setItem('user_role', 'customer');
-    localStorage.setItem('user_display_name', name);
-    localStorage.setItem('user_phone', phone);
-    localStorage.setItem('user_email', email);
-    localStorage.setItem('user_points', '100'); // Initial points
-    localStorage.setItem('user_tier', 'Standard Member');
-    localStorage.removeItem('reg_name_temp');
-    localStorage.removeItem('reg_phone_temp');
-    localStorage.removeItem('reg_email_temp');
-    window.dispatchEvent(new Event('storage'));
+    try {
+      // Gọi API đăng ký thực tế
+      await register(email, name, phone, regPassword);
 
-    setSuccessMsg(`Chào mừng ${name} gia nhập AutoWash Pro`);
-    setSuccessScreen(true);
-    setPanel('none');
-    
-    // Simulate session cookie
-    document.cookie = "UserPhone=" + phone + "; path=/; max-age=" + (30*24*60*60);
-    document.cookie = "UserEmail=" + email + "; path=/; max-age=" + (30*24*60*60);
+      localStorage.removeItem('reg_name_temp');
+      localStorage.removeItem('reg_phone_temp');
+      localStorage.removeItem('reg_email_temp');
 
-    setTimeout(() => {
-      navigate('/customer/dashboard');
-    }, 2000);
+      setSuccessMsg(`Chào mừng ${name} gia nhập AutoWash Pro`);
+      setSuccessScreen(true);
+      setPanel('none');
+      
+      // Ghi cookie phiên bản
+      document.cookie = "UserPhone=" + phone + "; path=/; max-age=" + (30*24*60*60);
+      document.cookie = "UserEmail=" + email + "; path=/; max-age=" + (30*24*60*60);
+
+      setTimeout(() => {
+        navigate('/customer/dashboard');
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      if (window.showToast) window.showToast(err.message || 'Lỗi đăng ký tài khoản mới lên cơ sở dữ liệu!', 'error');
+      startOtpTimer();
+    }
   };
 
   const handleResendOtp = () => {

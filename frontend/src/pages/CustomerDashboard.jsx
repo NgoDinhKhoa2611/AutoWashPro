@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/dashboard.css';
 
@@ -34,9 +35,20 @@ export const CustomerDashboard = () => {
     const index = new Date().getDate() % statuses.length;
     setWeatherStatus(statuses[index]);
 
-    // 3. Load dashboard data
-    const loadDashboardData = () => {
-      // Current active booking (dynamic loading)
+    // 3. Fetch active booking from API
+    const fetchActiveBooking = async () => {
+      try {
+        const response = await customerService.getActiveBooking();
+        if (response.success && response.booking) {
+          setActiveBooking(response.booking);
+          setWashStep(response.washStep || 0);
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      
+      // Fallback to local storage
       const activeStr = localStorage.getItem('active_booking');
       if (activeStr) {
         try {
@@ -49,6 +61,11 @@ export const CustomerDashboard = () => {
       } else {
         setActiveBooking(null);
       }
+    };
+
+    // 4. Load dashboard data
+    const loadDashboardData = () => {
+      fetchActiveBooking();
 
       // Vehicles
       let savedVehicles = [];
@@ -90,8 +107,14 @@ export const CustomerDashboard = () => {
     loadDashboardData();
     window.addEventListener('storage', loadDashboardData);
 
+    // dynamic polling for active booking status every 5 seconds
+    const interval = setInterval(() => {
+      fetchActiveBooking();
+    }, 5000);
+
     return () => {
       window.removeEventListener('storage', loadDashboardData);
+      clearInterval(interval);
     };
   }, []);
 

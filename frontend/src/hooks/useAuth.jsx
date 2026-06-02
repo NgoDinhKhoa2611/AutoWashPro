@@ -78,6 +78,32 @@ export const AuthProvider = ({ children }) => {
     throw new Error(data.message || 'Đăng nhập thất bại!');
   };
 
+  const register = async (email, fullName, phone, password) => {
+    const data = await authService.register(email, fullName, phone, password);
+    if (data.success) {
+      localStorage.setItem('user_role', data.role);
+      localStorage.setItem('user_display_name', data.name || '');
+      localStorage.setItem('user_email', data.email || '');
+      if (data.phone) localStorage.setItem('user_phone', data.phone);
+      if (data.tier) localStorage.setItem('user_tier', data.tier);
+      if (data.points != null) localStorage.setItem('user_points', String(data.points));
+      
+      const loggedUser = {
+        role: data.role,
+        name: data.name || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        tier: data.tier || 'Member',
+        points: data.points != null ? Number(data.points) : 0,
+        avatar: ''
+      };
+      setUser(loggedUser);
+      window.dispatchEvent(new Event('storage'));
+      return data;
+    }
+    throw new Error(data.message || 'Đăng ký thất bại!');
+  };
+
   const logout = async () => {
     try {
       await authService.logout();
@@ -114,6 +140,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
+    register,
     updateUser,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin' || user?.role === 'staff',

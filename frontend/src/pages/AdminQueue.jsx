@@ -58,83 +58,137 @@ export const AdminQueue = () => {
   const fetchQueue = async () => {
     setLoading(true);
     try {
-      // Load from localStorage first to preserve live customer bookings
-      let localQueue = [];
-      try {
-        localQueue = JSON.parse(localStorage.getItem('global_queue') || '[]');
-      } catch (e) {}
+      const response = await adminService.getQueue();
+      if (response) {
+        const mapped = response.map(item => {
+          const mainService = item.services[0]?.name || 'Rửa xe phổ thông';
+          const addonsOnly = item.services.filter(s => s.name !== mainService).map(s => s.name);
 
-      // If local queue is empty, populate mock data for business demonstration
-      if (localQueue.length === 0) {
-        localQueue = [
-          {
-            queueId: 'q_mock_1',
-            licensePlate: '51A - 999.99',
-            customerName: 'Trần Thị B',
-            phone: '0912345678',
-            tierName: 'Gold Loyalty',
-            tierId: 3,
-            status: 'Washing',
-            bookingDate: new Date().toISOString().split('T')[0],
-            bookingTime: '09:00',
-            mainService: 'Combo Rửa xe cao cấp',
-            addons: ['Vệ sinh nội thất', 'Wax nano'],
-            staffName: 'Trần Văn B',
-            progress: 33,
-            washStep: 2,
-            checkInAt: new Date().toISOString(),
-            eta: '15 phút',
-            price: 130000,
-            points: 13,
-            staffNote: 'Xe bẩn nhiều phần xích xe.',
-            services: [
-              { name: 'Nhận diện LPR', status: 'Completed' },
-              { name: 'Rửa bọt tuyết', status: 'Completed' },
-              { name: 'Sấy khô', status: 'In Progress' },
-              { name: 'Vệ sinh nội thất', status: 'Pending' },
-              { name: 'Wax nano', status: 'Pending' },
-              { name: 'Kiểm tra cuối', status: 'Pending' },
-              { name: 'Hoàn tất', status: 'Pending' }
-            ]
-          },
-          {
-            queueId: 'q_mock_2',
-            licensePlate: '59 - K1 47278',
-            customerName: 'Nguyễn Văn C',
-            phone: '0987654321',
-            tierName: 'Standard Loyalty',
-            tierId: 1,
-            status: 'Waiting',
-            bookingDate: new Date().toISOString().split('T')[0],
-            bookingTime: '10:30',
-            mainService: 'Rửa xe phổ thông',
-            addons: [],
-            staffName: 'Chưa gán',
-            progress: 0,
-            washStep: 0,
-            checkInAt: new Date().toISOString(),
-            eta: '20 phút',
-            price: 35000,
-            points: 3,
-            staffNote: '',
-            services: [
-              { name: 'Nhận diện LPR', status: 'In Progress' },
-              { name: 'Rửa bọt tuyết', status: 'Pending' },
-              { name: 'Sấy khô', status: 'Pending' },
-              { name: 'Kiểm tra cuối', status: 'Pending' },
-              { name: 'Hoàn tất', status: 'Pending' }
-            ]
-          }
-        ];
-        localStorage.setItem('global_queue', JSON.stringify(localQueue));
+          const servicesList = [
+            { name: 'Nhận diện LPR', status: item.status === 'Waiting' ? 'Pending' : (item.status === 'LPR_Scan' ? 'In Progress' : 'Completed') },
+            { name: 'Rửa bọt tuyết', status: item.status === 'Waiting' || item.status === 'LPR_Scan' ? 'Pending' : (item.status === 'Washing' ? 'In Progress' : 'Completed') },
+            { name: 'Sấy khô', status: item.status === 'Waiting' || item.status === 'LPR_Scan' || item.status === 'Washing' ? 'Pending' : (item.status === 'Drying' ? 'In Progress' : 'Completed') }
+          ];
+          
+          addonsOnly.forEach(a => {
+            servicesList.push({ name: a, status: item.status === 'Completed' ? 'Completed' : 'Pending' });
+          });
+          servicesList.push({ name: 'Hoàn tất', status: item.status === 'Completed' ? 'Completed' : 'Pending' });
+
+          const totalS = servicesList.length;
+          let washStep = 0;
+          if (item.status === 'LPR_Scan') washStep = 0;
+          else if (item.status === 'Washing') washStep = 1;
+          else if (item.status === 'Drying') washStep = 2;
+          else if (item.status === 'Completed') washStep = totalS - 1;
+
+          const progressPct = totalS > 1 ? Math.round((washStep / (totalS - 1)) * 100) : 100;
+
+          return {
+            queueId: item.queueId,
+            licensePlate: item.licensePlate,
+            customerName: item.customerName,
+            phone: '—',
+            tierName: item.tierName,
+            tierId: item.tierId,
+            status: item.status,
+            bookingDate: new Date(item.checkInAt).toISOString().split('T')[0],
+            bookingTime: new Date(item.checkInAt).toTimeString().substring(0, 5),
+            mainService: mainService,
+            addons: addonsOnly,
+            staffName: item.staffNote || 'Chưa gán',
+            progress: progressPct,
+            washStep: washStep,
+            checkInAt: item.checkInAt,
+            eta: item.status === 'Completed' ? 'Đã xong' : '15 phút',
+            price: item.finalPrice,
+            points: item.pointsEarned,
+            staffNote: item.staffNote || '',
+            services: servicesList
+          };
+        });
+        setQueue(mapped);
+        setLoading(false);
+        return;
       }
-
-      setQueue(localQueue);
     } catch (err) {
-      console.error('Lỗi khi tải hàng đợi:', err);
-    } finally {
-      setLoading(false);
+      console.error('Lỗi khi tải hàng đợi từ API:', err);
     }
+
+    loadLocalStorageQueue();
+  };
+
+  const loadLocalStorageQueue = () => {
+    let localQueue = [];
+    try {
+      localQueue = JSON.parse(localStorage.getItem('global_queue') || '[]');
+    } catch (e) {}
+
+    if (localQueue.length === 0) {
+      localQueue = [
+        {
+          queueId: 'q_mock_1',
+          licensePlate: '51A - 999.99',
+          customerName: 'Trần Thị B',
+          phone: '0912345678',
+          tierName: 'Gold Loyalty',
+          tierId: 3,
+          status: 'Washing',
+          bookingDate: new Date().toISOString().split('T')[0],
+          bookingTime: '09:00',
+          mainService: 'Combo Rửa xe cao cấp',
+          addons: ['Vệ sinh nội thất', 'Wax nano'],
+          staffName: 'Trần Văn B',
+          progress: 33,
+          washStep: 2,
+          checkInAt: new Date().toISOString(),
+          eta: '15 phút',
+          price: 130000,
+          points: 13,
+          staffNote: 'Xe bẩn nhiều phần xích xe.',
+          services: [
+            { name: 'Nhận diện LPR', status: 'Completed' },
+            { name: 'Rửa bọt tuyết', status: 'Completed' },
+            { name: 'Sấy khô', status: 'In Progress' },
+            { name: 'Vệ sinh nội thất', status: 'Pending' },
+            { name: 'Wax nano', status: 'Pending' },
+            { name: 'Kiểm tra cuối', status: 'Pending' },
+            { name: 'Hoàn tất', status: 'Pending' }
+          ]
+        },
+        {
+          queueId: 'q_mock_2',
+          licensePlate: '59 - K1 47278',
+          customerName: 'Nguyễn Văn C',
+          phone: '0987654321',
+          tierName: 'Standard Loyalty',
+          tierId: 1,
+          status: 'Waiting',
+          bookingDate: new Date().toISOString().split('T')[0],
+          bookingTime: '10:30',
+          mainService: 'Rửa xe phổ thông',
+          addons: [],
+          staffName: 'Chưa gán',
+          progress: 0,
+          washStep: 0,
+          checkInAt: new Date().toISOString(),
+          eta: '20 phút',
+          price: 35000,
+          points: 3,
+          staffNote: '',
+          services: [
+            { name: 'Nhận diện LPR', status: 'In Progress' },
+            { name: 'Rửa bọt tuyết', status: 'Pending' },
+            { name: 'Sấy khô', status: 'Pending' },
+            { name: 'Kiểm tra cuối', status: 'Pending' },
+            { name: 'Hoàn tất', status: 'Pending' }
+          ]
+        }
+      ];
+      localStorage.setItem('global_queue', JSON.stringify(localQueue));
+    }
+    setQueue(localQueue);
+    setLoading(false);
   };
 
   // Helper to update global queue states and sync with Customer tab
@@ -145,7 +199,21 @@ export const AdminQueue = () => {
   };
 
   // Move vehicle to next Kanban column
-  const handleAdvanceColumn = (queueId) => {
+  const handleAdvanceColumn = async (queueId) => {
+    try {
+      if (typeof queueId === 'number' || !isNaN(queueId)) {
+        const response = await adminService.advanceQueue(queueId);
+        if (response.success) {
+          if (window.showToast) window.showToast('Đã chuyển xe sang công đoạn tiếp theo!', 'success');
+          fetchQueue();
+          return;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    // Fallback logic
     const updated = queue.map(item => {
       if (item.queueId !== queueId) return item;
       
@@ -156,7 +224,6 @@ export const AdminQueue = () => {
       else if (item.status === 'Addon_Processing') nextStatus = 'Drying';
       else if (item.status === 'Drying') nextStatus = 'Completed';
 
-      // Automatically update the dynamic steps based on columns
       const updatedServices = [...item.services];
       let newWashStep = item.washStep;
 
@@ -173,19 +240,16 @@ export const AdminQueue = () => {
         updatedServices[0].status = 'Completed';
         if (updatedServices[1]) updatedServices[1].status = 'Completed';
         if (updatedServices[2]) updatedServices[2].status = 'Completed';
-        // Mark first addon in progress if any
         if (updatedServices.length > 4) {
           updatedServices[3].status = 'In Progress';
           newWashStep = 3;
         } else {
-          // No addons, skip to check
           if (updatedServices[updatedServices.length - 2]) {
             updatedServices[updatedServices.length - 2].status = 'In Progress';
           }
           newWashStep = updatedServices.length - 2;
         }
       } else if (nextStatus === 'Drying') {
-        // Complete everything before last checking
         for (let i = 0; i < updatedServices.length - 2; i++) {
           updatedServices[i].status = 'Completed';
         }
@@ -194,7 +258,6 @@ export const AdminQueue = () => {
         }
         newWashStep = updatedServices.length - 2;
       } else if (nextStatus === 'Completed') {
-        // Mark all completed
         updatedServices.forEach(s => s.status = 'Completed');
         newWashStep = updatedServices.length - 1;
       }
@@ -210,14 +273,12 @@ export const AdminQueue = () => {
         progress: progressPct
       };
 
-      // Sync back to Active Booking if matches customer's plate
       syncWithCustomerTab(newItem);
-
       return newItem;
     });
 
     saveQueueState(updated);
-    if (window.showToast) window.showToast('Đã chuyển xe sang công đoạn tiếp theo!', 'success');
+    if (window.showToast) window.showToast('Đã chuyển xe sang công đoạn tiếp theo (Offline)!', 'success');
   };
 
   const syncWithCustomerTab = (queueItem) => {
@@ -280,11 +341,25 @@ export const AdminQueue = () => {
 
   // Checkout and clean out queue
   const handleCheckoutVehicle = (queueId, plate) => {
-    const checkout = () => {
+    const checkout = async () => {
+      try {
+        if (typeof queueId === 'number' || !isNaN(queueId)) {
+          const response = await adminService.checkoutQueue(queueId);
+          if (response.success) {
+            if (window.showToast) window.showToast(`Check-out thành công cho xe ${plate}! Đã cộng +${response.pointsEarned} điểm Loyalty cho khách.`, 'success');
+            setSelectedVehicle(null);
+            fetchQueue();
+            return;
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+
+      // Fallback
       const updated = queue.filter(item => item.queueId !== queueId);
       saveQueueState(updated);
 
-      // Clean local active booking
       try {
         const activeStr = localStorage.getItem('active_booking');
         if (activeStr) {
@@ -296,12 +371,10 @@ export const AdminQueue = () => {
         }
       } catch (e) {}
 
-      // Add points to customer ledger
       const ptsEarned = selectedVehicle ? selectedVehicle.points : 13;
       const currentPts = Number(localStorage.getItem('user_points') || 217);
       localStorage.setItem('user_points', String(currentPts + ptsEarned));
 
-      // Notification review
       const reviewNotif = {
         id: 'notif_checkout_' + Date.now(),
         title: 'Dịch vụ hoàn tất ✨',
@@ -318,7 +391,7 @@ export const AdminQueue = () => {
 
       window.dispatchEvent(new Event('storage'));
       setSelectedVehicle(null);
-      if (window.showToast) window.showToast(`Check-out thành công cho xe ${plate}! Đã cộng +${ptsEarned} điểm Loyalty cho khách.`, 'success');
+      if (window.showToast) window.showToast(`Check-out thành công cho xe ${plate} (Offline)! Đã cộng +${ptsEarned} điểm Loyalty cho khách.`, 'success');
     };
 
     if (window.showConfirm) {
@@ -329,20 +402,33 @@ export const AdminQueue = () => {
   };
 
   // Add Walk-in Check-in
-  const handleAddWalkIn = (e) => {
+  const handleAddWalkIn = async (e) => {
     e.preventDefault();
     if (!walkInPlate.trim()) {
       if (window.showToast) window.showToast('Vui lòng điền biển số xe!', 'warning');
       return;
     }
 
-    // Determine priority multiplier based on selected tier
+    try {
+      const response = await adminService.addWalkIn(walkInPlate.trim(), walkInName.trim());
+      if (response.success) {
+        if (window.showToast) window.showToast(`Check-in thành công xe vãng lai ${walkInPlate}!`, 'success');
+        setShowCheckInModal(false);
+        setWalkInPlate('');
+        setWalkInName('');
+        fetchQueue();
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    // Fallback logic
     let priorityVal = 1;
     if (walkInPriority.includes('Silver')) priorityVal = 2;
     if (walkInPriority.includes('Gold')) priorityVal = 3;
     if (walkInPriority.includes('Platinum')) priorityVal = 4;
 
-    // Check if duplicate today's booking exists
     const duplicate = queue.find(item => item.licensePlate.trim().toUpperCase() === walkInPlate.trim().toUpperCase() && item.status === 'Waiting');
     
     if (duplicate) {
@@ -352,7 +438,6 @@ export const AdminQueue = () => {
       return;
     }
 
-    // Creating dynamic services workflow
     const dynamicServices = [
       { name: 'Nhận diện LPR', status: 'In Progress' },
       { name: 'Rửa bọt tuyết', status: 'Pending' },
@@ -369,7 +454,7 @@ export const AdminQueue = () => {
       phone: walkInPhone || '—',
       tierName: walkInPriority,
       tierId: priorityVal,
-      status: 'LPR_Scan', // check-in goes directly to scan LPR
+      status: 'LPR_Scan',
       bookingDate: new Date().toISOString().split('T')[0],
       bookingTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       mainService: walkInMainSvc,
@@ -387,7 +472,6 @@ export const AdminQueue = () => {
 
     saveQueueState([...queue, newItem]);
     
-    // Clear form states
     setWalkInPlate('');
     setWalkInName('');
     setWalkInPhone('');
@@ -395,7 +479,7 @@ export const AdminQueue = () => {
     setWalkInNote('');
     setShowCheckInModal(false);
     
-    if (window.showToast) window.showToast(`Check-in thành công cho xe vãng lai ${newItem.licensePlate}!`, 'success');
+    if (window.showToast) window.showToast(`Check-in thành công cho xe vãng lai ${newItem.licensePlate} (Offline)!`, 'success');
   };
 
   const handleToggleAddonCheck = (addon) => {

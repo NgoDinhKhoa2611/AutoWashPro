@@ -596,6 +596,380 @@ namespace Auto_Wash.Controllers
 
             return validProvinces.Contains(provinceCode);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetServices()
+        {
+            try
+            {
+                var services = await _context.Services
+                    .Where(s => s.IsActive)
+                    .Select(s => new
+                    {
+                        id = s.ServiceId.ToString(),
+                        name = s.ServiceName,
+                        desc = s.Description ?? "",
+                        category = s.Category == 1 ? "Rửa xe cơ bản" : s.Category == 2 ? "Rửa xe cao cấp" : s.Category == 3 ? "Rửa xe cao cấp" : "Dịch vụ đi kèm",
+                        price = s.BasePrice,
+                        estimatedMinutes = s.EstimatedMinutes,
+                        isActive = s.IsActive,
+                        isFeatured = s.IsFeatured
+                    })
+                    .ToListAsync();
+
+                return Ok(new { success = true, services });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.LicensePlate) || string.IsNullOrWhiteSpace(request.MainServiceName))
+            {
+                return BadRequest(new { success = false, message = "Thông tin đặt lịch không hợp lệ!" });
+            }
+
+            try
+            {
+                int? accountId = HttpContext.Session.GetInt32("AccountId");
+                Account? account = null;
+                if (accountId.HasValue)
+                {
+                    account = await _context.Accounts
+                        .Include(a => a.Customer)
+                        .ThenInclude(c => c!.Tier)
+                        .FirstOrDefaultAsync(a => a.AccountId == accountId.Value);
+                }
+
+                if (account == null)
+                {
+                    string? email = Request.Cookies["UserEmail"];
+                    string? phone = Request.Cookies["UserPhone"];
+                    if (!string.IsNullOrEmpty(email))
+                    {
+                        account = await _context.Accounts
+                            .Include(a => a.Customer)
+                            .ThenInclude(c => c!.Tier)
+                            .FirstOrDefaultAsync(a => a.Email == email.Trim());
+                    }
+                    else if (!string.IsNullOrEmpty(phone))
+                    {
+                        account = await _context.Accounts
+                            .Include(a => a.Customer)
+                            .ThenInclude(c => c!.Tier)
+                            .FirstOrDefaultAsync(a => a.Phone == phone.Trim());
+                    }
+                }
+
+                if (account == null)
+                {
+                    account = await _context.Accounts
+                        .Include(a => a.Customer)
+                        .ThenInclude(c => c!.Tier)
+                        .FirstOrDefaultAsync(a => a.Role == 3);
+                }
+
+                if (account == null || account.Customer == null)
+                {
+                    return BadRequest(new { success = false, message = "Không tìm thấy khách hàng!" });
+                }
+
+                var normPlate = request.LicensePlate.Replace("-", "").Replace(" ", "").ToUpper();
+                var vehicle = await _context.Vehicles
+                    .FirstOrDefaultAsync(v => v.CustomerId == account.Customer.CustomerId 
+                                           && v.LicensePlate.Replace("-", "").Replace(" ", "").ToUpper() == normPlate);
+                if (vehicle == null)
+                {
+                    vehicle = new Vehicle
+                    {
+                        CustomerId = account.Customer.CustomerId,
+                        LicensePlate = request.LicensePlate.Trim().ToUpper(),
+                        Brand = "Honda",
+                        Name = "Xe ga",
+                        RegisteredAt = DateTime.Now
+                    };
+                    _context.Vehicles.Add(vehicle);
+                    await _context.SaveChangesAsync();
+                }
+
+                var mainService = await _context.Services
+                    .FirstOrDefaultAsync(s => s.ServiceName == request.MainServiceName.Trim() && !s.IsAddOn);
+                if (mainService == null)
+                {
+                    mainService = await _context.Services.FirstOrDefaultAsync(s => !s.IsAddOn);
+                }
+
+                var addonsList = new List<Service>();
+                if (request.AddonServiceNames != null)
+                {
+                    foreach (var addonName in request.AddonServiceNames)
+                    {
+                        var addon = await _context.Services
+                            .FirstOrDefaultAsync(s => s.ServiceName == addonName.Trim() && s.IsAddOn);
+                        if (addon != null)
+                        {
+                            addonsList.Add(addon);
+                        }
+                    }
+                }
+
+                if (!DateTime.TryParse($"{request.BookingDate} {request.BookingTime}", out var scheduledAt))
+                {
+                    scheduledAt = DateTime.Now.AddDays(1);
+                }
+
+                int basePrice = (mainService?.BasePrice ?? 0) + addonsList.Sum(a => a.BasePrice);
+
+                var booking = new Booking
+                {
+                    CustomerId = account.Customer.CustomerId,
+                    VehicleId = vehicle.VehicleId,
+                    ScheduledAt = scheduledAt,
+                    Status = 1, // 1 = Booked/Pending
+                    BasePrice = basePrice,
+                    FinalPrice = request.FinalPrice,
+                    PointsEarned = request.PointsEarned,
+                    Notes = request.Notes,
+                    CreatedAt = DateTime.Now
+                };
+                _context.Bookings.Add(booking);
+                await _context.SaveChangesAsync();
+
+                if (mainService != null)
+                {
+                    _context.BookingServices.Add(new BookingService
+                    {
+                        BookingId = booking.BookingId,
+                        ServiceId = mainService.ServiceId,
+                        PriceSnapshot = mainService.BasePrice
+                    });
+                }
+                foreach (var addon in addonsList)
+                {
+                    _context.BookingServices.Add(new BookingService
+                    {
+                        BookingId = booking.BookingId,
+                        ServiceId = addon.ServiceId,
+                        PriceSnapshot = addon.BasePrice
+                    });
+                }
+                await _context.SaveChangesAsync();
+
+                if (scheduledAt.Date == DateTime.Today)
+                {
+                    var lastPos = await _context.Queues
+                        .Where(q => q.CheckInAt.Date == DateTime.Today && q.Status != "Cancelled")
+                        .MaxAsync(q => (int?)q.Position) ?? 0;
+
+                    var queueEntry = new Queue
+                    {
+                        BookingId = booking.BookingId,
+                        VehicleId = vehicle.VehicleId,
+                        CustomerId = account.Customer.CustomerId,
+                        LicensePlate = vehicle.LicensePlate,
+                        CustomerName = account.FullName,
+                        TierId = account.Customer.TierId,
+                        Status = "Waiting",
+                        Position = lastPos + 1,
+                        CheckInAt = DateTime.Now
+                    };
+                    _context.Queues.Add(queueEntry);
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(new { success = true, bookingId = booking.BookingId });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetWashHistory()
+        {
+            try
+            {
+                int? accountId = HttpContext.Session.GetInt32("AccountId");
+                Account? account = null;
+                if (accountId.HasValue)
+                {
+                    account = await _context.Accounts
+                        .Include(a => a.Customer)
+                        .FirstOrDefaultAsync(a => a.AccountId == accountId.Value);
+                }
+
+                if (account == null)
+                {
+                    string? email = Request.Cookies["UserEmail"];
+                    string? phone = Request.Cookies["UserPhone"];
+                    if (!string.IsNullOrEmpty(email))
+                    {
+                        account = await _context.Accounts
+                            .Include(a => a.Customer)
+                            .FirstOrDefaultAsync(a => a.Email == email.Trim());
+                    }
+                    else if (!string.IsNullOrEmpty(phone))
+                    {
+                        account = await _context.Accounts
+                            .Include(a => a.Customer)
+                            .FirstOrDefaultAsync(a => a.Phone == phone.Trim());
+                    }
+                }
+
+                if (account == null)
+                {
+                    account = await _context.Accounts
+                        .Include(a => a.Customer)
+                        .FirstOrDefaultAsync(a => a.Role == 3);
+                }
+
+                if (account == null || account.Customer == null)
+                {
+                    return BadRequest(new { success = false, message = "Không tìm thấy khách hàng!" });
+                }
+
+                var bookings = await _context.Bookings
+                    .Include(b => b.Vehicle)
+                    .Include(b => b.BookingServices)
+                        .ThenInclude(bs => bs.Service)
+                    .Where(b => b.CustomerId == account.Customer.CustomerId)
+                    .OrderByDescending(b => b.ScheduledAt)
+                    .Select(b => new
+                    {
+                        id = b.BookingId.ToString(),
+                        vehicle = b.Vehicle.LicensePlate,
+                        mainService = b.BookingServices.Where(bs => !bs.Service.IsAddOn).Select(bs => bs.Service.ServiceName).FirstOrDefault() ?? "Rửa xe",
+                        addons = b.BookingServices.Where(bs => bs.Service.IsAddOn).Select(bs => bs.Service.ServiceName).ToList(),
+                        status = b.Status == 4 ? "Completed" : b.Status == 1 ? "Booked" : b.Status == 2 ? "Confirmed" : "In Progress",
+                        bookingDate = b.ScheduledAt.ToString("yyyy-MM-dd"),
+                        bookingTime = b.ScheduledAt.ToString("HH:mm"),
+                        price = b.FinalPrice,
+                        points = b.PointsEarned
+                    })
+                    .ToListAsync();
+
+                return Ok(new { success = true, history = bookings });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetActiveBooking()
+        {
+            try
+            {
+                int? accountId = HttpContext.Session.GetInt32("AccountId");
+                Account? account = null;
+                if (accountId.HasValue)
+                {
+                    account = await _context.Accounts
+                        .Include(a => a.Customer)
+                        .FirstOrDefaultAsync(a => a.AccountId == accountId.Value);
+                }
+
+                if (account == null)
+                {
+                    string? email = Request.Cookies["UserEmail"];
+                    string? phone = Request.Cookies["UserPhone"];
+                    if (!string.IsNullOrEmpty(email))
+                    {
+                        account = await _context.Accounts
+                            .Include(a => a.Customer)
+                            .FirstOrDefaultAsync(a => a.Email == email.Trim());
+                    }
+                    else if (!string.IsNullOrEmpty(phone))
+                    {
+                        account = await _context.Accounts
+                            .Include(a => a.Customer)
+                            .FirstOrDefaultAsync(a => a.Phone == phone.Trim());
+                    }
+                }
+
+                if (account == null)
+                {
+                    account = await _context.Accounts
+                        .Include(a => a.Customer)
+                        .FirstOrDefaultAsync(a => a.Role == 3);
+                }
+
+                if (account == null || account.Customer == null)
+                {
+                    return BadRequest(new { success = false, message = "Không tìm thấy khách hàng!" });
+                }
+
+                var activeBooking = await _context.Bookings
+                    .Include(b => b.Vehicle)
+                    .Include(b => b.BookingServices)
+                        .ThenInclude(bs => bs.Service)
+                    .Include(b => b.Queues)
+                    .Where(b => b.CustomerId == account.Customer.CustomerId && b.Status < 4)
+                    .OrderBy(b => b.ScheduledAt)
+                    .FirstOrDefaultAsync();
+
+                if (activeBooking == null)
+                {
+                    return Ok(new { success = true, booking = (object?)null });
+                }
+
+                var mainSvcName = activeBooking.BookingServices
+                    .Where(bs => !bs.Service.IsAddOn)
+                    .Select(bs => bs.Service.ServiceName)
+                    .FirstOrDefault() ?? "Rửa xe";
+                var addons = activeBooking.BookingServices
+                    .Where(bs => bs.Service.IsAddOn)
+                    .Select(bs => bs.Service.ServiceName)
+                    .ToList();
+
+                var queue = activeBooking.Queues.FirstOrDefault();
+                string queueStatus = queue?.Status ?? "Waiting";
+
+                int washStep = 0;
+                int addonsCount = addons.Count;
+                if (queueStatus == "LPR_Scan") washStep = 0;
+                else if (queueStatus == "Washing") washStep = 1;
+                else if (queueStatus == "Drying") washStep = 2;
+                else if (queueStatus == "Completed") washStep = 3 + addonsCount;
+
+                var bookingData = new
+                {
+                    id = activeBooking.BookingId.ToString(),
+                    vehicle = activeBooking.Vehicle.LicensePlate,
+                    mainService = mainSvcName,
+                    addons = addons,
+                    status = queueStatus == "Completed" ? "Completed" : "Booked",
+                    bookingDate = activeBooking.ScheduledAt.ToString("yyyy-MM-dd"),
+                    bookingTime = activeBooking.ScheduledAt.ToString("HH:mm"),
+                    price = activeBooking.FinalPrice,
+                    points = activeBooking.PointsEarned
+                };
+
+                return Ok(new { success = true, booking = bookingData, queueStatus, washStep });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+    }
+
+    public class CreateBookingRequest
+    {
+        public string LicensePlate { get; set; } = string.Empty;
+        public string MainServiceName { get; set; } = string.Empty;
+        public List<string> AddonServiceNames { get; set; } = new();
+        public string BookingDate { get; set; } = string.Empty;
+        public string BookingTime { get; set; } = string.Empty;
+        public int FinalPrice { get; set; }
+        public int PointsEarned { get; set; }
+        public string? Notes { get; set; }
     }
 
     public class UpdateProfileRequest
