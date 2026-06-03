@@ -180,9 +180,19 @@ export const CustomerLoyalty = () => {
     }
   };
 
-  const currentTier = user?.tier || 'Gold Member';
-  const pts = user?.points || 550;
-  const nextTierDetails = TIER_DATA[currentTier] || TIER_DATA['Gold Member'];
+  const rawTier = user?.tier || 'Standard Member';
+  let currentTier = rawTier;
+  if (rawTier === 'Member' || rawTier === 'Standard' || rawTier === 'Standard Member') {
+    currentTier = 'Standard Member';
+  } else if (rawTier === 'Silver' || rawTier === 'Silver Member') {
+    currentTier = 'Silver Member';
+  } else if (rawTier === 'Gold' || rawTier === 'Gold Member') {
+    currentTier = 'Gold Member';
+  } else if (rawTier === 'Platinum' || rawTier === 'Platinum Member') {
+    currentTier = 'Platinum Member';
+  }
+  const pts = user?.points ?? 0;
+  const nextTierDetails = TIER_DATA[currentTier] || TIER_DATA['Standard Member'];
   const remaining = nextTierDetails.neededPts ? Math.max(0, nextTierDetails.neededPts - pts) + ' PTS' : 'Tối cao';
 
   return (

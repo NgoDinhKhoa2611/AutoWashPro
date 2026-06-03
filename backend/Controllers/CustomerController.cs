@@ -78,45 +78,7 @@ namespace Auto_Wash.Controllers
             }
         }
 
-        public async Task<IActionResult> Dashboard()
-        {
-            ViewBag.PageTitle  = "Dashboard";
-            ViewBag.ActiveNav  = "dashboard";
-            await PopulateUserProfileAsync();
-            return View();
-        }
 
-        public async Task<IActionResult> Booking()
-        {
-            ViewBag.PageTitle = "Đặt lịch rửa xe";
-            ViewBag.ActiveNav = "booking";
-            await PopulateUserProfileAsync();
-            return View();
-        }
-
-        public async Task<IActionResult> Loyalty()
-        {
-            ViewBag.PageTitle = "Tích điểm & Ưu đãi";
-            ViewBag.ActiveNav = "loyalty";
-            await PopulateUserProfileAsync();
-            return View();
-        }
-
-        public async Task<IActionResult> History()
-        {
-            ViewBag.PageTitle = "Lịch sử rửa xe";
-            ViewBag.ActiveNav = "history";
-            await PopulateUserProfileAsync();
-            return View();
-        }
-
-        public async Task<IActionResult> Profile()
-        {
-            ViewBag.PageTitle = "Hồ sơ của tôi";
-            ViewBag.ActiveNav = "profile";
-            await PopulateUserProfileAsync();
-            return View();
-        }
 
         [HttpPost]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
@@ -759,27 +721,7 @@ namespace Auto_Wash.Controllers
                 }
                 await _context.SaveChangesAsync();
 
-                if (scheduledAt.Date == DateTime.Today)
-                {
-                    var lastPos = await _context.Queues
-                        .Where(q => q.CheckInAt.Date == DateTime.Today && q.Status != "Cancelled")
-                        .MaxAsync(q => (int?)q.Position) ?? 0;
 
-                    var queueEntry = new Queue
-                    {
-                        BookingId = booking.BookingId,
-                        VehicleId = vehicle.VehicleId,
-                        CustomerId = account.Customer.CustomerId,
-                        LicensePlate = vehicle.LicensePlate,
-                        CustomerName = account.FullName,
-                        TierId = account.Customer.TierId,
-                        Status = "Waiting",
-                        Position = lastPos + 1,
-                        CheckInAt = DateTime.Now
-                    };
-                    _context.Queues.Add(queueEntry);
-                    await _context.SaveChangesAsync();
-                }
 
                 return Ok(new { success = true, bookingId = booking.BookingId });
             }
@@ -929,14 +871,20 @@ namespace Auto_Wash.Controllers
                     .ToList();
 
                 var queue = activeBooking.Queues.FirstOrDefault();
+                bool hasQueue = queue != null;
                 string queueStatus = queue?.Status ?? "Waiting";
 
-                int washStep = 0;
+                int washStep = hasQueue ? 0 : -1;
                 int addonsCount = addons.Count;
-                if (queueStatus == "LPR_Scan") washStep = 0;
-                else if (queueStatus == "Washing") washStep = 1;
-                else if (queueStatus == "Drying") washStep = 2;
-                else if (queueStatus == "Completed") washStep = 3 + addonsCount;
+                if (hasQueue)
+                {
+                    if (queueStatus == "Waiting") washStep = 0;
+                    else if (queueStatus == "LPR_Scan") washStep = 1;
+                    else if (queueStatus == "Washing") washStep = 2;
+                    else if (queueStatus == "Addon_Processing") washStep = 2 + (addonsCount > 0 ? 1 : 0);
+                    else if (queueStatus == "Drying") washStep = 2 + addonsCount;
+                    else if (queueStatus == "Completed") washStep = 3 + addonsCount;
+                }
 
                 var bookingData = new
                 {
@@ -948,7 +896,8 @@ namespace Auto_Wash.Controllers
                     bookingDate = activeBooking.ScheduledAt.ToString("yyyy-MM-dd"),
                     bookingTime = activeBooking.ScheduledAt.ToString("HH:mm"),
                     price = activeBooking.FinalPrice,
-                    points = activeBooking.PointsEarned
+                    points = activeBooking.PointsEarned,
+                    hasQueue = hasQueue
                 };
 
                 return Ok(new { success = true, booking = bookingData, queueStatus, washStep });

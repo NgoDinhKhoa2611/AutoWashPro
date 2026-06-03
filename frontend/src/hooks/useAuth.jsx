@@ -78,8 +78,8 @@ export const AuthProvider = ({ children }) => {
     throw new Error(data.message || 'Đăng nhập thất bại!');
   };
 
-  const register = async (email, fullName, phone, password) => {
-    const data = await authService.register(email, fullName, phone, password);
+  const register = async (email, fullName, phone, password, otpCode) => {
+    const data = await authService.register(email, fullName, phone, password, otpCode);
     if (data.success) {
       localStorage.setItem('user_role', data.role);
       localStorage.setItem('user_display_name', data.name || '');

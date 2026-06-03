@@ -65,22 +65,38 @@ export const AdminQueue = () => {
           const addonsOnly = item.services.filter(s => s.name !== mainService).map(s => s.name);
 
           const servicesList = [
-            { name: 'Nhận diện LPR', status: item.status === 'Waiting' ? 'Pending' : (item.status === 'LPR_Scan' ? 'In Progress' : 'Completed') },
-            { name: 'Rửa bọt tuyết', status: item.status === 'Waiting' || item.status === 'LPR_Scan' ? 'Pending' : (item.status === 'Washing' ? 'In Progress' : 'Completed') },
-            { name: 'Sấy khô', status: item.status === 'Waiting' || item.status === 'LPR_Scan' || item.status === 'Washing' ? 'Pending' : (item.status === 'Drying' ? 'In Progress' : 'Completed') }
+            { name: 'Nhận diện LPR', status: item.status === 'Waiting' ? 'In Progress' : 'Completed' },
+            { name: 'Rửa bọt tuyết', status: item.status === 'Waiting' ? 'Pending' : (item.status === 'LPR_Scan' ? 'In Progress' : 'Completed') }
           ];
           
           addonsOnly.forEach(a => {
-            servicesList.push({ name: a, status: item.status === 'Completed' ? 'Completed' : 'Pending' });
+            servicesList.push({ 
+              name: a, 
+              status: (item.status === 'Waiting' || item.status === 'LPR_Scan') ? 'Pending' 
+                     : (item.status === 'Washing' || item.status === 'Addon_Processing' ? 'In Progress' : 'Completed') 
+            });
           });
-          servicesList.push({ name: 'Hoàn tất', status: item.status === 'Completed' ? 'Completed' : 'Pending' });
+          
+          servicesList.push({ 
+            name: 'Sấy khô', 
+            status: item.status === 'Completed' ? 'Completed' 
+                   : (item.status === 'Drying' ? 'In Progress' : 'Pending') 
+          });
+          
+          servicesList.push({ 
+            name: 'Hoàn tất', 
+            status: item.status === 'Completed' ? 'Completed' : 'Pending' 
+          });
 
           const totalS = servicesList.length;
           let washStep = 0;
-          if (item.status === 'LPR_Scan') washStep = 0;
-          else if (item.status === 'Washing') washStep = 1;
-          else if (item.status === 'Drying') washStep = 2;
-          else if (item.status === 'Completed') washStep = totalS - 1;
+          const addonsCount = addonsOnly.length;
+          if (item.status === 'Waiting') washStep = 0;
+          else if (item.status === 'LPR_Scan') washStep = 1;
+          else if (item.status === 'Washing') washStep = 2;
+          else if (item.status === 'Addon_Processing') washStep = 2 + (addonsCount > 0 ? 1 : 0);
+          else if (item.status === 'Drying') washStep = 2 + addonsCount;
+          else if (item.status === 'Completed') washStep = 3 + addonsCount;
 
           const progressPct = totalS > 1 ? Math.round((washStep / (totalS - 1)) * 100) : 100;
 
@@ -224,43 +240,35 @@ export const AdminQueue = () => {
       else if (item.status === 'Addon_Processing') nextStatus = 'Drying';
       else if (item.status === 'Drying') nextStatus = 'Completed';
 
-      const updatedServices = [...item.services];
-      let newWashStep = item.washStep;
+      const addonsCount = item.addons.length;
+      const updatedServices = item.services.map((s, idx) => {
+        let status = 'Pending';
+        if (nextStatus === 'Waiting') {
+          if (idx === 0) status = 'In Progress';
+        } else if (nextStatus === 'LPR_Scan') {
+          if (idx === 0) status = 'Completed';
+          else if (idx === 1) status = 'In Progress';
+        } else if (nextStatus === 'Washing') {
+          if (idx <= 1) status = 'Completed';
+          else if (idx === 2) status = 'In Progress';
+        } else if (nextStatus === 'Addon_Processing') {
+          if (idx <= 1 + addonsCount) status = 'Completed';
+          else if (idx === 2 + addonsCount) status = 'In Progress';
+        } else if (nextStatus === 'Drying') {
+          if (idx <= 2 + addonsCount) status = 'Completed';
+        } else if (nextStatus === 'Completed') {
+          status = 'Completed';
+        }
+        return { ...s, status };
+      });
 
-      if (nextStatus === 'LPR_Scan') {
-        updatedServices[0].status = 'Completed';
-        if (updatedServices[1]) updatedServices[1].status = 'In Progress';
-        newWashStep = 1;
-      } else if (nextStatus === 'Washing') {
-        updatedServices[0].status = 'Completed';
-        if (updatedServices[1]) updatedServices[1].status = 'Completed';
-        if (updatedServices[2]) updatedServices[2].status = 'In Progress';
-        newWashStep = 2;
-      } else if (nextStatus === 'Addon_Processing') {
-        updatedServices[0].status = 'Completed';
-        if (updatedServices[1]) updatedServices[1].status = 'Completed';
-        if (updatedServices[2]) updatedServices[2].status = 'Completed';
-        if (updatedServices.length > 4) {
-          updatedServices[3].status = 'In Progress';
-          newWashStep = 3;
-        } else {
-          if (updatedServices[updatedServices.length - 2]) {
-            updatedServices[updatedServices.length - 2].status = 'In Progress';
-          }
-          newWashStep = updatedServices.length - 2;
-        }
-      } else if (nextStatus === 'Drying') {
-        for (let i = 0; i < updatedServices.length - 2; i++) {
-          updatedServices[i].status = 'Completed';
-        }
-        if (updatedServices[updatedServices.length - 2]) {
-          updatedServices[updatedServices.length - 2].status = 'In Progress';
-        }
-        newWashStep = updatedServices.length - 2;
-      } else if (nextStatus === 'Completed') {
-        updatedServices.forEach(s => s.status = 'Completed');
-        newWashStep = updatedServices.length - 1;
-      }
+      let newWashStep = 0;
+      if (nextStatus === 'Waiting') newWashStep = 0;
+      else if (nextStatus === 'LPR_Scan') newWashStep = 1;
+      else if (nextStatus === 'Washing') newWashStep = 2;
+      else if (nextStatus === 'Addon_Processing') newWashStep = 2 + (addonsCount > 0 ? 1 : 0);
+      else if (nextStatus === 'Drying') newWashStep = 2 + addonsCount;
+      else if (nextStatus === 'Completed') newWashStep = 3 + addonsCount;
 
       const totalS = updatedServices.length;
       const progressPct = Math.round((newWashStep / (totalS - 1)) * 100);
@@ -301,7 +309,7 @@ export const AdminQueue = () => {
   };
 
   // Complete a specific step in the detail list
-  const handleToggleStepCompleted = (stepIdx) => {
+  const handleToggleStepCompleted = async (stepIdx) => {
     if (!selectedVehicle) return;
 
     const updatedServices = selectedVehicle.services.map((s, idx) => {
@@ -337,6 +345,17 @@ export const AdminQueue = () => {
     const updatedQueue = queue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q);
     saveQueueState(updatedQueue);
     syncWithCustomerTab(updatedItem);
+
+    // Call API to save to database
+    try {
+      if (typeof selectedVehicle.queueId === 'number' || !isNaN(selectedVehicle.queueId)) {
+        await adminService.updateQueue(selectedVehicle.queueId, newStatus, selectedVehicle.staffNote);
+        if (window.showToast) window.showToast('Đã cập nhật công đoạn rửa xe!', 'success');
+        fetchQueue();
+      }
+    } catch (err) {
+      console.error('Lỗi khi gọi API UpdateQueue:', err);
+    }
   };
 
   // Checkout and clean out queue
@@ -490,14 +509,24 @@ export const AdminQueue = () => {
     }
   };
 
-  const handleAssignStaff = (staff) => {
+  const handleAssignStaff = async (staff) => {
     if (!selectedVehicle) return;
-    const updatedItem = { ...selectedVehicle, staffName: staff };
+    const updatedItem = { ...selectedVehicle, staffName: staff, staffNote: staff };
     setSelectedVehicle(updatedItem);
 
     const updatedQueue = queue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q);
     saveQueueState(updatedQueue);
     syncWithCustomerTab(updatedItem);
+
+    try {
+      if (typeof selectedVehicle.queueId === 'number' || !isNaN(selectedVehicle.queueId)) {
+        await adminService.updateQueue(selectedVehicle.queueId, selectedVehicle.status, staff);
+        if (window.showToast) window.showToast('Đã gán nhân viên phụ trách!', 'success');
+        fetchQueue();
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSaveStaffNotes = (note) => {
@@ -509,10 +538,23 @@ export const AdminQueue = () => {
     saveQueueState(updatedQueue);
   };
 
+  const handleBlurStaffNotes = async () => {
+    if (!selectedVehicle) return;
+    try {
+      if (typeof selectedVehicle.queueId === 'number' || !isNaN(selectedVehicle.queueId)) {
+        await adminService.updateQueue(selectedVehicle.queueId, selectedVehicle.status, selectedVehicle.staffNote);
+        if (window.showToast) window.showToast('Đã lưu ghi chú dịch vụ!', 'success');
+        fetchQueue();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <div className="container-fluid py-4 text-start">
+    <div className="container-fluid py-0 text-start d-flex flex-column h-100">
       {/* Page Header */}
-      <div className="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2 border-bottom pb-3">
+      <div className="d-flex justify-content-between align-items-center flex-wrap mb-3 gap-2 border-bottom pb-3">
         <div>
           <h4 className="fw-bold mb-1 text-dark" style={{ letterSpacing: '-0.5px' }}>HÀNG ĐỢI XE TRONG NGÀY ({queue.length})</h4>
           <p className="text-secondary small mb-0">Hệ thống quản lý, phân bổ làn và giám sát các xe đang thực hiện dịch vụ</p>
@@ -528,7 +570,7 @@ export const AdminQueue = () => {
       </div>
 
       {/* KANBAN BOARD LAYOUT */}
-      <div className="kanban-board-container d-flex gap-3 overflow-auto pb-4" style={{ minHeight: '520px' }}>
+      <div className="kanban-board-container d-flex gap-3">
         {KANBAN_COLUMNS.map(col => {
           const colItems = queue.filter(item => item.status === col.id);
 
@@ -542,7 +584,7 @@ export const AdminQueue = () => {
               </div>
 
               {/* Kanban Column Cards List */}
-              <div className="kanban-cards-list d-flex flex-column gap-2" style={{ minHeight: '400px' }}>
+              <div className="kanban-cards-list d-flex flex-column gap-2">
                 {colItems.length === 0 ? (
                   <div className="text-center py-5 text-muted small bg-light bg-opacity-40 rounded-4 border border-dashed" style={{ borderStyle: 'dashed' }}>
                     Trống
@@ -718,6 +760,7 @@ export const AdminQueue = () => {
                   placeholder="Điền ghi chú tình trạng xe, vết xước sẵn có..."
                   value={selectedVehicle.staffNote || ''}
                   onChange={(e) => handleSaveStaffNotes(e.target.value)}
+                  onBlur={handleBlurStaffNotes}
                 ></textarea>
               </div>
 

@@ -113,12 +113,13 @@ export const Login = () => {
             document.cookie = "UserAvatar=" + encodeURIComponent(avatar) + "; path=/; max-age=" + (30*24*60*60);
           }
 
-          localStorage.setItem('user_role', 'customer');
-          localStorage.setItem('user_display_name', name);
-          localStorage.setItem('user_email', email);
+          localStorage.setItem('user_role', data.role || 'customer');
+          localStorage.setItem('user_display_name', data.name || name);
+          localStorage.setItem('user_email', data.email || email);
           localStorage.setItem('user_avatar', avatar);
-          localStorage.setItem('user_points', '550');
-          localStorage.setItem('user_tier', 'Gold Member');
+          localStorage.setItem('user_phone', data.phone || '');
+          localStorage.setItem('user_points', String(data.points ?? 0));
+          localStorage.setItem('user_tier', data.tier || 'Standard Member');
           window.dispatchEvent(new Event('storage'));
 
           if (window.showToast) window.showToast(`Đăng nhập Google thành công! Chào mừng ${name}`, 'success');
@@ -176,7 +177,8 @@ export const Login = () => {
   };
 
   // Registration submission (Simulating OTP sandbox check)
-  const handleRegisterSubmit = (e) => {
+  // Registration submission
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     if (!regName.trim() || !regPhone.trim() || !regEmail.trim() || !regPassword || !regConfirm) {
       if (window.showToast) window.showToast('Vui lòng điền đầy đủ tất cả các trường!', 'warning');
@@ -196,15 +198,24 @@ export const Login = () => {
     }
 
     setRegLoading(true);
-    setTimeout(() => {
-      localStorage.setItem('reg_name_temp', regName);
-      localStorage.setItem('reg_phone_temp', regPhone);
-      localStorage.setItem('reg_email_temp', regEmail);
+    try {
+      const res = await authService.sendRegisterOtp(regEmail.trim());
+      if (res.success) {
+        localStorage.setItem('reg_name_temp', regName);
+        localStorage.setItem('reg_phone_temp', regPhone);
+        localStorage.setItem('reg_email_temp', regEmail);
+        setPanel('otp');
+        startOtpTimer();
+        if (window.showToast) window.showToast('Mã OTP đã được gửi về Gmail của bạn!', 'success');
+      } else {
+        if (window.showToast) window.showToast(res.message || 'Lỗi gửi mã OTP!', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      if (window.showToast) window.showToast(err.response?.data?.message || 'Có lỗi xảy ra khi gửi OTP!', 'error');
+    } finally {
       setRegLoading(false);
-      setPanel('otp');
-      startOtpTimer();
-      if (window.showToast) window.showToast('Mã OTP đã được gửi về số điện thoại của bạn!', 'success');
-    }, 1000);
+    }
   };
 
   // Otp Timers
@@ -280,7 +291,45 @@ export const Login = () => {
 
     try {
       // Gọi API đăng ký thực tế
-      await register(email, name, phone, regPassword);
+      await register(email, name, phone, regPassword, code);
+
+      // Clean up previous states
+      localStorage.removeItem('user_vehicles');
+      localStorage.removeItem('user_history_bookings');
+      localStorage.removeItem('active_booking');
+      localStorage.removeItem('wash_step');
+
+      // Initialize welcome notification
+      const welcomeNotif = {
+        id: 'notif_welcome_' + Date.now(),
+        title: '🎉 Chào mừng bạn đến với AutoWash Pro!',
+        body: 'Tài khoản của bạn đã được đăng ký thành công. Hãy thêm phương tiện đầu tiên để bắt đầu trải nghiệm dịch vụ.',
+        time: 'Vừa xong',
+        type: 'welcome',
+        read: false
+      };
+      localStorage.setItem('user_notifications', JSON.stringify([welcomeNotif]));
+
+      // Initialize welcome voucher WELCOME10
+      const welcomeVoucher = {
+        redemptionId: 'red_welcome_' + Date.now(),
+        rewardId: 999,
+        title: 'Voucher chào mừng',
+        rewardType: 'DiscountPercent',
+        rewardValue: 10,
+        icon: 'fa-ticket-alt',
+        code: 'WELCOME10',
+        status: 1, // 1 = Available
+        redeemedAt: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      };
+      localStorage.setItem('user_claimed_vouchers', JSON.stringify([welcomeVoucher]));
+
+      // Set clean defaults in localStorage
+      localStorage.setItem('user_points', '0');
+      localStorage.setItem('user_tier', 'Standard Member');
+      localStorage.setItem('user_vehicles', JSON.stringify([]));
+      localStorage.setItem('user_history_bookings', JSON.stringify([]));
 
       localStorage.removeItem('reg_name_temp');
       localStorage.removeItem('reg_phone_temp');
@@ -299,18 +348,26 @@ export const Login = () => {
       }, 2000);
     } catch (err) {
       console.error(err);
-      if (window.showToast) window.showToast(err.message || 'Lỗi đăng ký tài khoản mới lên cơ sở dữ liệu!', 'error');
+      const errMsg = err.response?.data?.message || err.message || 'Lỗi đăng ký tài khoản mới lên cơ sở dữ liệu!';
+      if (window.showToast) window.showToast(errMsg, 'error');
       startOtpTimer();
     }
   };
 
-  const handleResendOtp = () => {
-    startOtpTimer();
-    if (window.showToast) window.showToast('Đã gửi lại mã OTP mới!', 'info');
+  const handleResendOtp = async () => {
+    const email = localStorage.getItem('reg_email_temp') || regEmail;
+    try {
+      await authService.sendRegisterOtp(email.trim());
+      startOtpTimer();
+      if (window.showToast) window.showToast('Đã gửi lại mã OTP mới qua Gmail!', 'info');
+    } catch (err) {
+      console.error(err);
+      if (window.showToast) window.showToast('Lỗi khi gửi lại OTP!', 'error');
+    }
   };
 
   // Google Profile completion Form
-  const handleGoogleCompleteSubmit = (e) => {
+  const handleGoogleCompleteSubmit = async (e) => {
     e.preventDefault();
     if (!completePhone || !completePassword || !completeConfirm) {
       if (window.showToast) window.showToast('Vui lòng nhập đầy đủ các trường!', 'warning');
@@ -335,20 +392,82 @@ export const Login = () => {
       return;
     }
 
-    setGoogleUser(prev => ({
-      ...prev,
-      phone: cleanPhone,
-      password: completePassword
-    }));
+    if (window.showToast) window.showToast('Đang hoàn tất hồ sơ...', 'info');
 
-    if (window.showToast) window.showToast('Đang gửi mã OTP đến số điện thoại ' + cleanPhone + '...', 'info');
+    try {
+      const response = await authService.completeGoogleSignup(
+        googleUser.email,
+        googleUser.name,
+        googleUser.googleId,
+        cleanPhone,
+        completePassword
+      );
 
-    // Simulate SMS, trigger Firebase OTP screen
-    setTimeout(() => {
-      if (window.showToast) window.showToast('Mã OTP đã gửi: 123456', 'success');
-      setPanel('firebase-otp');
-      startFbOtpTimer();
-    }, 800);
+      if (response.success) {
+        // Clean up previous states
+        localStorage.removeItem('user_vehicles');
+        localStorage.removeItem('user_history_bookings');
+        localStorage.removeItem('active_booking');
+        localStorage.removeItem('wash_step');
+
+        // Initialize welcome notification
+        const welcomeNotif = {
+          id: 'notif_welcome_' + Date.now(),
+          title: '🎉 Chào mừng bạn đến với AutoWash Pro!',
+          body: 'Tài khoản của bạn đã được đăng ký thành công. Hãy thêm phương tiện đầu tiên để bắt đầu trải nghiệm dịch vụ.',
+          time: 'Vừa xong',
+          type: 'welcome',
+          read: false
+        };
+        localStorage.setItem('user_notifications', JSON.stringify([welcomeNotif]));
+
+        // Initialize welcome voucher WELCOME10
+        const welcomeVoucher = {
+          redemptionId: 'red_welcome_' + Date.now(),
+          rewardId: 999,
+          title: 'Voucher chào mừng',
+          rewardType: 'DiscountPercent',
+          rewardValue: 10,
+          icon: 'fa-ticket-alt',
+          code: 'WELCOME10',
+          status: 1, // 1 = Available
+          redeemedAt: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+          expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        };
+        localStorage.setItem('user_claimed_vouchers', JSON.stringify([welcomeVoucher]));
+
+        localStorage.setItem('user_role', 'customer');
+        localStorage.setItem('user_display_name', googleUser.name);
+        localStorage.setItem('user_phone', cleanPhone);
+        localStorage.setItem('user_email', googleUser.email);
+        localStorage.setItem('user_avatar', googleUser.avatar || '');
+        localStorage.setItem('user_points', '0');
+        localStorage.setItem('user_tier', 'Standard Member');
+        localStorage.setItem('user_vehicles', JSON.stringify([]));
+        localStorage.setItem('user_history_bookings', JSON.stringify([]));
+        window.dispatchEvent(new Event('storage'));
+
+        // Write cookies
+        document.cookie = "UserEmail=" + googleUser.email + "; path=/; max-age=" + (30*24*60*60);
+        document.cookie = "UserPhone=" + cleanPhone + "; path=/; max-age=" + (30*24*60*60);
+        if (googleUser.avatar) {
+          document.cookie = "UserAvatar=" + encodeURIComponent(googleUser.avatar) + "; path=/; max-age=" + (30*24*60*60);
+        }
+
+        setSuccessMsg(`Chào mừng ${googleUser.name} gia nhập AutoWash Pro`);
+        setSuccessScreen(true);
+        setPanel('none');
+
+        setTimeout(() => {
+          navigate('/customer/dashboard');
+        }, 2000);
+      } else {
+        if (window.showToast) window.showToast(response.message || 'Có lỗi xảy ra!', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      if (window.showToast) window.showToast('Lỗi đồng bộ dữ liệu với máy chủ!', 'error');
+    }
   };
 
   // Firebase OTP inputs
@@ -401,13 +520,47 @@ export const Login = () => {
       );
 
       if (response.success) {
+        // Clean up previous states
+        localStorage.removeItem('user_vehicles');
+        localStorage.removeItem('user_history_bookings');
+        localStorage.removeItem('active_booking');
+        localStorage.removeItem('wash_step');
+
+        // Initialize welcome notification
+        const welcomeNotif = {
+          id: 'notif_welcome_' + Date.now(),
+          title: '🎉 Chào mừng bạn đến với AutoWash Pro!',
+          body: 'Tài khoản của bạn đã được đăng ký thành công. Hãy thêm phương tiện đầu tiên để bắt đầu trải nghiệm dịch vụ.',
+          time: 'Vừa xong',
+          type: 'welcome',
+          read: false
+        };
+        localStorage.setItem('user_notifications', JSON.stringify([welcomeNotif]));
+
+        // Initialize welcome voucher WELCOME10
+        const welcomeVoucher = {
+          redemptionId: 'red_welcome_' + Date.now(),
+          rewardId: 999,
+          title: 'Voucher chào mừng',
+          rewardType: 'DiscountPercent',
+          rewardValue: 10,
+          icon: 'fa-ticket-alt',
+          code: 'WELCOME10',
+          status: 1, // 1 = Available
+          redeemedAt: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+          expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        };
+        localStorage.setItem('user_claimed_vouchers', JSON.stringify([welcomeVoucher]));
+
         localStorage.setItem('user_role', 'customer');
         localStorage.setItem('user_display_name', googleUser.name);
         localStorage.setItem('user_phone', googleUser.phone);
         localStorage.setItem('user_email', googleUser.email);
         localStorage.setItem('user_avatar', googleUser.avatar || '');
-        localStorage.setItem('user_points', '100');
+        localStorage.setItem('user_points', '0');
         localStorage.setItem('user_tier', 'Standard Member');
+        localStorage.setItem('user_vehicles', JSON.stringify([]));
+        localStorage.setItem('user_history_bookings', JSON.stringify([]));
         window.dispatchEvent(new Event('storage'));
 
         // Write cookies
@@ -681,11 +834,11 @@ export const Login = () => {
       {panel === 'otp' && (
         <div className="glass-card text-center animate-up" style={{ width: '100%', maxWidth: '420px', zIndex: 10 }}>
           <div className="success-checkmark-wrapper mb-3" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7' }}>
-            <i className="fas fa-mobile-alt"></i>
+            <i className="fas fa-envelope"></i>
           </div>
           <h4 className="fw-bold mt-2">Xác thực mã OTP</h4>
           <p className="text-secondary small px-2 mt-2">
-            Hệ thống đã gửi một mã xác thực 6 chữ số tới số điện thoại: <span className="text-cyan fw-bold">{regPhone}</span>
+            Hệ thống đã gửi một mã xác thực 6 chữ số tới địa chỉ email: <span className="text-cyan fw-bold">{regEmail}</span>
           </p>
 
           <div className="d-flex justify-content-center gap-2 mb-4 mt-4">

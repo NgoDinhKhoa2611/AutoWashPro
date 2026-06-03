@@ -8,17 +8,14 @@ namespace Auto_Wash.Controllers
     public class AccountController : Controller
     {
         private readonly AutoWashDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AccountController(AutoWashDbContext context)
+        public AccountController(AutoWashDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
-        public IActionResult Login()
-        {
-            ViewBag.PageTitle = "Đăng nhập";
-            return View();
-        }
 
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] PhoneLoginRequest request)
@@ -78,7 +75,7 @@ namespace Auto_Wash.Controllers
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
-            return RedirectToAction("Login", "Account");
+            return Redirect("/login");
         }
 
         [HttpPost]
@@ -121,6 +118,22 @@ namespace Auto_Wash.Controllers
                     }
                 }
 
+                string? tier = "Member";
+                int points = 0;
+                var customer = await _context.Customers
+                    .Include(c => c.Tier)
+                    .FirstOrDefaultAsync(c => c.AccountId == account.AccountId);
+                if (customer != null)
+                {
+                    tier = customer.Tier?.TierName ?? "Member";
+                    points = customer.PointBalance;
+                }
+
+                HttpContext.Session.SetString("UserRole", "customer");
+                HttpContext.Session.SetString("UserName", account.FullName);
+                HttpContext.Session.SetString("UserEmail", account.Email);
+                HttpContext.Session.SetInt32("AccountId", account.AccountId);
+
                 // Set cookies for returning users
                 Response.Cookies.Append("UserEmail", account.Email, new CookieOptions {
                     Expires = DateTime.Now.AddDays(7),
@@ -131,7 +144,16 @@ namespace Auto_Wash.Controllers
                     SameSite = SameSiteMode.Lax
                 });
 
-                return Ok(new { success = true, isNewUser = false });
+                return Ok(new {
+                    success = true,
+                    isNewUser = false,
+                    role = "customer",
+                    name = account.FullName,
+                    email = account.Email,
+                    phone = account.Phone,
+                    tier = tier,
+                    points = points
+                });
             }
             catch (Exception ex)
             {
@@ -181,8 +203,8 @@ namespace Auto_Wash.Controllers
                         AccountId = account.AccountId,
                         MembershipCode = "MEM" + DateTime.Now.ToString("yyMMddHHmmss"),
                         TierId = 1, // Default Tier: Member
-                        PointBalance = 100, // Gift 100 points
-                        LifetimePoints = 100,
+                        PointBalance = 0,
+                        LifetimePoints = 0,
                         RankingBalance = 0,
                         TotalVisits = 0,
                         TotalSpend = 0,
@@ -219,16 +241,142 @@ namespace Auto_Wash.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        private async Task SendRealEmailAsync(string toEmail, string subject, string body)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.FullName))
+            try
             {
-                return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ tất cả các trường!" });
+                var smtpHost = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
+                var smtpPortStr = _configuration["Smtp:Port"] ?? "587";
+                int smtpPort = int.TryParse(smtpPortStr, out var port) ? port : 587;
+                var smtpUser = _configuration["Smtp:Username"] ?? "";
+                var smtpPass = _configuration["Smtp:Password"] ?? "";
+                var fromEmail = _configuration["Smtp:FromEmail"] ?? "autowashpro.service@gmail.com";
+
+                if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPass))
+                {
+                    Console.WriteLine($"[SMTP NOT CONFIG] Email could not be sent to {toEmail} because SMTP is not configured in appsettings.json.");
+                    return;
+                }
+
+                var message = new MimeKit.MimeMessage();
+                message.From.Add(new MimeKit.MailboxAddress("AutoWash Pro Support", fromEmail));
+                message.To.Add(new MimeKit.MailboxAddress("", toEmail));
+                message.Subject = subject;
+
+                var bodyBuilder = new MimeKit.BodyBuilder
+                {
+                    HtmlBody = body
+                };
+                message.Body = bodyBuilder.ToMessageBody();
+
+                using (var client = new MailKit.Net.Smtp.SmtpClient())
+                {
+                    var socketOption = smtpPort == 465 
+                        ? MailKit.Security.SecureSocketOptions.SslOnConnect 
+                        : MailKit.Security.SecureSocketOptions.StartTls;
+
+                    await client.ConnectAsync(smtpHost, smtpPort, socketOption);
+                    await client.AuthenticateAsync(smtpUser, smtpPass);
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
+
+                    Console.WriteLine($"[SMTP SUCCESS] MailKit successfully dispatched Email OTP to {toEmail}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SMTP ERROR] MailKit failed to send email to {toEmail}: {ex.Message}");
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendRegisterOtp([FromBody] SendRegisterOtpRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(new { success = false, message = "Email không hợp lệ!" });
             }
 
             try
             {
+                var existingEmail = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == request.Email.Trim());
+                if (existingEmail != null)
+                {
+                    return BadRequest(new { success = false, message = "Email này đã được sử dụng bởi một tài khoản khác!" });
+                }
+
+                var rnd = new Random();
+                string code = rnd.Next(100000, 999999).ToString();
+
+                var otp = new OtpVerification
+                {
+                    Email = request.Email.Trim(),
+                    Phone = "",
+                    Code = code,
+                    ExpiresAt = DateTime.Now.AddMinutes(5),
+                    IsUsed = false,
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.OtpVerifications.Add(otp);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine("\n==============================================");
+                Console.WriteLine($"[REGISTER EMAIL OTP SIMULATION] To: {request.Email}");
+                Console.WriteLine($"Code: {code} (Valid for 5 minutes)");
+                Console.WriteLine("==============================================\n");
+
+                // Dispatch real Email OTP via SMTP
+                string subject = "AutoWash Pro - Xác thực đăng ký tài khoản";
+                string body = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #cbd5e1; border-radius: 12px; background-color: #f8fafc;'>
+                        <div style='text-align: center; margin-bottom: 20px;'>
+                            <h2 style='color: #0f172a; margin: 0;'>AutoWash <span style='color: #06b6d4;'>Pro</span></h2>
+                            <p style='color: #64748b; font-size: 0.85rem; margin: 5px 0 0 0;'>Hệ Thống Quản Lý Rửa Xe Thông Minh</p>
+                        </div>
+                        <hr style='border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;' />
+                        <p style='color: #334155;'>Xin chào,</p>
+                        <p style='color: #334155;'>Bạn đang thực hiện đăng ký tài khoản mới tại AutoWash Pro.</p>
+                        <p style='color: #334155;'>Vui lòng sử dụng mã xác thực OTP 6 chữ số dưới đây để hoàn tất thủ tục:</p>
+                        <div style='text-align: center; margin: 30px 0;'>
+                            <span style='font-size: 2rem; font-weight: bold; letter-spacing: 5px; color: #06b6d4; background-color: #0f172a; padding: 10px 25px; border-radius: 8px; display: inline-block;'>{code}</span>
+                        </div>
+                        <p style='color: #64748b; font-size: 0.8rem; text-align: center;'>Mã OTP này có giá trị trong vòng 5 phút và chỉ được sử dụng một lần. Vui lòng không cung cấp mã này cho bất kỳ ai.</p>
+                        <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;' />
+                        <p style='font-size: 0.8rem; color: #64748b; text-align: center;'>Đây là email tự động từ hệ thống AutoWash Pro. Vui lòng không trả lời email này.</p>
+                    </div>";
+
+                await SendRealEmailAsync(request.Email.Trim(), subject, body);
+
+                return Ok(new { success = true, message = $"Mã OTP đã được gửi đến email {request.Email}! (Mã mô phỏng: {code})" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.FullName) || string.IsNullOrWhiteSpace(request.OtpCode))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ tất cả các trường và mã OTP!" });
+            }
+
+            try
+            {
+                // Verify OTP first
+                var otp = await _context.OtpVerifications
+                    .Where(o => o.Email == request.Email.Trim() && o.Code == request.OtpCode.Trim() && !o.IsUsed && o.ExpiresAt > DateTime.Now)
+                    .OrderByDescending(o => o.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (otp == null)
+                {
+                    return BadRequest(new { success = false, message = "Mã OTP không hợp lệ hoặc đã hết hạn!" });
+                }
+
                 var existingEmail = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == request.Email.Trim());
                 if (existingEmail != null)
                 {
@@ -253,22 +401,23 @@ namespace Auto_Wash.Controllers
                 };
 
                 _context.Accounts.Add(account);
+                otp.IsUsed = true;
                 await _context.SaveChangesAsync();
 
-                var customer = new Customer
+                var customerProfile = new Customer
                 {
                     AccountId = account.AccountId,
                     MembershipCode = "MEM" + DateTime.Now.ToString("yyMMddHHmmss"),
                     TierId = 1, // Default Tier: Member
-                    PointBalance = 100, // Gift 100 points
-                    LifetimePoints = 100,
+                    PointBalance = 0,
+                    LifetimePoints = 0,
                     RankingBalance = 0,
                     TotalVisits = 0,
                     TotalSpend = 0,
                     JoinedAt = DateTime.Now
                 };
 
-                _context.Customers.Add(customer);
+                _context.Customers.Add(customerProfile);
                 await _context.SaveChangesAsync();
 
                 Response.Cookies.Append("UserEmail", account.Email, new CookieOptions {
@@ -288,7 +437,7 @@ namespace Auto_Wash.Controllers
                     email = account.Email,
                     phone = account.Phone,
                     tier = "Member",
-                    points = 100
+                    points = 0
                 });
             }
             catch (Exception ex)
@@ -340,5 +489,11 @@ namespace Auto_Wash.Controllers
         public string FullName { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+        public string OtpCode { get; set; } = string.Empty;
+    }
+
+    public class SendRegisterOtpRequest
+    {
+        public string Email { get; set; } = string.Empty;
     }
 }

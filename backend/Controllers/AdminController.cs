@@ -18,7 +18,7 @@ namespace Auto_Wash.Controllers
         {
             var role = HttpContext.Session.GetString("UserRole");
             if (string.IsNullOrEmpty(role) || (role != "admin" && role != "staff"))
-                return RedirectToAction("Login", "Account");
+                return Redirect("/login");
             return null;
         }
 
@@ -26,58 +26,6 @@ namespace Auto_Wash.Controllers
         {
             var role = HttpContext.Session.GetString("UserRole");
             return role == "admin" || role == "staff";
-        }
-
-        // ── Page Actions ──────────────────────────────────────────────
-
-        public IActionResult Dashboard()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Admin Dashboard";
-            ViewBag.ActiveNav = "dashboard";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
-        }
-
-        public IActionResult Queue()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Hàng đợi rửa xe";
-            ViewBag.ActiveNav = "queue";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
-        }
-
-        public IActionResult Customers()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Quản lý khách hàng";
-            ViewBag.ActiveNav = "customers";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
-        }
-
-        public IActionResult Services()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Quản lý dịch vụ";
-            ViewBag.ActiveNav = "services";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
-        }
-
-        public IActionResult Promotions()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Khuyến mãi & Chiến dịch";
-            ViewBag.ActiveNav = "promotions";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
         }
 
         // ── Dashboard Stats API ───────────────────────────────────────
@@ -341,9 +289,11 @@ namespace Auto_Wash.Controllers
         // ── Queue Status Progression ──────────────────────────────────
         private static readonly Dictionary<string, string> _queueFlow = new()
         {
-            ["Waiting"]  = "LPR_Scan",
-            ["LPR_Scan"] = "Washing",
-            ["Washing"]  = "Drying"
+            ["Waiting"]          = "LPR_Scan",
+            ["LPR_Scan"]         = "Washing",
+            ["Washing"]          = "Addon_Processing",
+            ["Addon_Processing"] = "Drying",
+            ["Drying"]           = "Completed"
         };
 
         // ── Queue Management API ──────────────────────────────────────
@@ -354,6 +304,8 @@ namespace Auto_Wash.Controllers
             if (!IsAdminOrStaff()) return Unauthorized();
 
             var today = DateTime.Today;
+
+            // 1. Fetch today's actual Queue entries
             var items = await _context.Queues
                 .Include(q => q.Tier)
                 .Include(q => q.Booking)
@@ -364,27 +316,83 @@ namespace Auto_Wash.Controllers
                 .ThenBy(q => q.CheckInAt)
                 .ToListAsync();
 
-            var result = items.Select((q, idx) => new {
-                queueId      = q.QueueId,
-                bookingId    = q.BookingId,
-                licensePlate = q.LicensePlate,
-                customerName = q.CustomerName ?? "Khách vãng lai",
-                tierName     = q.Tier?.TierName ?? "Member",
-                tierId       = q.TierId ?? 1,
-                status       = q.Status,
-                position     = idx + 1,
-                checkInAt    = q.CheckInAt,
-                startedAt    = q.StartedAt,
-                completedAt  = q.CompletedAt,
-                staffNote    = q.StaffNote,
-                finalPrice   = q.Booking?.FinalPrice ?? 0,
-                pointsEarned = q.Booking?.PointsEarned ?? 0,
-                services     = (q.Booking?.BookingServices ?? new List<BookingService>())
-                    .Select(bs => new { name = bs.Service.ServiceName, price = bs.PriceSnapshot })
-                    .ToList()
-            });
+            // Get the list of BookingIds that already have Queue entries today
+            var existingBookingIds = items
+                .Where(q => q.BookingId.HasValue)
+                .Select(q => q.BookingId!.Value)
+                .ToHashSet();
 
-            return Ok(result);
+            // 2. Fetch today's Bookings (status 1 = Pending, 2 = Confirmed) that DO NOT have a Queue entry
+            var pendingBookings = await _context.Bookings
+                .Include(b => b.Vehicle)
+                .Include(b => b.Customer)
+                    .ThenInclude(c => c.Tier)
+                .Include(b => b.Customer)
+                    .ThenInclude(c => c.Account)
+                .Include(b => b.BookingServices)
+                    .ThenInclude(bs => bs.Service)
+                .Where(b => b.ScheduledAt.Date == today 
+                         && (b.Status == 1 || b.Status == 2)
+                         && !existingBookingIds.Contains(b.BookingId))
+                .OrderByDescending(b => b.Customer.Tier != null ? b.Customer.Tier.QueuePriority : 0)
+                .ThenBy(b => b.ScheduledAt)
+                .ToListAsync();
+
+            // 3. Map both and merge them
+            var mergedResult = new List<object>();
+
+            // Map existing queue entries
+            foreach (var q in items)
+            {
+                mergedResult.Add(new {
+                    queueId      = q.QueueId,
+                    bookingId    = q.BookingId,
+                    licensePlate = q.LicensePlate,
+                    customerName = q.CustomerName ?? "Khách vãng lai",
+                    tierName     = q.Tier?.TierName ?? "Member",
+                    tierId       = q.TierId ?? 1,
+                    status       = q.Status,
+                    position     = q.Position,
+                    checkInAt    = q.CheckInAt,
+                    startedAt    = q.StartedAt,
+                    completedAt  = q.CompletedAt,
+                    staffNote    = q.StaffNote,
+                    finalPrice   = q.Booking?.FinalPrice ?? 0,
+                    pointsEarned = q.Booking?.PointsEarned ?? 0,
+                    services     = (q.Booking?.BookingServices ?? new List<BookingService>())
+                        .Select(bs => new { name = bs.Service.ServiceName, price = bs.PriceSnapshot })
+                        .ToList()
+                });
+            }
+
+            // Map pending bookings to synthetic queue entries
+            int positionOffset = items.Count > 0 ? items.Max(q => q.Position) : 0;
+            int idx = 1;
+            foreach (var b in pendingBookings)
+            {
+                mergedResult.Add(new {
+                    queueId      = -b.BookingId, // Synthetic ID
+                    bookingId    = b.BookingId,
+                    licensePlate = b.Vehicle.LicensePlate,
+                    customerName = b.Customer.Account?.FullName ?? "Khách hàng",
+                    tierName     = b.Customer.Tier?.TierName ?? "Member",
+                    tierId       = b.Customer.TierId,
+                    status       = "Waiting", // Pending booking shows in "Chờ check-in"
+                    position     = positionOffset + idx,
+                    checkInAt    = b.ScheduledAt,
+                    startedAt    = (DateTime?)null,
+                    completedAt  = (DateTime?)null,
+                    staffNote    = b.Notes,
+                    finalPrice   = b.FinalPrice,
+                    pointsEarned = b.PointsEarned,
+                    services     = b.BookingServices
+                        .Select(bs => new { name = bs.Service.ServiceName, price = bs.PriceSnapshot })
+                        .ToList()
+                });
+                idx++;
+            }
+
+            return Ok(mergedResult);
         }
 
         [HttpPost]
@@ -392,7 +400,52 @@ namespace Auto_Wash.Controllers
         {
             if (!IsAdminOrStaff()) return Unauthorized();
 
-            var q = await _context.Queues.FindAsync(id);
+            Queue? q = null;
+            if (id < 0)
+            {
+                int bookingId = -id;
+                var booking = await _context.Bookings
+                    .Include(b => b.Vehicle)
+                    .Include(b => b.Customer)
+                        .ThenInclude(c => c.Account)
+                    .FirstOrDefaultAsync(b => b.BookingId == bookingId);
+
+                if (booking == null) return NotFound(new { success = false, message = "Không tìm thấy đặt lịch!" });
+
+                q = await _context.Queues.FirstOrDefaultAsync(w => w.BookingId == bookingId);
+                if (q == null)
+                {
+                    var today = DateTime.Today;
+                    var lastPos = await _context.Queues
+                        .Where(w => w.CheckInAt.Date == today && w.Status != "Cancelled")
+                        .MaxAsync(w => (int?)w.Position) ?? 0;
+
+                    q = new Queue
+                    {
+                        BookingId = booking.BookingId,
+                        VehicleId = booking.VehicleId,
+                        CustomerId = booking.CustomerId,
+                        LicensePlate = booking.Vehicle.LicensePlate,
+                        CustomerName = booking.Customer.Account?.FullName ?? "Khách hàng",
+                        TierId = booking.Customer.TierId,
+                        Status = "LPR_Scan", // Advance from Waiting to LPR_Scan
+                        Position = lastPos + 1,
+                        CheckInAt = DateTime.Now,
+                        StartedAt = DateTime.Now
+                    };
+
+                    booking.Status = 3; // InProgress
+                    _context.Queues.Add(q);
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { success = true, newStatus = "LPR_Scan" });
+                }
+            }
+            else
+            {
+                q = await _context.Queues.FindAsync(id);
+            }
+
             if (q == null) return NotFound(new { success = false, message = "Không tìm thấy xe!" });
 
             if (!_queueFlow.TryGetValue(q.Status, out var nextStatus))
@@ -410,7 +463,50 @@ namespace Auto_Wash.Controllers
         {
             if (!IsAdminOrStaff()) return Unauthorized();
 
-            var q = await _context.Queues.FindAsync(id);
+            Queue? q = null;
+            if (id < 0)
+            {
+                int bookingId = -id;
+                var booking = await _context.Bookings
+                    .Include(b => b.Vehicle)
+                    .Include(b => b.Customer)
+                        .ThenInclude(c => c.Account)
+                    .FirstOrDefaultAsync(b => b.BookingId == bookingId);
+
+                if (booking != null)
+                {
+                    q = await _context.Queues.FirstOrDefaultAsync(w => w.BookingId == bookingId);
+                    if (q == null)
+                    {
+                        var today = DateTime.Today;
+                        var lastPos = await _context.Queues
+                            .Where(w => w.CheckInAt.Date == today && w.Status != "Cancelled")
+                            .MaxAsync(w => (int?)w.Position) ?? 0;
+
+                        q = new Queue
+                        {
+                            BookingId = booking.BookingId,
+                            VehicleId = booking.VehicleId,
+                            CustomerId = booking.CustomerId,
+                            LicensePlate = booking.Vehicle.LicensePlate,
+                            CustomerName = booking.Customer.Account?.FullName ?? "Khách hàng",
+                            TierId = booking.Customer.TierId,
+                            Status = "Waiting",
+                            Position = lastPos + 1,
+                            CheckInAt = DateTime.Now
+                        };
+
+                        booking.Status = 3; // InProgress
+                        _context.Queues.Add(q);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
+            else
+            {
+                q = await _context.Queues.FindAsync(id);
+            }
+
             if (q == null) return NotFound(new { success = false });
 
             if (!string.IsNullOrEmpty(request.Status))  q.Status    = request.Status;
@@ -428,10 +524,22 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                var q = await _context.Queues
-                    .Include(q => q.Booking)
-                        .ThenInclude(b => b!.Customer)
-                    .FirstOrDefaultAsync(q => q.QueueId == id);
+                Queue? q = null;
+                if (id < 0)
+                {
+                    int bookingId = -id;
+                    q = await _context.Queues
+                        .Include(w => w.Booking)
+                            .ThenInclude(b => b!.Customer)
+                        .FirstOrDefaultAsync(w => w.BookingId == bookingId);
+                }
+                else
+                {
+                    q = await _context.Queues
+                        .Include(w => w.Booking)
+                            .ThenInclude(b => b!.Customer)
+                        .FirstOrDefaultAsync(w => w.QueueId == id);
+                }
 
                 if (q == null) return NotFound(new { success = false, message = "Không tìm thấy!" });
 
@@ -490,6 +598,17 @@ namespace Auto_Wash.Controllers
         {
             if (!IsAdminOrStaff()) return Unauthorized();
 
+            if (id < 0)
+            {
+                int bookingId = -id;
+                var booking = await _context.Bookings.FindAsync(bookingId);
+                if (booking == null) return NotFound(new { success = false });
+
+                booking.Status = 5; // Cancelled
+                await _context.SaveChangesAsync();
+                return Ok(new { success = true });
+            }
+
             var q = await _context.Queues.FindAsync(id);
             if (q == null) return NotFound(new { success = false });
 
@@ -531,7 +650,7 @@ namespace Auto_Wash.Controllers
 
                 var tierName = (await _context.Tiers.FindAsync(tierId ?? 1))?.TierName ?? "Member";
 
-                // Tìm booking confirmed hôm nay cho xe này (DATABASE.md Luồng 2)
+                // Tìm booking confirmed/pending hôm nay cho xe này
                 int? bookingId      = null;
                 string? bookingSvcs = null;
                 if (vehicleId.HasValue)
@@ -541,7 +660,7 @@ namespace Auto_Wash.Controllers
                             .ThenInclude(bs => bs.Service)
                         .FirstOrDefaultAsync(b =>
                             b.VehicleId    == vehicleId.Value
-                            && b.Status    == 2        // Confirmed
+                            && (b.Status == 1 || b.Status == 2) // Pending or Confirmed
                             && b.ScheduledAt.Date == today);
 
                     if (booking != null)

@@ -6,11 +6,7 @@ import '../styles/customer/history.css';
 
 const STEP_BADGES = ['Đã nhận diện LPR', 'Đang phun rửa vỏ', 'Đang sấy khí áp lực', 'Đã rửa sạch & Check-out'];
 
-const INITIAL_HISTORY = [
-  { id: 'hist_01', date: '18/05/2026', plate: '51G - 123.45', type: 'Honda Vision', service: 'Combo Cao cấp', price: 85000, points: 85, status: 'Hoàn tất', surveyStatus: 'pending' },
-  { id: 'hist_02', date: '12/05/2026', plate: '51G - 123.45', type: 'Honda Vision', service: 'Rửa xe phổ thông', price: 35000, points: 35, status: 'Hoàn tất', surveyStatus: 'rated', rating: 5 },
-  { id: 'hist_03', date: '05/05/2026', plate: '51A - 999.99', type: 'SH Mode', service: 'Rửa xe phổ thông', price: 35000, points: 35, status: 'Hoàn tất', surveyStatus: 'rated', rating: 4 }
-];
+const INITIAL_HISTORY = [];
 
 export const CustomerHistory = () => {
   const { user, updateUser } = useAuth();
@@ -261,7 +257,7 @@ export const CustomerHistory = () => {
               {history.length === 0 ? (
                 <div className="empty-state-container text-center py-5 text-muted">
                   <div className="empty-state-icon mb-3"><i className="fas fa-history fa-2x"></i></div>
-                  <h5 className="fw-bold mb-2">Chưa có lịch sử rửa xe</h5>
+                  <h5 className="fw-bold mb-2">Bạn chưa có lịch sử sử dụng dịch vụ</h5>
                   <p className="small mb-0">Sau khi hoàn tất dịch vụ, lịch sử sẽ tự động xuất hiện tại đây.</p>
                 </div>
               ) : (

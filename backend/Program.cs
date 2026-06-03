@@ -53,12 +53,11 @@ namespace Auto_Wash
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
-                app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
+            app.UseDefaultFiles(); // Enables serving index.html as default page
             app.UseStaticFiles();
             app.UseSession();
             app.UseRouting();
@@ -68,6 +67,8 @@ namespace Auto_Wash
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
+            
+            app.MapFallbackToFile("index.html"); // Fallback for React Router client routes
 
             app.Lifetime.ApplicationStarted.Register(() =>
             {
