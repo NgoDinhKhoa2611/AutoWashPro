@@ -5,18 +5,8 @@ import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/booking.css';
 
-const DEFAULT_MAIN_SERVICES = [
-  { id: 'svc_01', name: 'Rửa xe phổ thông', desc: 'Rửa vỏ bọt tuyết cơ bản, sấy khô nhanh.', price: 35000, time: '20 phút', icon: 'fa-soap' },
-  { id: 'svc_02', name: 'Combo Rửa xe cao cấp', desc: 'Bọt tuyết chi tiết + sáp nano + vệ sinh nội thất.', price: 85000, time: '45 phút', icon: 'fa-star' },
-  { id: 'svc_03', name: 'Rửa xe siêu nhanh', desc: 'Rửa vỏ cơ bản dành cho giờ cao điểm.', price: 25000, time: '10 phút', icon: 'fa-bolt' }
-];
-
-const DEFAULT_ADDON_SERVICES = [
-  { id: 'add_04', name: 'Vệ sinh nội thất', price: 30000, icon: 'fa-couch', desc: 'Lau dọn ghế, khử mùi cabin' },
-  { id: 'add_02', name: 'Wax nano', price: 25000, icon: 'fa-shield-alt', desc: 'Bảo vệ sơn xe sáng bóng' },
-  { id: 'add_03', name: 'Chăm sóc dưỡng nhựa', price: 30000, icon: 'fa-spray-can', desc: 'Phục hồi và làm bóng nhựa nhám' },
-  { id: 'add_01', name: 'Vệ sinh sên xích', price: 20000, icon: 'fa-link', desc: 'Làm sạch và bôi trơn xích chuyên sâu' }
-];
+const DEFAULT_MAIN_SERVICES = [];
+const DEFAULT_ADDON_SERVICES = [];
 
 const TIME_SLOTS = ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00'];
 
@@ -67,48 +57,32 @@ export const CustomerBooking = () => {
     const fetchVehicles = async () => {
       try {
         const response = await customerService.getVehicles();
-        if (response.success && response.vehicles && response.vehicles.length > 0) {
-          const list = response.vehicles.map(v => ({
-            plate: v.plate,
-            type: v.type,
-            lastWash: 'Vừa xong',
-            totalWashes: 0
-          }));
-          setVehicles(list);
-          setSelectedVehicle(list[0].plate);
-        } else {
-          loadLocalStorageVehicles();
+        if (response.success) {
+          if (response.vehicles && response.vehicles.length > 0) {
+            const list = response.vehicles.map(v => ({
+              plate: v.plate,
+              type: v.type,
+              lastWash: 'Vừa xong',
+              totalWashes: 0
+            }));
+            setVehicles(list);
+            setSelectedVehicle(list[0].plate);
+          } else {
+            setVehicles([]);
+            setSelectedVehicle(null);
+          }
         }
       } catch (err) {
         console.error(err);
-        loadLocalStorageVehicles();
-      }
-    };
-
-    const loadLocalStorageVehicles = () => {
-      let savedVehicles = [];
-      try {
-        savedVehicles = JSON.parse(localStorage.getItem('user_vehicles') || '[]');
-      } catch (e) {}
-      if (savedVehicles.length === 0) {
-        savedVehicles = [
-          { plate: '51G - 123.45', type: 'Honda Vision', lastWash: '28/05/2026', totalWashes: 8 },
-          { plate: '51A - 999.99', type: 'SH Mode', lastWash: '22/05/2026', totalWashes: 12 }
-        ];
-        localStorage.setItem('user_vehicles', JSON.stringify(savedVehicles));
-      }
-      setVehicles(savedVehicles);
-      if (savedVehicles.length > 0) {
-        setSelectedVehicle(savedVehicles[0].plate);
+        setVehicles([]);
+        setSelectedVehicle(null);
       }
     };
 
     fetchVehicles();
 
     // Set default main service
-    setSelectedMain(DEFAULT_MAIN_SERVICES[1]);
-
-    // Load services (checking Custom services in DB/LocalStorage)
+    // Load services (checking Custom services in DB)
     const fetchServices = async () => {
       try {
         const response = await customerService.getServices();
@@ -137,53 +111,32 @@ export const CustomerBooking = () => {
             }));
           setAddonServices(addons);
         } else {
-          loadLocalStorageServices();
+          setMainServices([]);
+          setAddonServices([]);
+          setSelectedMain(null);
         }
       } catch (err) {
         console.error(err);
-        loadLocalStorageServices();
+        setMainServices([]);
+        setAddonServices([]);
+        setSelectedMain(null);
       }
-    };
-
-    const loadLocalStorageServices = () => {
-      let appSvc = [];
-      try {
-        appSvc = JSON.parse(localStorage.getItem('app_services') || '[]');
-      } catch (e) {}
-
-      const customMains = appSvc
-        .filter(s => (s.isActive !== undefined ? s.isActive : s.status === 'Active') && 
-                     (s.category === 'Rửa xe cơ bản' || s.category === 'Rửa xe cao cấp'))
-        .map(s => ({
-          id: s.id,
-          name: s.name,
-          desc: s.description || '',
-          price: s.price,
-          time: (s.estimatedMinutes || 15) + ' phút',
-          icon: 'fa-soap'
-        }));
-      setMainServices(customMains.length > 0 ? customMains : DEFAULT_MAIN_SERVICES);
-
-      const customAddons = appSvc
-        .filter(s => (s.isActive !== undefined ? s.isActive : s.status === 'Active') && 
-                     (s.category === 'Dịch vụ đi kèm' || s.category === 'Chăm sóc nội thất' || s.category === 'Phủ bóng / Wax'))
-        .map(s => ({
-          id: s.id,
-          name: s.name,
-          price: s.price,
-          icon: 'fa-plus-circle',
-          desc: s.description || 'Dịch vụ nâng cao đi kèm'
-        }));
-      setAddonServices(customAddons.length > 0 ? customAddons : DEFAULT_ADDON_SERVICES);
     };
 
     fetchServices();
 
-    // Load claimed vouchers
-    try {
-      const claimed = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
-      setMyVouchers(claimed.filter(v => v.status === 1)); // 1 = Available
-    } catch (e) {}
+    // Load claimed vouchers from DB
+    const fetchVouchers = async () => {
+      try {
+        const response = await customerService.getVouchers();
+        if (response.success && response.vouchers) {
+          setMyVouchers(response.vouchers.filter(v => v.status === 1)); // 1 = Available
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchVouchers();
   }, [user]);
 
   const handleSelectVehicle = (plate) => {
@@ -212,12 +165,8 @@ export const CustomerBooking = () => {
       return;
     }
 
-    // 1. Check in claimed vouchers in local storage
-    let claimedList = [];
-    try {
-      claimedList = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
-    } catch (e) {}
-    const voucher = claimedList.find(v => v.code.toUpperCase() === code);
+    // Check in my vouchers loaded from DB
+    const voucher = myVouchers.find(v => v.code.toUpperCase() === code);
 
     if (voucher) {
       if (voucher.status === 2 || voucher.status === 'used') {
@@ -233,27 +182,8 @@ export const CustomerBooking = () => {
         rewardValue: voucher.rewardValue
       });
       if (window.showToast) window.showToast(`Áp dụng voucher "${voucher.title}" thành công!`, 'success');
-      return;
-    }
-
-    // 2. Hardcoded fallback promos
-    const hardcodedPromos = {
-      'SILVER10': { title: 'Silver ưu đãi 10%', rewardType: 'DiscountPercent', rewardValue: 10 },
-      'GOLD15': { title: 'Gold special 15%', rewardType: 'DiscountPercent', rewardValue: 15 },
-      'VIP20': { title: 'Platinum VIP 20%', rewardType: 'DiscountPercent', rewardValue: 20 },
-      'WASH10K': { title: 'Giảm 10.000đ', rewardType: 'FixedAmount', rewardValue: 10000 }
-    };
-
-    if (hardcodedPromos[code]) {
-      setAppliedVoucher({
-        code: code,
-        title: hardcodedPromos[code].title,
-        rewardType: hardcodedPromos[code].rewardType,
-        rewardValue: hardcodedPromos[code].rewardValue
-      });
-      if (window.showToast) window.showToast(`Áp dụng mã khuyến mãi "${code}" thành công!`, 'success');
     } else {
-      if (window.showToast) window.showToast('Mã ưu đãi không hợp lệ hoặc đã hết hạn.', 'warning');
+      if (window.showToast) window.showToast('Mã ưu đãi không hợp lệ hoặc đã hết hạn trong ví.', 'warning');
     }
   };
 
@@ -268,28 +198,18 @@ export const CustomerBooking = () => {
   const mainPrice = selectedMain ? Number(selectedMain.price) : 0;
   const baseTotal = mainPrice + addonTotal;
 
-  // VIP discount (Tier-based Loyalty perks)
+  // VIP discount (Tier-based Loyalty perks) - Disabled in this phase as backend calculates base total
   const tier = (user?.tier || 'Silver Member').toUpperCase();
-  let tierDiscountPercent = 0;
-  if (tier.includes('PLATINUM')) tierDiscountPercent = 10;
-  else if (tier.includes('GOLD')) tierDiscountPercent = 5;
-  else if (tier.includes('SILVER')) tierDiscountPercent = 2;
-  const tierDiscountAmount = Math.round(baseTotal * (tierDiscountPercent / 100));
+  const tierDiscountPercent = 0;
+  const tierDiscountAmount = 0;
 
-  // Voucher discount
-  let promoDiscountAmount = 0;
-  if (appliedVoucher && baseTotal > 0) {
-    if (appliedVoucher.rewardType === 'DiscountPercent') {
-      promoDiscountAmount = Math.round(baseTotal * (Number(appliedVoucher.rewardValue) / 100));
-    } else {
-      promoDiscountAmount = Math.min(baseTotal, Number(appliedVoucher.rewardValue));
-    }
-  }
+  // Voucher discount - Disabled in this phase as backend calculates base total
+  const promoDiscountAmount = 0;
 
-  const totalDiscount = tierDiscountAmount + promoDiscountAmount;
-  const finalTotal = Math.max(0, baseTotal - totalDiscount);
+  const totalDiscount = 0;
+  const finalTotal = baseTotal;
 
-  // Earned points (+1 point for every 10,000đ spent to match "+13 PTS" for "130.000đ")
+  // Earned points (+1 point for every 10,000đ spent)
   const earnedPoints = Math.round(finalTotal / 10000);
 
   // Confirm booking
@@ -307,79 +227,29 @@ export const CustomerBooking = () => {
       return;
     }
 
-    // Creating booking object linking to dashboard dynamic progress
-    const booking = {
-      id: 'book_' + Date.now(),
-      vehicle: selectedVehicle,
-      mainService: selectedMain.name,
-      addons: Object.values(selectedAddons).map(a => a.name),
-      status: 'Booked',
-      bookingDate: bookingDate,
-      bookingTime: bookingTime,
-      staffName: 'Nguyễn Văn A',
-      price: finalTotal,
-      points: earnedPoints
-    };
-
     try {
-      // Call real backend booking API
+      // Call real backend booking API (do not send final price or points earned)
       const result = await customerService.createBooking({
         LicensePlate: selectedVehicle,
         MainServiceName: selectedMain.name,
         AddonServiceNames: Object.values(selectedAddons).map(a => a.name),
         BookingDate: bookingDate,
         BookingTime: bookingTime,
-        FinalPrice: finalTotal,
-        PointsEarned: earnedPoints,
         Notes: ''
       });
 
       if (result.success) {
-        booking.id = 'book_' + result.bookingId;
+        if (window.showToast) window.showToast(`Đặt lịch thành công cho xe ${selectedVehicle}!`, 'success');
+        setTimeout(() => {
+          navigate('/customer/dashboard');
+        }, 1200);
+      } else {
+        if (window.showToast) window.showToast(result.message || 'Đặt lịch thất bại!', 'warning');
       }
     } catch (err) {
       console.error(err);
-      if (window.showToast) window.showToast('Đặt lịch thất bại lên cơ sở dữ liệu! Đang chạy chế độ offline dự phòng...', 'warning');
+      if (window.showToast) window.showToast('Đặt lịch thất bại. Vui lòng thử lại!', 'warning');
     }
-
-    // Mark claimed voucher as used in local storage
-    if (appliedVoucher && appliedVoucher.redemptionId) {
-      let claimedList = [];
-      try {
-        claimedList = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
-      } catch (e) {}
-      const idx = claimedList.findIndex(v => v.redemptionId === appliedVoucher.redemptionId);
-      if (idx !== -1) {
-        claimedList[idx].status = 2; // 2 = Used
-        localStorage.setItem('user_claimed_vouchers', JSON.stringify(claimedList));
-      }
-    }
-
-    // Save booking states (local backup)
-    localStorage.setItem('active_booking', JSON.stringify(booking));
-    localStorage.setItem('wash_step', '0');
-
-    // Create notification
-    const notif = {
-      id: 'notif_book_' + Date.now(),
-      title: 'Đặt lịch thành công',
-      body: `Xe ${selectedVehicle} đã đặt lịch lúc ${bookingTime} - ngày ${bookingDate.split('-').reverse().join('/')}.`,
-      time: 'Vừa xong',
-      type: 'status',
-      read: false
-    };
-    let notifications = [];
-    try {
-      notifications = JSON.parse(localStorage.getItem('user_notifications') || '[]');
-    } catch (e) {}
-    localStorage.setItem('user_notifications', JSON.stringify([notif, ...notifications]));
-    window.dispatchEvent(new Event('storage'));
-
-    if (window.showToast) window.showToast(`Đặt lịch thành công cho xe ${selectedVehicle}!`, 'success');
-    
-    setTimeout(() => {
-      navigate('/customer/dashboard');
-    }, 1200);
   };
 
   return (
@@ -394,25 +264,41 @@ export const CustomerBooking = () => {
               <span className="step-num-badge">1</span> Chọn phương tiện rửa
             </h5>
             <div className="row g-3" id="vehicles-list">
-              {vehicles.map((v, i) => (
-                <div key={i} className="col-md-6">
-                  <div
-                    className={`selectable-card p-3 rounded-4 border h-100 ${selectedVehicle === v.plate ? 'selected' : 'bg-light border-light'}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleSelectVehicle(v.plate)}
+              {vehicles.length === 0 ? (
+                <div className="col-12 text-center py-4">
+                  <div className="alert alert-warning py-3 mb-3 fw-medium">
+                    Bạn chưa có phương tiện nào. Vui lòng thêm phương tiện trước khi đặt lịch.
+                  </div>
+                  <button
+                    type="button"
+                    className="app-btn-primary px-4 py-2 border-0 text-dark fw-bold"
+                    style={{ borderRadius: '10px' }}
+                    onClick={() => navigate('/customer/vehicles')}
                   >
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="rounded-3 d-flex align-items-center justify-content-center bg-white border shadow-sm" style={{ width: '44px', height: '44px' }}>
-                        <i className="fas fa-motorcycle text-muted"></i>
-                      </div>
-                      <div>
-                        <div className="fw-bold" style={{ color: 'var(--navy-dark)', fontSize: '0.9rem' }}>{v.plate}</div>
-                        <small className="text-muted">{v.type}</small>
+                    Đi đến trang Phương tiện của tôi
+                  </button>
+                </div>
+              ) : (
+                vehicles.map((v, i) => (
+                  <div key={i} className="col-md-6">
+                    <div
+                      className={`selectable-card p-3 rounded-4 border h-100 ${selectedVehicle === v.plate ? 'selected' : 'bg-light border-light'}`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleSelectVehicle(v.plate)}
+                    >
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="rounded-3 d-flex align-items-center justify-content-center bg-white border shadow-sm" style={{ width: '44px', height: '44px' }}>
+                          <i className="fas fa-motorcycle text-muted"></i>
+                        </div>
+                        <div>
+                          <div className="fw-bold" style={{ color: 'var(--navy-dark)', fontSize: '0.9rem' }}>{v.plate}</div>
+                          <small className="text-muted">{v.type}</small>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -544,7 +430,7 @@ export const CustomerBooking = () => {
               <div className="d-flex justify-content-between align-items-center">
                 <span className="text-muted small">Xe:</span>
                 <span className="fw-bold text-dark font-monospace" id="summary-vehicle" style={{ fontSize: '0.88rem' }}>
-                  {selectedVehicle || 'Chưa chọn'}
+                  {selectedVehicle || 'Chưa có phương tiện'}
                 </span>
               </div>
               
@@ -657,7 +543,12 @@ export const CustomerBooking = () => {
               </h3>
             </div>
 
-            <button onClick={handleConfirmBooking} className="app-btn-primary w-100 py-3 shadow-lg fs-6 border-0 text-dark fw-bold" style={{ borderRadius: '14px' }}>
+            <button
+              onClick={handleConfirmBooking}
+              disabled={vehicles.length === 0}
+              className="app-btn-primary w-100 py-3 shadow-lg fs-6 border-0 text-dark fw-bold"
+              style={{ borderRadius: '14px', opacity: vehicles.length === 0 ? 0.5 : 1, cursor: vehicles.length === 0 ? 'not-allowed' : 'pointer' }}
+            >
               XÁC NHẬN ĐẶT LỊCH <i className="fas fa-chevron-right ms-1"></i>
             </button>
           </div>

@@ -76,3 +76,4 @@ local.settings.json
 # Database & docs (local only)
 *.md
 *.sql
+!docs/**/*.md

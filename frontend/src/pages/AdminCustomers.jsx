@@ -125,13 +125,6 @@ export const AdminCustomers = () => {
     else if (newPts >= 2000) newTier = 'Gold Loyalty';
     else if (newPts >= 500) newTier = 'Silver Loyalty';
 
-    // Update in localStorage if adjusting the main test user
-    if (selectedCustomer.phone === '0901234567') {
-      localStorage.setItem('user_points', String(newPts));
-      localStorage.setItem('user_tier', newTier.replace(' Loyalty', ' Member'));
-      window.dispatchEvent(new Event('storage'));
-    }
-
     const updated = customers.map(c => {
       if (c.id !== selectedCustomer.id) return c;
       return { ...c, points: newPts, tier: newTier };
@@ -147,26 +140,6 @@ export const AdminCustomers = () => {
   const applyVoucherAssign = () => {
     if (!selectedCustomer) return;
     const vInfo = availableVouchers.find(v => v.code === selectedVoucherCode);
-
-    // Sync to user claimed vouchers if main test customer
-    if (selectedCustomer.phone === '0901234567') {
-      let claimed = [];
-      try {
-        claimed = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
-      } catch (e) {}
-      
-      const newVoucher = {
-        redemptionId: 'red_' + Date.now(),
-        code: selectedVoucherCode,
-        title: vInfo.title,
-        rewardType: selectedVoucherCode.includes('10K') ? 'FixedAmount' : 'DiscountPercent',
-        rewardValue: selectedVoucherCode.includes('10K') ? 10000 : selectedVoucherCode.includes('10') ? 10 : selectedVoucherCode.includes('15') ? 15 : 20,
-        status: 1 // Available
-      };
-
-      localStorage.setItem('user_claimed_vouchers', JSON.stringify([...claimed, newVoucher]));
-      window.dispatchEvent(new Event('storage'));
-    }
 
     if (window.showToast) {
       window.showToast(`Đã gán thành công voucher "${vInfo.title}" cho ${selectedCustomer.name}!`, 'success');

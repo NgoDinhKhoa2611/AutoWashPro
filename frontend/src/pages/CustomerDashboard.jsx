@@ -48,82 +48,76 @@ export const CustomerDashboard = () => {
           } else {
             setActiveBooking(null);
           }
-          return;
+        } else {
+          setActiveBooking(null);
         }
       } catch (err) {
         console.error(err);
-      }
-      
-      // Fallback to local storage
-      const activeStr = localStorage.getItem('active_booking');
-      if (activeStr) {
-        try {
-          const bookingObj = JSON.parse(activeStr);
-          setActiveBooking(bookingObj);
-          setWashStep(Number(localStorage.getItem('wash_step') || 0));
-        } catch (e) {
-          setActiveBooking(null);
-        }
-      } else {
         setActiveBooking(null);
       }
     };
 
     // 4. Load dashboard data
-    const loadDashboardData = () => {
+    const loadDashboardData = async () => {
       fetchActiveBooking();
 
       // Vehicles
-      let savedVehicles = [];
       try {
-        savedVehicles = JSON.parse(localStorage.getItem('user_vehicles') || '[]');
-      } catch (e) {}
-      setVehicles(savedVehicles);
-
-      // Claimed vouchers
-      let savedVouchers = [];
-      try {
-        savedVouchers = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
-      } catch (e) {}
-      setClaimedVouchers(savedVouchers);
-      setVouchersUsedCount(savedVouchers.filter(v => v.status === 2).length);
-
-      // Wash history count
-      let savedHistory = [];
-      try {
-        savedHistory = JSON.parse(localStorage.getItem('user_history_bookings') || '[]');
-      } catch (e) {}
-      setWashHistoryCount(savedHistory.length);
-
-      // Points & Tier Sync
-      const pts = Number(localStorage.getItem('user_points') || 0);
-      const rawTier = localStorage.getItem('user_tier') || 'Standard Member';
-      let tier = rawTier;
-      if (rawTier === 'Member' || rawTier === 'Standard') {
-        tier = 'Standard Member';
-      } else if (rawTier === 'Silver') {
-        tier = 'Silver Member';
-      } else if (rawTier === 'Gold') {
-        tier = 'Gold Member';
-      } else if (rawTier === 'Platinum') {
-        tier = 'Platinum Member';
+        const response = await customerService.getVehicles();
+        if (response && response.success && response.vehicles) {
+          setVehicles(response.vehicles);
+        } else {
+          setVehicles([]);
+        }
+      } catch (err) {
+        console.error(err);
+        setVehicles([]);
       }
 
-      if (user && (user.points !== pts || user.tier !== tier)) {
-        updateUser({ points: pts, tier });
+      // Vouchers
+      try {
+        const response = await customerService.getVouchers();
+        if (response && response.success && response.vouchers) {
+          setClaimedVouchers(response.vouchers);
+          setVouchersUsedCount(response.vouchers.filter(v => v.status === 2).length);
+        } else {
+          setClaimedVouchers([]);
+          setVouchersUsedCount(0);
+        }
+      } catch (err) {
+        console.error(err);
+        setClaimedVouchers([]);
+        setVouchersUsedCount(0);
+      }
+
+      // Wash history count
+      try {
+        const response = await customerService.getWashHistory();
+        if (response && response.success && response.history) {
+          setWashHistoryCount(response.history.length);
+        } else {
+          setWashHistoryCount(0);
+        }
+      } catch (err) {
+        console.error(err);
+        setWashHistoryCount(0);
       }
 
       // Notifications
       try {
-        const savedNotifs = localStorage.getItem('user_notifications');
-        if (savedNotifs) {
-          setNotifications(JSON.parse(savedNotifs));
+        const response = await customerService.getNotifications();
+        if (response && response.success && response.notifications) {
+          setNotifications(response.notifications);
+        } else {
+          setNotifications([]);
         }
-      } catch (e) {}
+      } catch (err) {
+        console.error(err);
+        setNotifications([]);
+      }
     };
 
     loadDashboardData();
-    window.addEventListener('storage', loadDashboardData);
 
     // dynamic polling for active booking status every 5 seconds
     const interval = setInterval(() => {
@@ -131,16 +125,21 @@ export const CustomerDashboard = () => {
     }, 5000);
 
     return () => {
-      window.removeEventListener('storage', loadDashboardData);
       clearInterval(interval);
     };
   }, []);
 
-  const markNotifRead = (id) => {
+  const markNotifRead = async (id) => {
+    try {
+      const numericId = parseInt(id, 10);
+      if (!isNaN(numericId)) {
+        await customerService.markNotificationAsRead(numericId);
+      }
+    } catch (e) {
+      console.error(e);
+    }
     const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
     setNotifications(updated);
-    localStorage.setItem('user_notifications', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
   };
 
   const getTierDetails = (tierName) => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { GlobalToastAndConfirm } from '../components/GlobalToastAndConfirm';
+import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/customer.css';
 
@@ -23,23 +24,22 @@ export const CustomerLayout = () => {
   // Lấy đường dẫn hiện tại để active link
   const activeNav = location.pathname.startsWith('/customer/dashboard') ? 'dashboard' :
                     location.pathname.startsWith('/customer/booking') ? 'booking' :
+                    location.pathname.startsWith('/customer/vehicles') ? 'vehicles' :
                     location.pathname.startsWith('/customer/loyalty') ? 
                       (location.search.includes('tab=vouchers') ? 'vouchers' : 'loyalty') :
                     location.pathname.startsWith('/customer/history') ? 'history' :
                     location.pathname.startsWith('/customer/profile') ? 'profile' : 'dashboard';
 
   useEffect(() => {
-    // Load notifications from local storage
-    const loadNotifs = () => {
+    // Load notifications from API
+    const loadNotifs = async () => {
       try {
-        const saved = localStorage.getItem('user_notifications');
-        if (saved) {
-          setNotifications(JSON.parse(saved));
-        } else {
-          setNotifications([]);
+        const response = await customerService.getNotifications();
+        if (response.success && response.notifications) {
+          setNotifications(response.notifications);
         }
       } catch (e) {
-        console.error('Lỗi khi đọc thông báo:', e);
+        console.error('Lỗi khi tải thông báo:', e);
       }
     };
 
@@ -73,21 +73,36 @@ export const CustomerLayout = () => {
     setMobileSidebarShow(!mobileSidebarShow);
   };
 
-  const markNotifRead = (id) => {
-    const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
-    setNotifications(updated);
-    localStorage.setItem('user_notifications', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
+  const markNotifRead = async (id) => {
+    try {
+      await customerService.markNotificationAsRead(Number(id));
+      const response = await customerService.getNotifications();
+      if (response.success && response.notifications) {
+        setNotifications(response.notifications);
+      }
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const markAllRead = (e) => {
+  const markAllRead = async (e) => {
     e.stopPropagation();
-    const updated = notifications.map(n => ({ ...n, read: true }));
-    setNotifications(updated);
-    localStorage.setItem('user_notifications', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
-    if (window.showToast) {
-      window.showToast('Đã đánh dấu tất cả thông báo là đã đọc!', 'success');
+    try {
+      const unread = notifications.filter(n => !n.read);
+      for (const n of unread) {
+        await customerService.markNotificationAsRead(Number(n.id));
+      }
+      const response = await customerService.getNotifications();
+      if (response.success && response.notifications) {
+        setNotifications(response.notifications);
+      }
+      window.dispatchEvent(new Event('storage'));
+      if (window.showToast) {
+        window.showToast('Đã đánh dấu tất cả thông báo là đã đọc!', 'success');
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -159,6 +174,9 @@ export const CustomerLayout = () => {
           <Link to="/customer/booking" className={`customer-sidebar-link ${activeNav === 'booking' ? 'active' : ''}`}>
             <i className="fas fa-calendar-alt"></i><span>Đặt lịch rửa xe</span>
           </Link>
+          <Link to="/customer/vehicles" className={`customer-sidebar-link ${activeNav === 'vehicles' ? 'active' : ''}`}>
+            <i className="fas fa-motorcycle"></i><span>Phương tiện của tôi</span>
+          </Link>
           <Link to="/customer/loyalty" className={`customer-sidebar-link ${activeNav === 'loyalty' ? 'active' : ''}`}>
             <i className="fas fa-crown"></i><span>AutoWash Loyalty</span>
           </Link>
@@ -194,6 +212,7 @@ export const CustomerLayout = () => {
             <h5 className="fw-bold text-dark mb-0">
               {activeNav === 'dashboard' ? 'Dashboard' :
                activeNav === 'booking' ? 'Đặt lịch rửa xe' :
+               activeNav === 'vehicles' ? 'Phương tiện của tôi' :
                activeNav === 'loyalty' ? 'Tích điểm & Ưu đãi' :
                activeNav === 'history' ? 'Lịch sử rửa xe' : 'Hồ sơ của tôi'}
             </h5>

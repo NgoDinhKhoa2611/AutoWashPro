@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Auto_Wash.Data;
 using Auto_Wash.Data.Entities;
+using Auto_Wash.Services;
+using Auto_Wash.Helpers;
 
 namespace Auto_Wash
 {
@@ -32,6 +34,16 @@ namespace Auto_Wash
                 options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 30)));
             });
 
+            // Register HttpContextAccessor and Services
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<AuthContextService>();
+            builder.Services.AddScoped<AccountService>();
+            builder.Services.AddScoped<VehicleService>();
+            builder.Services.AddScoped<OtpService>();
+            builder.Services.AddScoped<WelcomeRewardService>();
+            builder.Services.AddScoped<Auto_Wash.Services.BookingService>();
+            builder.Services.AddScoped<AdminQueueService>();
+
             // Session support
             builder.Services.AddDistributedMemoryCache();
             builder.Services.AddSession(options =>
@@ -44,10 +56,13 @@ namespace Auto_Wash
             var app = builder.Build();
 
             // Seed default admin account on startup
-            using (var scope = app.Services.CreateScope())
+            if (app.Environment.IsDevelopment())
             {
-                var db = scope.ServiceProvider.GetRequiredService<AutoWashDbContext>();
-                await SeedAdminAsync(db);
+                using (var scope = app.Services.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AutoWashDbContext>();
+                    await SeedAdminAsync(db);
+                }
             }
 
             // Configure the HTTP request pipeline.
@@ -70,18 +85,21 @@ namespace Auto_Wash
             
             app.MapFallbackToFile("index.html"); // Fallback for React Router client routes
 
-            app.Lifetime.ApplicationStarted.Register(() =>
+            if (app.Environment.IsDevelopment())
             {
-                try
+                app.Lifetime.ApplicationStarted.Register(() =>
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    try
                     {
-                        FileName = "http://localhost:5023",
-                        UseShellExecute = true
-                    });
-                }
-                catch { }
-            });
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "http://localhost:5023",
+                            UseShellExecute = true
+                        });
+                    }
+                    catch { }
+                });
+            }
 
             await app.RunAsync();
         }
@@ -97,7 +115,7 @@ namespace Auto_Wash
                     {
                         Email = adminEmail,
                         FullName = "Admin AutoWash",
-                        PasswordHash = HashSHA256("Admin@123"),
+                        PasswordHash = PasswordHelper.HashPassword("Admin@123"),
                         Role = 1,
                         IsActive = true,
                         CreatedAt = DateTime.Now
@@ -109,13 +127,6 @@ namespace Auto_Wash
             {
                 // DB not available at startup — skip seed
             }
-        }
-
-        private static string HashSHA256(string input)
-        {
-            using var sha = System.Security.Cryptography.SHA256.Create();
-            var bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
-            return Convert.ToHexString(bytes).ToLower();
         }
     }
 }

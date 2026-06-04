@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Auto_Wash</RootNamespace>
+    <UserSecretsId>4d4751bc-0059-4b7d-8f85-b350cdf0867d</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

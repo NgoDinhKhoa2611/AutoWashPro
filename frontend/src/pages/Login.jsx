@@ -188,6 +188,16 @@ export const Login = () => {
       if (window.showToast) window.showToast('Vui lòng đồng ý với điều khoản sử dụng!', 'warning');
       return;
     }
+    const cleanPhone = regPhone.trim();
+    if (!/^0\d{9}$/.test(cleanPhone)) {
+      if (window.showToast) window.showToast('Số điện thoại không hợp lệ! Vui lòng nhập 10 chữ số bắt đầu bằng số 0.', 'warning');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(regEmail.trim())) {
+      if (window.showToast) window.showToast('Địa chỉ email không hợp lệ!', 'warning');
+      return;
+    }
     if (regPassword !== regConfirm) {
       if (window.showToast) window.showToast('Mật khẩu xác nhận không trùng khớp!', 'error');
       return;
@@ -293,44 +303,6 @@ export const Login = () => {
       // Gọi API đăng ký thực tế
       await register(email, name, phone, regPassword, code);
 
-      // Clean up previous states
-      localStorage.removeItem('user_vehicles');
-      localStorage.removeItem('user_history_bookings');
-      localStorage.removeItem('active_booking');
-      localStorage.removeItem('wash_step');
-
-      // Initialize welcome notification
-      const welcomeNotif = {
-        id: 'notif_welcome_' + Date.now(),
-        title: '🎉 Chào mừng bạn đến với AutoWash Pro!',
-        body: 'Tài khoản của bạn đã được đăng ký thành công. Hãy thêm phương tiện đầu tiên để bắt đầu trải nghiệm dịch vụ.',
-        time: 'Vừa xong',
-        type: 'welcome',
-        read: false
-      };
-      localStorage.setItem('user_notifications', JSON.stringify([welcomeNotif]));
-
-      // Initialize welcome voucher WELCOME10
-      const welcomeVoucher = {
-        redemptionId: 'red_welcome_' + Date.now(),
-        rewardId: 999,
-        title: 'Voucher chào mừng',
-        rewardType: 'DiscountPercent',
-        rewardValue: 10,
-        icon: 'fa-ticket-alt',
-        code: 'WELCOME10',
-        status: 1, // 1 = Available
-        redeemedAt: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-      };
-      localStorage.setItem('user_claimed_vouchers', JSON.stringify([welcomeVoucher]));
-
-      // Set clean defaults in localStorage
-      localStorage.setItem('user_points', '0');
-      localStorage.setItem('user_tier', 'Standard Member');
-      localStorage.setItem('user_vehicles', JSON.stringify([]));
-      localStorage.setItem('user_history_bookings', JSON.stringify([]));
-
       localStorage.removeItem('reg_name_temp');
       localStorage.removeItem('reg_phone_temp');
       localStorage.removeItem('reg_email_temp');
@@ -404,38 +376,6 @@ export const Login = () => {
       );
 
       if (response.success) {
-        // Clean up previous states
-        localStorage.removeItem('user_vehicles');
-        localStorage.removeItem('user_history_bookings');
-        localStorage.removeItem('active_booking');
-        localStorage.removeItem('wash_step');
-
-        // Initialize welcome notification
-        const welcomeNotif = {
-          id: 'notif_welcome_' + Date.now(),
-          title: '🎉 Chào mừng bạn đến với AutoWash Pro!',
-          body: 'Tài khoản của bạn đã được đăng ký thành công. Hãy thêm phương tiện đầu tiên để bắt đầu trải nghiệm dịch vụ.',
-          time: 'Vừa xong',
-          type: 'welcome',
-          read: false
-        };
-        localStorage.setItem('user_notifications', JSON.stringify([welcomeNotif]));
-
-        // Initialize welcome voucher WELCOME10
-        const welcomeVoucher = {
-          redemptionId: 'red_welcome_' + Date.now(),
-          rewardId: 999,
-          title: 'Voucher chào mừng',
-          rewardType: 'DiscountPercent',
-          rewardValue: 10,
-          icon: 'fa-ticket-alt',
-          code: 'WELCOME10',
-          status: 1, // 1 = Available
-          redeemedAt: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-          expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        };
-        localStorage.setItem('user_claimed_vouchers', JSON.stringify([welcomeVoucher]));
-
         localStorage.setItem('user_role', 'customer');
         localStorage.setItem('user_display_name', googleUser.name);
         localStorage.setItem('user_phone', cleanPhone);
@@ -443,8 +383,6 @@ export const Login = () => {
         localStorage.setItem('user_avatar', googleUser.avatar || '');
         localStorage.setItem('user_points', '0');
         localStorage.setItem('user_tier', 'Standard Member');
-        localStorage.setItem('user_vehicles', JSON.stringify([]));
-        localStorage.setItem('user_history_bookings', JSON.stringify([]));
         window.dispatchEvent(new Event('storage'));
 
         // Write cookies
@@ -520,38 +458,6 @@ export const Login = () => {
       );
 
       if (response.success) {
-        // Clean up previous states
-        localStorage.removeItem('user_vehicles');
-        localStorage.removeItem('user_history_bookings');
-        localStorage.removeItem('active_booking');
-        localStorage.removeItem('wash_step');
-
-        // Initialize welcome notification
-        const welcomeNotif = {
-          id: 'notif_welcome_' + Date.now(),
-          title: '🎉 Chào mừng bạn đến với AutoWash Pro!',
-          body: 'Tài khoản của bạn đã được đăng ký thành công. Hãy thêm phương tiện đầu tiên để bắt đầu trải nghiệm dịch vụ.',
-          time: 'Vừa xong',
-          type: 'welcome',
-          read: false
-        };
-        localStorage.setItem('user_notifications', JSON.stringify([welcomeNotif]));
-
-        // Initialize welcome voucher WELCOME10
-        const welcomeVoucher = {
-          redemptionId: 'red_welcome_' + Date.now(),
-          rewardId: 999,
-          title: 'Voucher chào mừng',
-          rewardType: 'DiscountPercent',
-          rewardValue: 10,
-          icon: 'fa-ticket-alt',
-          code: 'WELCOME10',
-          status: 1, // 1 = Available
-          redeemedAt: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-          expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        };
-        localStorage.setItem('user_claimed_vouchers', JSON.stringify([welcomeVoucher]));
-
         localStorage.setItem('user_role', 'customer');
         localStorage.setItem('user_display_name', googleUser.name);
         localStorage.setItem('user_phone', googleUser.phone);
@@ -559,8 +465,6 @@ export const Login = () => {
         localStorage.setItem('user_avatar', googleUser.avatar || '');
         localStorage.setItem('user_points', '0');
         localStorage.setItem('user_tier', 'Standard Member');
-        localStorage.setItem('user_vehicles', JSON.stringify([]));
-        localStorage.setItem('user_history_bookings', JSON.stringify([]));
         window.dispatchEvent(new Event('storage'));
 
         // Write cookies

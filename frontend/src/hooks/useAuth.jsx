@@ -117,8 +117,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user_tier');
     localStorage.removeItem('user_points');
     localStorage.removeItem('user_avatar');
-    localStorage.removeItem('active_booking');
-    localStorage.removeItem('wash_step');
     
     setUser(null);
     window.dispatchEvent(new Event('storage'));
