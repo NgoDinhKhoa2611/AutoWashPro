@@ -16,6 +16,7 @@ import CustomerBooking from './pages/CustomerBooking';
 import CustomerLoyalty from './pages/CustomerLoyalty';
 import CustomerHistory from './pages/CustomerHistory';
 import CustomerProfile from './pages/CustomerProfile';
+import CustomerVehicles from './pages/CustomerVehicles';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminQueue from './pages/AdminQueue';
 import AdminCustomers from './pages/AdminCustomers';
@@ -49,6 +50,7 @@ function App() {
             <Route path="loyalty" element={<CustomerLoyalty />} />
             <Route path="history" element={<CustomerHistory />} />
             <Route path="profile" element={<CustomerProfile />} />
+            <Route path="vehicles" element={<CustomerVehicles />} />
           </Route>
 
           {/* Admin Routes (Protected) */}

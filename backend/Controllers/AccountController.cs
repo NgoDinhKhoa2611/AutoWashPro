@@ -1,61 +1,68 @@
+using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Auto_Wash.Data;
-using Auto_Wash.Data.Entities;
+using Microsoft.AspNetCore.Http;
+using Auto_Wash.Services;
+using Auto_Wash.DTOs.Account;
+using Auto_Wash.Helpers;
 
 namespace Auto_Wash.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly AutoWashDbContext _context;
+        private readonly AccountService _accountService;
+        private readonly OtpService _otpService;
 
-        public AccountController(AutoWashDbContext context)
+        public AccountController(AccountService accountService, OtpService otpService)
         {
-            _context = context;
-        }
-
-        public IActionResult Login()
-        {
-            ViewBag.PageTitle = "Đăng nhập";
-            return View();
+            _accountService = accountService;
+            _otpService = otpService;
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login([FromBody] PhoneLoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
             if (string.IsNullOrWhiteSpace(request.Identifier) || string.IsNullOrWhiteSpace(request.Password))
                 return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ thông tin!" });
 
             try
             {
-                var hash = HashPassword(request.Password);
-                var account = await _context.Accounts
-                    .FirstOrDefaultAsync(a =>
-                        (a.Email == request.Identifier.Trim() || a.Phone == request.Identifier.Trim())
-                        && a.PasswordHash == hash
-                        && a.IsActive);
-
+                var account = await _accountService.AuthenticateAsync(request.Identifier, request.Password);
                 if (account == null)
                     return Ok(new { success = false, message = "Tài khoản hoặc mật khẩu không đúng!" });
 
                 var roleStr = account.Role == 1 ? "admin" : account.Role == 2 ? "staff" : "customer";
                 HttpContext.Session.SetString("UserRole", roleStr);
                 HttpContext.Session.SetString("UserName", account.FullName);
-                HttpContext.Session.SetString("UserEmail", account.Email);
+                HttpContext.Session.SetString("UserEmail", account.Email ?? "");
                 HttpContext.Session.SetInt32("AccountId", account.AccountId);
 
                 string? tier = null;
                 int? points = null;
                 if (account.Role == 3)
                 {
-                    var customer = await _context.Customers
-                        .Include(c => c.Tier)
-                        .FirstOrDefaultAsync(c => c.AccountId == account.AccountId);
+                    var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
                     if (customer != null)
                     {
                         tier = customer.Tier?.TierName;
                         points = customer.PointBalance;
                     }
+                }
+
+                // Ghi cookies cho an toàn
+                if (!string.IsNullOrEmpty(account.Email))
+                {
+                    Response.Cookies.Append("UserEmail", account.Email, new CookieOptions {
+                        Expires = DateTime.Now.AddDays(7),
+                        SameSite = SameSiteMode.Lax
+                    });
+                }
+                if (!string.IsNullOrEmpty(account.Phone))
+                {
+                    Response.Cookies.Append("UserPhone", account.Phone, new CookieOptions {
+                        Expires = DateTime.Now.AddDays(7),
+                        SameSite = SameSiteMode.Lax
+                    });
                 }
 
                 return Ok(new
@@ -78,11 +85,13 @@ namespace Auto_Wash.Controllers
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
-            return RedirectToAction("Login", "Account");
+            Response.Cookies.Delete("UserEmail");
+            Response.Cookies.Delete("UserPhone");
+            return Redirect("/login");
         }
 
         [HttpPost]
-        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Email))
             {
@@ -91,38 +100,44 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                // 1. Check if account already exists in Accounts table
-                var account = await _context.Accounts
-                    .FirstOrDefaultAsync(a => a.Email == request.Email.Trim());
+                var account = await _accountService.FindByEmailAsync(request.Email);
 
                 if (account == null)
                 {
-                    // Account doesn't exist, this is a new Google user.
-                    // We defer database writing until they verify their phone number on the next screen.
                     return Ok(new { success = true, isNewUser = true });
                 }
                 else
                 {
-                    // Account exists. If phone is missing, it is an incomplete registration!
                     if (string.IsNullOrEmpty(account.Phone))
                     {
                         return Ok(new { success = true, isNewUser = true });
                     }
 
-                    // If account exists but GoogleId is not set, set it now
                     if (string.IsNullOrEmpty(account.GoogleId))
                     {
-                        account.GoogleId = request.GoogleId?.Trim();
-                        await _context.SaveChangesAsync();
+                        await _accountService.UpdateGoogleIdAsync(account, request.GoogleId);
                     }
-                    else if (account.GoogleId != request.GoogleId?.Trim())
+                    else if (account.GoogleId != request.GoogleId.Trim())
                     {
                         return BadRequest(new { success = false, message = "Tài khoản này đã được liên kết với một tài khoản Google khác!" });
                     }
                 }
 
-                // Set cookies for returning users
-                Response.Cookies.Append("UserEmail", account.Email, new CookieOptions {
+                string? tier = "Member";
+                int points = 0;
+                var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
+                if (customer != null)
+                {
+                    tier = customer.Tier?.TierName ?? "Member";
+                    points = customer.PointBalance;
+                }
+
+                HttpContext.Session.SetString("UserRole", "customer");
+                HttpContext.Session.SetString("UserName", account.FullName);
+                HttpContext.Session.SetString("UserEmail", account.Email ?? "");
+                HttpContext.Session.SetInt32("AccountId", account.AccountId);
+
+                Response.Cookies.Append("UserEmail", account.Email ?? "", new CookieOptions {
                     Expires = DateTime.Now.AddDays(7),
                     SameSite = SameSiteMode.Lax
                 });
@@ -131,7 +146,16 @@ namespace Auto_Wash.Controllers
                     SameSite = SameSiteMode.Lax
                 });
 
-                return Ok(new { success = true, isNewUser = false });
+                return Ok(new {
+                    success = true,
+                    isNewUser = false,
+                    role = "customer",
+                    name = account.FullName,
+                    email = account.Email,
+                    phone = account.Phone,
+                    tier = tier,
+                    points = points
+                });
             }
             catch (Exception ex)
             {
@@ -140,7 +164,7 @@ namespace Auto_Wash.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CompleteGoogleSignup([FromBody] CompleteGoogleSignupRequest request)
+        public async Task<IActionResult> CompleteGoogleSignup([FromBody] CompleteGoogleSignupRequestDto request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password))
             {
@@ -149,60 +173,15 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                // Check unique phone constraints
-                var existingPhone = await _context.Accounts.FirstOrDefaultAsync(a => a.Phone == request.Phone.Trim());
+                var existingPhone = await _accountService.FindByPhoneAsync(request.Phone);
                 if (existingPhone != null)
                 {
                     return BadRequest(new { success = false, message = "Số điện thoại này đã được sử dụng bởi một tài khoản khác!" });
                 }
 
-                // Check if account already exists by email
-                var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == request.Email.Trim());
+                var account = await _accountService.CompleteGoogleSignupAsync(request);
 
-                if (account == null)
-                {
-                    account = new Account
-                    {
-                        Email = request.Email.Trim(),
-                        FullName = request.FullName.Trim(),
-                        GoogleId = request.GoogleId.Trim(),
-                        Phone = request.Phone.Trim(),
-                        PasswordHash = HashPassword(request.Password.Trim()),
-                        Role = 3, // 3 = Customer
-                        IsActive = true,
-                        CreatedAt = DateTime.Now
-                    };
-
-                    _context.Accounts.Add(account);
-                    await _context.SaveChangesAsync();
-
-                    var customer = new Customer
-                    {
-                        AccountId = account.AccountId,
-                        MembershipCode = "MEM" + DateTime.Now.ToString("yyMMddHHmmss"),
-                        TierId = 1, // Default Tier: Member
-                        PointBalance = 100, // Gift 100 points
-                        LifetimePoints = 100,
-                        RankingBalance = 0,
-                        TotalVisits = 0,
-                        TotalSpend = 0,
-                        JoinedAt = DateTime.Now
-                    };
-
-                    _context.Customers.Add(customer);
-                    await _context.SaveChangesAsync();
-                }
-                else
-                {
-                    // Existing account but phone was missing
-                    account.Phone = request.Phone.Trim();
-                    account.GoogleId = request.GoogleId.Trim();
-                    account.PasswordHash = HashPassword(request.Password.Trim());
-                    await _context.SaveChangesAsync();
-                }
-
-                // Set cookies
-                Response.Cookies.Append("UserEmail", account.Email, new CookieOptions {
+                Response.Cookies.Append("UserEmail", account.Email ?? "", new CookieOptions {
                     Expires = DateTime.Now.AddDays(7),
                     SameSite = SameSiteMode.Lax
                 });
@@ -220,58 +199,91 @@ namespace Auto_Wash.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> SendRegisterOtp([FromBody] SendRegisterOtpRequest request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.FullName))
+            if (request == null || string.IsNullOrWhiteSpace(request.Email))
             {
-                return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ tất cả các trường!" });
+                return BadRequest(new { success = false, message = "Email không hợp lệ!" });
             }
 
             try
             {
-                var existingEmail = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == request.Email.Trim());
+                var existingEmail = await _accountService.FindByEmailAsync(request.Email);
                 if (existingEmail != null)
                 {
                     return BadRequest(new { success = false, message = "Email này đã được sử dụng bởi một tài khoản khác!" });
                 }
 
-                var existingPhone = await _context.Accounts.FirstOrDefaultAsync(a => a.Phone == request.Phone.Trim());
+                string code = await _otpService.GenerateAndSaveOtpAsync(request.Email, "");
+
+                if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+                {
+                    Console.WriteLine("\n==============================================");
+                    Console.WriteLine($"[REGISTER EMAIL OTP SIMULATION] To: {request.Email}");
+                    Console.WriteLine($"Code: {code} (Valid for 5 minutes)");
+                    Console.WriteLine("==============================================\n");
+                }
+
+                string subject = "AutoWash Pro - Xác thực đăng ký tài khoản";
+                string body = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #cbd5e1; border-radius: 12px; background-color: #f8fafc;'>
+                        <div style='text-align: center; margin-bottom: 20px;'>
+                            <h2 style='color: #0f172a; margin: 0;'>AutoWash <span style='color: #06b6d4;'>Pro</span></h2>
+                            <p style='color: #64748b; font-size: 0.85rem; margin: 5px 0 0 0;'>Hệ Thống Quản Lý Rửa Xe Thông Minh</p>
+                        </div>
+                        <hr style='border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;' />
+                        <p style='color: #334155;'>Xin chào,</p>
+                        <p style='color: #334155;'>Bạn đang thực hiện đăng ký tài khoản mới tại AutoWash Pro.</p>
+                        <p style='color: #334155;'>Vui lòng sử dụng mã xác thực OTP 6 chữ số dưới đây để hoàn tất thủ tục:</p>
+                        <div style='text-align: center; margin: 30px 0;'>
+                            <span style='font-size: 2rem; font-weight: bold; letter-spacing: 5px; color: #06b6d4; background-color: #0f172a; padding: 10px 25px; border-radius: 8px; display: inline-block;'>{code}</span>
+                        </div>
+                        <p style='color: #64748b; font-size: 0.8rem; text-align: center;'>Mã OTP này có giá trị trong vòng 5 phút và chỉ được sử dụng một lần. Vui lòng không cung cấp mã này cho bất kỳ ai.</p>
+                        <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;' />
+                        <p style='font-size: 0.8rem; color: #64748b; text-align: center;'>Đây là email tự động từ hệ thống AutoWash Pro. Vui lòng không trả lời email này.</p>
+                    </div>";
+
+                await _otpService.SendEmailOtpAsync(request.Email.Trim(), subject, body);
+
+                return Ok(new { success = true, message = $"Mã OTP đã được gửi đến email {request.Email}!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.FullName) || string.IsNullOrWhiteSpace(request.OtpCode))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ tất cả các trường và mã OTP!" });
+            }
+
+            try
+            {
+                bool otpValid = await _otpService.VerifyOtpAsync(request.Email, request.OtpCode);
+                if (!otpValid)
+                {
+                    return BadRequest(new { success = false, message = "Mã OTP không hợp lệ hoặc đã hết hạn!" });
+                }
+
+                var existingEmail = await _accountService.FindByEmailAsync(request.Email);
+                if (existingEmail != null)
+                {
+                    return BadRequest(new { success = false, message = "Email này đã được sử dụng bởi một tài khoản khác!" });
+                }
+
+                var existingPhone = await _accountService.FindByPhoneAsync(request.Phone);
                 if (existingPhone != null)
                 {
                     return BadRequest(new { success = false, message = "Số điện thoại này đã được sử dụng bởi một tài khoản khác!" });
                 }
 
-                var account = new Account
-                {
-                    Email = request.Email.Trim(),
-                    FullName = request.FullName.Trim(),
-                    Phone = request.Phone.Trim(),
-                    PasswordHash = HashPassword(request.Password.Trim()),
-                    Role = 3, // 3 = Customer
-                    IsActive = true,
-                    CreatedAt = DateTime.Now
-                };
+                var account = await _accountService.RegisterAccountAsync(request);
 
-                _context.Accounts.Add(account);
-                await _context.SaveChangesAsync();
-
-                var customer = new Customer
-                {
-                    AccountId = account.AccountId,
-                    MembershipCode = "MEM" + DateTime.Now.ToString("yyMMddHHmmss"),
-                    TierId = 1, // Default Tier: Member
-                    PointBalance = 100, // Gift 100 points
-                    LifetimePoints = 100,
-                    RankingBalance = 0,
-                    TotalVisits = 0,
-                    TotalSpend = 0,
-                    JoinedAt = DateTime.Now
-                };
-
-                _context.Customers.Add(customer);
-                await _context.SaveChangesAsync();
-
-                Response.Cookies.Append("UserEmail", account.Email, new CookieOptions {
+                Response.Cookies.Append("UserEmail", account.Email ?? "", new CookieOptions {
                     Expires = DateTime.Now.AddDays(7),
                     SameSite = SameSiteMode.Lax
                 });
@@ -288,7 +300,7 @@ namespace Auto_Wash.Controllers
                     email = account.Email,
                     phone = account.Phone,
                     tier = "Member",
-                    points = 100
+                    points = 0
                 });
             }
             catch (Exception ex)
@@ -296,49 +308,10 @@ namespace Auto_Wash.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
-
-        private string HashPassword(string password)
-        {
-            using (var sha256 = System.Security.Cryptography.SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-                var builder = new System.Text.StringBuilder();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    builder.Append(bytes[i].ToString("x2"));
-                }
-                return builder.ToString();
-            }
-        }
     }
 
-    public class GoogleLoginRequest
+    public class SendRegisterOtpRequest
     {
         public string Email { get; set; } = string.Empty;
-        public string FullName { get; set; } = string.Empty;
-        public string GoogleId { get; set; } = string.Empty;
-    }
-
-    public class PhoneLoginRequest
-    {
-        public string Identifier { get; set; } = string.Empty;
-        public string Password   { get; set; } = string.Empty;
-    }
-
-    public class CompleteGoogleSignupRequest
-    {
-        public string Email    { get; set; } = string.Empty;
-        public string FullName { get; set; } = string.Empty;
-        public string GoogleId { get; set; } = string.Empty;
-        public string Phone    { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-    }
-
-    public class RegisterRequest
-    {
-        public string Email { get; set; } = string.Empty;
-        public string FullName { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
     }
 }

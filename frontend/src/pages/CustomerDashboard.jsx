@@ -15,6 +15,8 @@ export const CustomerDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [claimedVouchers, setClaimedVouchers] = useState([]);
   const [showAllNotifs, setShowAllNotifs] = useState(false);
+  const [washHistoryCount, setWashHistoryCount] = useState(0);
+  const [vouchersUsedCount, setVouchersUsedCount] = useState(0);
 
   useEffect(() => {
     // 1. Greeting header based on hour
@@ -39,73 +41,83 @@ export const CustomerDashboard = () => {
     const fetchActiveBooking = async () => {
       try {
         const response = await customerService.getActiveBooking();
-        if (response.success && response.booking) {
-          setActiveBooking(response.booking);
-          setWashStep(response.washStep || 0);
-          return;
+        if (response && response.success) {
+          if (response.booking) {
+            setActiveBooking(response.booking);
+            setWashStep(response.washStep || 0);
+          } else {
+            setActiveBooking(null);
+          }
+        } else {
+          setActiveBooking(null);
         }
       } catch (err) {
         console.error(err);
-      }
-      
-      // Fallback to local storage
-      const activeStr = localStorage.getItem('active_booking');
-      if (activeStr) {
-        try {
-          const bookingObj = JSON.parse(activeStr);
-          setActiveBooking(bookingObj);
-          setWashStep(Number(localStorage.getItem('wash_step') || 0));
-        } catch (e) {
-          setActiveBooking(null);
-        }
-      } else {
         setActiveBooking(null);
       }
     };
 
     // 4. Load dashboard data
-    const loadDashboardData = () => {
+    const loadDashboardData = async () => {
       fetchActiveBooking();
 
       // Vehicles
-      let savedVehicles = [];
       try {
-        savedVehicles = JSON.parse(localStorage.getItem('user_vehicles') || '[]');
-      } catch (e) {}
-      if (savedVehicles.length === 0) {
-        savedVehicles = [
-          { plate: '51G - 123.45', type: 'Honda Vision', lastWash: '28/05/2026', totalWashes: 8 }
-        ];
-        localStorage.setItem('user_vehicles', JSON.stringify(savedVehicles));
+        const response = await customerService.getVehicles();
+        if (response && response.success && response.vehicles) {
+          setVehicles(response.vehicles);
+        } else {
+          setVehicles([]);
+        }
+      } catch (err) {
+        console.error(err);
+        setVehicles([]);
       }
-      setVehicles(savedVehicles);
 
-      // Claimed vouchers
-      let savedVouchers = [];
+      // Vouchers
       try {
-        savedVouchers = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
-      } catch (e) {}
-      setClaimedVouchers(savedVouchers);
+        const response = await customerService.getVouchers();
+        if (response && response.success && response.vouchers) {
+          setClaimedVouchers(response.vouchers);
+          setVouchersUsedCount(response.vouchers.filter(v => v.status === 2).length);
+        } else {
+          setClaimedVouchers([]);
+          setVouchersUsedCount(0);
+        }
+      } catch (err) {
+        console.error(err);
+        setClaimedVouchers([]);
+        setVouchersUsedCount(0);
+      }
 
-      // Points & Tier Sync (Defaults to 217 and Silver Member for exact match of request)
-      const pts = Number(localStorage.getItem('user_points') || 217);
-      const tier = localStorage.getItem('user_tier') || 'Silver Member';
-
-      if (user && (user.points !== pts || user.tier !== tier)) {
-        updateUser({ points: pts, tier });
+      // Wash history count
+      try {
+        const response = await customerService.getWashHistory();
+        if (response && response.success && response.history) {
+          setWashHistoryCount(response.history.length);
+        } else {
+          setWashHistoryCount(0);
+        }
+      } catch (err) {
+        console.error(err);
+        setWashHistoryCount(0);
       }
 
       // Notifications
       try {
-        const savedNotifs = localStorage.getItem('user_notifications');
-        if (savedNotifs) {
-          setNotifications(JSON.parse(savedNotifs));
+        const response = await customerService.getNotifications();
+        if (response && response.success && response.notifications) {
+          setNotifications(response.notifications);
+        } else {
+          setNotifications([]);
         }
-      } catch (e) {}
+      } catch (err) {
+        console.error(err);
+        setNotifications([]);
+      }
     };
 
     loadDashboardData();
-    window.addEventListener('storage', loadDashboardData);
 
     // dynamic polling for active booking status every 5 seconds
     const interval = setInterval(() => {
@@ -113,16 +125,21 @@ export const CustomerDashboard = () => {
     }, 5000);
 
     return () => {
-      window.removeEventListener('storage', loadDashboardData);
       clearInterval(interval);
     };
   }, []);
 
-  const markNotifRead = (id) => {
+  const markNotifRead = async (id) => {
+    try {
+      const numericId = parseInt(id, 10);
+      if (!isNaN(numericId)) {
+        await customerService.markNotificationAsRead(numericId);
+      }
+    } catch (e) {
+      console.error(e);
+    }
     const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
     setNotifications(updated);
-    localStorage.setItem('user_notifications', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
   };
 
   const getTierDetails = (tierName) => {
@@ -164,8 +181,18 @@ export const CustomerDashboard = () => {
 
   // Progression calculation based on Silver (100-499), Gold (500-999), Platinum (1000+)
   const calculateProgress = () => {
-    const currentPts = user?.points || 217;
-    const tierName = user?.tier || 'Silver Member';
+    const currentPts = user?.points ?? 0;
+    const rawTier = user?.tier || 'Standard Member';
+    let tierName = rawTier;
+    if (rawTier === 'Member' || rawTier === 'Standard') {
+      tierName = 'Standard Member';
+    } else if (rawTier === 'Silver') {
+      tierName = 'Silver Member';
+    } else if (rawTier === 'Gold') {
+      tierName = 'Gold Member';
+    } else if (rawTier === 'Platinum') {
+      tierName = 'Platinum Member';
+    }
     
     if (tierName.toUpperCase().includes('PLATINUM')) {
       return {
@@ -216,8 +243,8 @@ export const CustomerDashboard = () => {
     return [
       'Nhận diện LPR',
       'Rửa bọt tuyết',
-      'Sấy khô',
       ...(activeBooking.addons || []),
+      'Sấy khô',
       'Hoàn tất'
     ];
   };
@@ -252,9 +279,19 @@ export const CustomerDashboard = () => {
     return 'fa-plus-circle';
   };
 
-  const points = user?.points || 217;
-  const tier = user?.tier || 'Silver Member';
-  const displayTier = (tier || '').replace(' Member', ' Loyalty');
+  const points = user?.points ?? 0;
+  const rawTier = user?.tier || 'Standard Member';
+  let tier = rawTier;
+  if (rawTier === 'Member' || rawTier === 'Standard') {
+    tier = 'Standard Member';
+  } else if (rawTier === 'Silver') {
+    tier = 'Silver Member';
+  } else if (rawTier === 'Gold') {
+    tier = 'Gold Member';
+  } else if (rawTier === 'Platinum') {
+    tier = 'Platinum Member';
+  }
+  const displayTier = tier === 'Standard Member' ? 'Standard Member' : tier.replace(' Member', ' Loyalty');
   const tierInfo = getTierDetails(tier);
   const progression = calculateProgress();
 
@@ -304,7 +341,7 @@ export const CustomerDashboard = () => {
             </div>
             <div className="text-start">
               <span className="summary-title">Voucher khả dụng</span>
-              <div className="summary-value">{activeVouchers.length || 1} Voucher</div>
+              <div className="summary-value">{activeVouchers.length || 0} Voucher</div>
             </div>
           </Link>
         </div>
@@ -340,7 +377,7 @@ export const CustomerDashboard = () => {
             </div>
             <div className="text-start">
               <span className="summary-title">Tổng lượt rửa</span>
-              <div className="summary-value">12 Lượt rửa</div>
+              <div className="summary-value">{washHistoryCount} Lượt rửa</div>
             </div>
           </Link>
         </div>
@@ -361,7 +398,14 @@ export const CustomerDashboard = () => {
               </Link>
             </div>
 
-            {vehicles.length === 1 ? (
+            {vehicles.length === 0 ? (
+              <div className="text-center py-4 text-muted small" style={{ background: '#f8fafc', borderRadius: '14px', border: '1px dashed #e2e8f0' }}>
+                <p className="mb-3">Bạn chưa đăng ký phương tiện nào</p>
+                <Link to="/customer/profile" className="app-btn-primary px-3 py-2 text-dark fw-bold text-decoration-none d-inline-block" style={{ fontSize: '0.75rem', borderRadius: '8px' }}>
+                  + Thêm phương tiện đầu tiên
+                </Link>
+              </div>
+            ) : vehicles.length === 1 ? (
               // If only 1 vehicle
               <div className="p-3 rounded-4 border bg-light bg-opacity-50">
                 <div className="row align-items-center">
@@ -378,11 +422,11 @@ export const CustomerDashboard = () => {
                   </div>
                   <div className="col-sm-3 col-6 text-start">
                     <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>LẦN RỬA GẦN NHẤT</small>
-                    <span className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>{vehicles[0].lastWash || '3 ngày trước'}</span>
+                    <span className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>{vehicles[0].lastWash || 'Chưa có'}</span>
                   </div>
                   <div className="col-sm-3 col-6 text-start">
                     <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>TỔNG SỐ LƯỢT RỬA</small>
-                    <span className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>{vehicles[0].totalWashes || 12} lượt rửa</span>
+                    <span className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>{vehicles[0].totalWashes || 0} lượt rửa</span>
                   </div>
                 </div>
               </div>
@@ -439,7 +483,7 @@ export const CustomerDashboard = () => {
           </div>
 
           {/* 3. Live Wash Tracking (Tesla Car Care Premium design - 100% dynamic timeline) */}
-          {activeBooking && (
+          {activeBooking && activeBooking.hasQueue && (
             <div className="app-card border-0 p-4 mb-4 text-start" style={{ borderLeft: '4px solid #0ea5e9' }}>
               <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
                 <div className="d-flex align-items-center gap-2">
@@ -689,15 +733,14 @@ export const CustomerDashboard = () => {
           {/* 3. Thống Kê Cá Nhân */}
           <div className="app-card border-0 p-4 mb-4 text-start">
             <h5 className="fw-bold mb-3 text-dark" style={{ fontSize: '0.9rem' }}>
-              <i className="fas fa-chart-pie text-cyan me-2"></i>THỐNG KÊ CÁ NHÂN
+              <i className="fas fa-chart-bar text-cyan me-2"></i>THỐNG KÊ CÁ NHÂN
             </h5>
-            
-            <div className="personal-stats-grid">
+            <div className="d-flex flex-column gap-3">
               <div className="personal-stat-box">
-                <div className="personal-stat-icon" style={{ background: 'rgba(14, 165, 233, 0.08)', color: '#0ea5e9' }}>
+                <div className="personal-stat-icon" style={{ background: 'rgba(2, 132, 199, 0.08)', color: '#0284c7' }}>
                   <i className="fas fa-hands-wash"></i>
                 </div>
-                <span className="personal-stat-num">12</span>
+                <span className="personal-stat-num">{washHistoryCount}</span>
                 <span className="personal-stat-text">Lượt rửa xe</span>
               </div>
 
@@ -705,7 +748,7 @@ export const CustomerDashboard = () => {
                 <div className="personal-stat-icon" style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }}>
                   <i className="fas fa-ticket-alt"></i>
                 </div>
-                <span className="personal-stat-num">3</span>
+                <span className="personal-stat-num">{vouchersUsedCount}</span>
                 <span className="personal-stat-text">Voucher đã dùng</span>
               </div>
 
@@ -733,17 +776,23 @@ export const CustomerDashboard = () => {
               <i className="fas fa-hourglass-end text-danger me-2 animate-pulse"></i>VOUCHER GẦN HẾT HẠN
             </h5>
 
-            <div className="ticket-dashed-box mb-2" style={{ borderLeft: '4px solid #dc2626' }}>
-              <div className="d-flex justify-content-between align-items-center w-100">
-                <div className="overflow-hidden">
-                  <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.8rem' }}>Voucher Giảm 10%</div>
-                  <small className="text-secondary d-block" style={{ fontSize: '0.68rem' }}>Mã: WASH10K</small>
-                </div>
-                <span className="badge bg-danger text-white fw-bold px-2 py-1" style={{ fontSize: '0.62rem' }}>
-                  Còn 3 ngày
-                </span>
+            {activeVouchers.length === 0 ? (
+              <div className="text-center py-3 text-muted small" style={{ background: '#f8fafc', borderRadius: '10px', border: '1px dashed #e2e8f0' }}>
+                Không có voucher nào sắp hết hạn
               </div>
-            </div>
+            ) : (
+              <div className="ticket-dashed-box mb-2" style={{ borderLeft: '4px solid #dc2626' }}>
+                <div className="d-flex justify-content-between align-items-center w-100">
+                  <div className="overflow-hidden">
+                    <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.8rem' }}>{activeVouchers[0].title}</div>
+                    <small className="text-secondary d-block" style={{ fontSize: '0.68rem' }}>Mã: {activeVouchers[0].code}</small>
+                  </div>
+                  <span className="badge bg-danger text-white fw-bold px-2 py-1" style={{ fontSize: '0.62rem' }}>
+                    Còn {activeVouchers[0].code === 'WELCOME10' ? '30' : '29'} ngày
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>

@@ -9,75 +9,16 @@ namespace Auto_Wash.Controllers
     {
         private readonly AutoWashDbContext _context;
 
+        // TODO: Refactor direct DbContext querying in AdminController actions into a service class.
         public AdminController(AutoWashDbContext context)
         {
             _context = context;
-        }
-
-        private IActionResult? CheckAdminSession()
-        {
-            var role = HttpContext.Session.GetString("UserRole");
-            if (string.IsNullOrEmpty(role) || (role != "admin" && role != "staff"))
-                return RedirectToAction("Login", "Account");
-            return null;
         }
 
         private bool IsAdminOrStaff()
         {
             var role = HttpContext.Session.GetString("UserRole");
             return role == "admin" || role == "staff";
-        }
-
-        // ── Page Actions ──────────────────────────────────────────────
-
-        public IActionResult Dashboard()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Admin Dashboard";
-            ViewBag.ActiveNav = "dashboard";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
-        }
-
-        public IActionResult Queue()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Hàng đợi rửa xe";
-            ViewBag.ActiveNav = "queue";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
-        }
-
-        public IActionResult Customers()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Quản lý khách hàng";
-            ViewBag.ActiveNav = "customers";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
-        }
-
-        public IActionResult Services()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Quản lý dịch vụ";
-            ViewBag.ActiveNav = "services";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
-        }
-
-        public IActionResult Promotions()
-        {
-            var check = CheckAdminSession();
-            if (check != null) return check;
-            ViewBag.PageTitle = "Khuyến mãi & Chiến dịch";
-            ViewBag.ActiveNav = "promotions";
-            ViewBag.AdminName = HttpContext.Session.GetString("UserName") ?? "Admin";
-            return View();
         }
 
         // ── Dashboard Stats API ───────────────────────────────────────
@@ -224,8 +165,6 @@ namespace Auto_Wash.Controllers
         }
 
         // ── Monthly Tier Review API ───────────────────────────────────
-        // Xếp hạng dựa theo Customer.RankingBalance (cửa sổ trượt N năm)
-        // so với Tier.MinRankingBalance
 
         [HttpGet]
         public async Task<IActionResult> TierReview()
@@ -338,251 +277,6 @@ namespace Auto_Wash.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
-        // ── Queue Status Progression ──────────────────────────────────
-        private static readonly Dictionary<string, string> _queueFlow = new()
-        {
-            ["Waiting"]  = "LPR_Scan",
-            ["LPR_Scan"] = "Washing",
-            ["Washing"]  = "Drying"
-        };
-
-        // ── Queue Management API ──────────────────────────────────────
-
-        [HttpGet]
-        public async Task<IActionResult> GetQueue()
-        {
-            if (!IsAdminOrStaff()) return Unauthorized();
-
-            var today = DateTime.Today;
-            var items = await _context.Queues
-                .Include(q => q.Tier)
-                .Include(q => q.Booking)
-                    .ThenInclude(b => b!.BookingServices)
-                        .ThenInclude(bs => bs.Service)
-                .Where(q => q.CheckInAt.Date == today && q.Status != "Cancelled")
-                .OrderByDescending(q => q.Tier != null ? q.Tier.QueuePriority : 0)
-                .ThenBy(q => q.CheckInAt)
-                .ToListAsync();
-
-            var result = items.Select((q, idx) => new {
-                queueId      = q.QueueId,
-                bookingId    = q.BookingId,
-                licensePlate = q.LicensePlate,
-                customerName = q.CustomerName ?? "Khách vãng lai",
-                tierName     = q.Tier?.TierName ?? "Member",
-                tierId       = q.TierId ?? 1,
-                status       = q.Status,
-                position     = idx + 1,
-                checkInAt    = q.CheckInAt,
-                startedAt    = q.StartedAt,
-                completedAt  = q.CompletedAt,
-                staffNote    = q.StaffNote,
-                finalPrice   = q.Booking?.FinalPrice ?? 0,
-                pointsEarned = q.Booking?.PointsEarned ?? 0,
-                services     = (q.Booking?.BookingServices ?? new List<BookingService>())
-                    .Select(bs => new { name = bs.Service.ServiceName, price = bs.PriceSnapshot })
-                    .ToList()
-            });
-
-            return Ok(result);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> AdvanceQueue(int id)
-        {
-            if (!IsAdminOrStaff()) return Unauthorized();
-
-            var q = await _context.Queues.FindAsync(id);
-            if (q == null) return NotFound(new { success = false, message = "Không tìm thấy xe!" });
-
-            if (!_queueFlow.TryGetValue(q.Status, out var nextStatus))
-                return BadRequest(new { success = false, message = $"Không thể chuyển từ trạng thái '{q.Status}'!" });
-
-            q.Status = nextStatus;
-            q.StartedAt ??= DateTime.Now;
-
-            await _context.SaveChangesAsync();
-            return Ok(new { success = true, newStatus = nextStatus });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> UpdateQueue(int id, [FromBody] UpdateQueueRequest request)
-        {
-            if (!IsAdminOrStaff()) return Unauthorized();
-
-            var q = await _context.Queues.FindAsync(id);
-            if (q == null) return NotFound(new { success = false });
-
-            if (!string.IsNullOrEmpty(request.Status))  q.Status    = request.Status;
-            if (request.StaffNote != null)               q.StaffNote = request.StaffNote;
-            if (q.StartedAt == null && q.Status != "Waiting") q.StartedAt = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-            return Ok(new { success = true });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CheckoutQueue(int id)
-        {
-            if (!IsAdminOrStaff()) return Unauthorized();
-
-            try
-            {
-                var q = await _context.Queues
-                    .Include(q => q.Booking)
-                        .ThenInclude(b => b!.Customer)
-                    .FirstOrDefaultAsync(q => q.QueueId == id);
-
-                if (q == null) return NotFound(new { success = false, message = "Không tìm thấy!" });
-
-                var now = DateTime.Now;
-                q.Status      = "Completed";
-                q.CompletedAt ??= now;
-
-                if (q.Booking != null && q.Booking.Status != 4)
-                {
-                    q.Booking.Status = 4;
-                    q.Booking.PaidAt ??= now;
-
-                    var customer = q.Booking.Customer;
-                    if (customer != null)
-                    {
-                        customer.TotalVisits    += 1;
-                        customer.TotalSpend     += q.Booking.FinalPrice;
-                        customer.RankingBalance += q.Booking.FinalPrice;
-                        customer.PointBalance   += q.Booking.PointsEarned;
-                        customer.LifetimePoints += q.Booking.PointsEarned;
-                        customer.LastVisitAt     = now;
-                    }
-
-                    _context.LoyaltyTransactions.Add(new LoyaltyTransaction
-                    {
-                        CustomerId      = q.Booking.CustomerId,
-                        Points          = q.Booking.PointsEarned,
-                        TransactionType = "Earned",
-                        BookingId       = q.BookingId,
-                        Note            = $"Tích điểm dịch vụ rửa xe {q.LicensePlate}",
-                        CreatedAt       = now
-                    });
-
-                    _context.Notifications.Add(new Notification
-                    {
-                        CustomerId = q.Booking.CustomerId,
-                        Title      = "Rửa xe hoàn tất!",
-                        Message    = $"Xe {q.LicensePlate} hoàn tất dịch vụ. Bạn nhận +{q.Booking.PointsEarned} điểm!",
-                        Type       = "Booking",
-                        IsRead     = false,
-                        CreatedAt  = now
-                    });
-                }
-
-                await _context.SaveChangesAsync();
-                return Ok(new { success = true, finalPrice = q.Booking?.FinalPrice ?? 0, pointsEarned = q.Booking?.PointsEarned ?? 0 });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CancelQueue(int id)
-        {
-            if (!IsAdminOrStaff()) return Unauthorized();
-
-            var q = await _context.Queues.FindAsync(id);
-            if (q == null) return NotFound(new { success = false });
-
-            q.Status = "Cancelled";
-            await _context.SaveChangesAsync();
-            return Ok(new { success = true });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> AddWalkIn([FromBody] WalkInRequest request)
-        {
-            if (!IsAdminOrStaff()) return Unauthorized();
-
-            try
-            {
-                int? tierId = 1, customerId = null, vehicleId = null;
-                string customerName = request.CustomerName ?? "Khách vãng lai";
-
-                var normPlate = request.LicensePlate.Replace("-", "").Replace(" ", "").ToUpper();
-                var vehicle = await _context.Vehicles
-                    .Include(v => v.Customer).ThenInclude(c => c!.Account)
-                    .Include(v => v.Customer).ThenInclude(c => c!.Tier)
-                    .FirstOrDefaultAsync(v =>
-                        v.LicensePlate.Replace("-", "").Replace(" ", "").ToUpper() == normPlate);
-
-                if (vehicle?.Customer != null)
-                {
-                    tierId       = vehicle.Customer.TierId;
-                    customerId   = vehicle.Customer.CustomerId;
-                    vehicleId    = vehicle.VehicleId;
-                    if (string.IsNullOrEmpty(request.CustomerName))
-                        customerName = vehicle.Customer.Account.FullName;
-                }
-
-                var today   = DateTime.Today;
-                var lastPos = await _context.Queues
-                    .Where(q => q.CheckInAt.Date == today && q.Status != "Cancelled")
-                    .MaxAsync(q => (int?)q.Position) ?? 0;
-
-                var tierName = (await _context.Tiers.FindAsync(tierId ?? 1))?.TierName ?? "Member";
-
-                // Tìm booking confirmed hôm nay cho xe này (DATABASE.md Luồng 2)
-                int? bookingId      = null;
-                string? bookingSvcs = null;
-                if (vehicleId.HasValue)
-                {
-                    var booking = await _context.Bookings
-                        .Include(b => b.BookingServices)
-                            .ThenInclude(bs => bs.Service)
-                        .FirstOrDefaultAsync(b =>
-                            b.VehicleId    == vehicleId.Value
-                            && b.Status    == 2        // Confirmed
-                            && b.ScheduledAt.Date == today);
-
-                    if (booking != null)
-                    {
-                        bookingId      = booking.BookingId;
-                        booking.Status = 3;            // InProgress
-                        bookingSvcs    = string.Join(", ", booking.BookingServices
-                            .Select(bs => bs.Service.ServiceName));
-                    }
-                }
-
-                var entry = new Auto_Wash.Data.Entities.Queue
-                {
-                    LicensePlate = request.LicensePlate.ToUpper().Trim(),
-                    CustomerName = customerName,
-                    TierId       = tierId,
-                    CustomerId   = customerId,
-                    VehicleId    = vehicleId,
-                    BookingId    = bookingId,
-                    Status       = "Waiting",
-                    Position     = lastPos + 1,
-                    CheckInAt    = DateTime.Now
-                };
-
-                _context.Queues.Add(entry);
-                await _context.SaveChangesAsync();
-
-                return Ok(new {
-                    success         = true,
-                    queueId         = entry.QueueId,
-                    customerName    = entry.CustomerName,
-                    tierName,
-                    hasBooking      = bookingId.HasValue,
-                    bookingServices = bookingSvcs
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
     }
 
     public class SaveLoyaltyConfigRequest
@@ -600,17 +294,5 @@ namespace Auto_Wash.Controllers
         public decimal PointMultiplier   { get; set; }
         public decimal DiscountPercent   { get; set; }
         public int     BookingWindowDays { get; set; }
-    }
-
-    public class WalkInRequest
-    {
-        public string  LicensePlate { get; set; } = string.Empty;
-        public string? CustomerName { get; set; }
-    }
-
-    public class UpdateQueueRequest
-    {
-        public string? Status    { get; set; }
-        public string? StaffNote { get; set; }
     }
 }

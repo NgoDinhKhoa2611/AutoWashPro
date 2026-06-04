@@ -6,11 +6,7 @@ import '../styles/customer/history.css';
 
 const STEP_BADGES = ['Đã nhận diện LPR', 'Đang phun rửa vỏ', 'Đang sấy khí áp lực', 'Đã rửa sạch & Check-out'];
 
-const INITIAL_HISTORY = [
-  { id: 'hist_01', date: '18/05/2026', plate: '51G - 123.45', type: 'Honda Vision', service: 'Combo Cao cấp', price: 85000, points: 85, status: 'Hoàn tất', surveyStatus: 'pending' },
-  { id: 'hist_02', date: '12/05/2026', plate: '51G - 123.45', type: 'Honda Vision', service: 'Rửa xe phổ thông', price: 35000, points: 35, status: 'Hoàn tất', surveyStatus: 'rated', rating: 5 },
-  { id: 'hist_03', date: '05/05/2026', plate: '51A - 999.99', type: 'SH Mode', service: 'Rửa xe phổ thông', price: 35000, points: 35, status: 'Hoàn tất', surveyStatus: 'rated', rating: 4 }
-];
+const INITIAL_HISTORY = [];
 
 export const CustomerHistory = () => {
   const { user, updateUser } = useAuth();
@@ -53,33 +49,13 @@ export const CustomerHistory = () => {
           setTotalWashes(list.length);
           setTotalSpent(list.reduce((s, i) => s + i.price, 0));
           setTotalPoints(list.reduce((s, i) => s + i.points, 0));
-          return;
+        } else {
+          setHistory([]);
         }
       } catch (err) {
         console.error(err);
+        setHistory([]);
       }
-
-      loadLocalStorageHistory();
-    };
-
-    const loadLocalStorageHistory = () => {
-      let saved = [];
-      try {
-        const str = localStorage.getItem('user_history_bookings');
-        if (str) {
-          saved = JSON.parse(str);
-        } else {
-          saved = INITIAL_HISTORY;
-          localStorage.setItem('user_history_bookings', JSON.stringify(INITIAL_HISTORY));
-        }
-      } catch (e) {
-        saved = INITIAL_HISTORY;
-      }
-      setHistory(saved);
-
-      setTotalWashes(saved.length);
-      setTotalSpent(saved.reduce((s, i) => s + i.price, 0));
-      setTotalPoints(saved.reduce((s, i) => s + i.points, 0));
     };
 
     const fetchActive = async () => {
@@ -88,34 +64,17 @@ export const CustomerHistory = () => {
         if (response.success && response.booking) {
           setActiveBooking(response.booking);
           setWashStep(response.washStep || 0);
-          return;
-        }
-      } catch (err) {
-        console.error(err);
-      }
-      
-      try {
-        const activeStr = localStorage.getItem('active_booking');
-        if (activeStr) {
-          setActiveBooking(JSON.parse(activeStr));
-          setWashStep(Number(localStorage.getItem('wash_step') || 0));
         } else {
           setActiveBooking(null);
         }
-      } catch (e) {}
+      } catch (err) {
+        console.error(err);
+        setActiveBooking(null);
+      }
     };
 
-    const loadHistoryData = () => {
-      fetchHistory();
-      fetchActive();
-    };
-
-    loadHistoryData();
-    window.addEventListener('storage', loadHistoryData);
-
-    return () => {
-      window.removeEventListener('storage', loadHistoryData);
-    };
+    fetchHistory();
+    fetchActive();
   }, []);
 
   const handleOpenSurvey = (id) => {
@@ -141,13 +100,7 @@ export const CustomerHistory = () => {
     setSubmittingSurvey(true);
 
     setTimeout(() => {
-      // Award +50 points
-      const currentPts = Number(localStorage.getItem('user_points') || 0);
-      const updatedPts = currentPts + 50;
-      localStorage.setItem('user_points', String(updatedPts));
-      updateUser({ points: updatedPts });
-
-      // Mark history item as rated
+      // Mark history item as rated in local state
       const updatedHistory = history.map(item => {
         if (item.id === surveyTargetId) {
           return { ...item, surveyStatus: 'rated', rating: surveyRating };
@@ -155,23 +108,6 @@ export const CustomerHistory = () => {
         return item;
       });
       setHistory(updatedHistory);
-      localStorage.setItem('user_history_bookings', JSON.stringify(updatedHistory));
-
-      // Create notification
-      const notif = {
-        id: 'notif_review_' + Date.now(),
-        title: 'Nhận điểm đánh giá',
-        body: 'Chúc mừng! Bạn đã nhận được +50 PTS điểm thưởng AutoWash Loyalty nhờ gửi đánh giá phản hồi dịch vụ.',
-        time: 'Vừa xong',
-        type: 'points',
-        read: false
-      };
-      let notifications = [];
-      try {
-        notifications = JSON.parse(localStorage.getItem('user_notifications') || '[]');
-      } catch (e) {}
-      localStorage.setItem('user_notifications', JSON.stringify([notif, ...notifications]));
-      window.dispatchEvent(new Event('storage'));
 
       setSubmittingSurvey(false);
       setSurveySuccess(true);
@@ -261,7 +197,7 @@ export const CustomerHistory = () => {
               {history.length === 0 ? (
                 <div className="empty-state-container text-center py-5 text-muted">
                   <div className="empty-state-icon mb-3"><i className="fas fa-history fa-2x"></i></div>
-                  <h5 className="fw-bold mb-2">Chưa có lịch sử rửa xe</h5>
+                  <h5 className="fw-bold mb-2">Bạn chưa có lịch sử sử dụng dịch vụ</h5>
                   <p className="small mb-0">Sau khi hoàn tất dịch vụ, lịch sử sẽ tự động xuất hiện tại đây.</p>
                 </div>
               ) : (
@@ -297,9 +233,15 @@ export const CustomerHistory = () => {
                         <button
                           className="app-btn-primary py-2 px-3 shadow-none border-0"
                           style={{ fontSize: '0.78rem', borderRadius: '10px' }}
-                          onClick={() => handleOpenSurvey(item.id)}
+                          onClick={() => {
+                            if (window.showToast) {
+                              window.showToast('Chức năng đánh giá sẽ được đồng bộ backend ở phase sau.', 'info');
+                            } else {
+                              alert('Chức năng đánh giá sẽ được đồng bộ backend ở phase sau.');
+                            }
+                          }}
                         >
-                          <i className="fas fa-comment-alt me-1"></i> ĐÁNH GIÁ +50 PTS
+                          <i className="fas fa-comment-alt me-1"></i> ĐÁNH GIÁ
                         </button>
                       ) : (
                         <div className="d-flex align-items-center gap-1 text-warning" style={{ fontSize: '0.82rem' }}>

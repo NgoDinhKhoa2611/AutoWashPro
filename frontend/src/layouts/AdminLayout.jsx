@@ -83,7 +83,7 @@ export const AdminLayout = () => {
       </nav>
 
       {/* Admin Main */}
-      <div className={`admin-main ${sidebarCollapsed ? 'collapsed' : ''}`} id="admin-main">
+      <div className={`admin-main ${sidebarCollapsed ? 'collapsed' : ''} ${activeNav === 'queue' ? 'admin-main-queue' : ''}`} id="admin-main">
         <Outlet />
       </div>
     </div>

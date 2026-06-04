@@ -48,11 +48,6 @@ export const AdminQueue = () => {
 
   useEffect(() => {
     fetchQueue();
-    const handleStorage = () => {
-      fetchQueue();
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
   const fetchQueue = async () => {
@@ -65,22 +60,38 @@ export const AdminQueue = () => {
           const addonsOnly = item.services.filter(s => s.name !== mainService).map(s => s.name);
 
           const servicesList = [
-            { name: 'Nhận diện LPR', status: item.status === 'Waiting' ? 'Pending' : (item.status === 'LPR_Scan' ? 'In Progress' : 'Completed') },
-            { name: 'Rửa bọt tuyết', status: item.status === 'Waiting' || item.status === 'LPR_Scan' ? 'Pending' : (item.status === 'Washing' ? 'In Progress' : 'Completed') },
-            { name: 'Sấy khô', status: item.status === 'Waiting' || item.status === 'LPR_Scan' || item.status === 'Washing' ? 'Pending' : (item.status === 'Drying' ? 'In Progress' : 'Completed') }
+            { name: 'Nhận diện LPR', status: item.status === 'Waiting' ? 'In Progress' : 'Completed' },
+            { name: 'Rửa bọt tuyết', status: item.status === 'Waiting' ? 'Pending' : (item.status === 'LPR_Scan' ? 'In Progress' : 'Completed') }
           ];
           
           addonsOnly.forEach(a => {
-            servicesList.push({ name: a, status: item.status === 'Completed' ? 'Completed' : 'Pending' });
+            servicesList.push({ 
+              name: a, 
+              status: (item.status === 'Waiting' || item.status === 'LPR_Scan') ? 'Pending' 
+                     : (item.status === 'Washing' || item.status === 'Addon_Processing' ? 'In Progress' : 'Completed') 
+            });
           });
-          servicesList.push({ name: 'Hoàn tất', status: item.status === 'Completed' ? 'Completed' : 'Pending' });
+          
+          servicesList.push({ 
+            name: 'Sấy khô', 
+            status: item.status === 'Completed' ? 'Completed' 
+                   : (item.status === 'Drying' ? 'In Progress' : 'Pending') 
+          });
+          
+          servicesList.push({ 
+            name: 'Hoàn tất', 
+            status: item.status === 'Completed' ? 'Completed' : 'Pending' 
+          });
 
           const totalS = servicesList.length;
           let washStep = 0;
-          if (item.status === 'LPR_Scan') washStep = 0;
-          else if (item.status === 'Washing') washStep = 1;
-          else if (item.status === 'Drying') washStep = 2;
-          else if (item.status === 'Completed') washStep = totalS - 1;
+          const addonsCount = addonsOnly.length;
+          if (item.status === 'Waiting') washStep = 0;
+          else if (item.status === 'LPR_Scan') washStep = 1;
+          else if (item.status === 'Washing') washStep = 2;
+          else if (item.status === 'Addon_Processing') washStep = 2 + (addonsCount > 0 ? 1 : 0);
+          else if (item.status === 'Drying') washStep = 2 + addonsCount;
+          else if (item.status === 'Completed') washStep = 3 + addonsCount;
 
           const progressPct = totalS > 1 ? Math.round((washStep / (totalS - 1)) * 100) : 100;
 
@@ -108,94 +119,12 @@ export const AdminQueue = () => {
           };
         });
         setQueue(mapped);
-        setLoading(false);
-        return;
       }
     } catch (err) {
       console.error('Lỗi khi tải hàng đợi từ API:', err);
+    } finally {
+      setLoading(false);
     }
-
-    loadLocalStorageQueue();
-  };
-
-  const loadLocalStorageQueue = () => {
-    let localQueue = [];
-    try {
-      localQueue = JSON.parse(localStorage.getItem('global_queue') || '[]');
-    } catch (e) {}
-
-    if (localQueue.length === 0) {
-      localQueue = [
-        {
-          queueId: 'q_mock_1',
-          licensePlate: '51A - 999.99',
-          customerName: 'Trần Thị B',
-          phone: '0912345678',
-          tierName: 'Gold Loyalty',
-          tierId: 3,
-          status: 'Washing',
-          bookingDate: new Date().toISOString().split('T')[0],
-          bookingTime: '09:00',
-          mainService: 'Combo Rửa xe cao cấp',
-          addons: ['Vệ sinh nội thất', 'Wax nano'],
-          staffName: 'Trần Văn B',
-          progress: 33,
-          washStep: 2,
-          checkInAt: new Date().toISOString(),
-          eta: '15 phút',
-          price: 130000,
-          points: 13,
-          staffNote: 'Xe bẩn nhiều phần xích xe.',
-          services: [
-            { name: 'Nhận diện LPR', status: 'Completed' },
-            { name: 'Rửa bọt tuyết', status: 'Completed' },
-            { name: 'Sấy khô', status: 'In Progress' },
-            { name: 'Vệ sinh nội thất', status: 'Pending' },
-            { name: 'Wax nano', status: 'Pending' },
-            { name: 'Kiểm tra cuối', status: 'Pending' },
-            { name: 'Hoàn tất', status: 'Pending' }
-          ]
-        },
-        {
-          queueId: 'q_mock_2',
-          licensePlate: '59 - K1 47278',
-          customerName: 'Nguyễn Văn C',
-          phone: '0987654321',
-          tierName: 'Standard Loyalty',
-          tierId: 1,
-          status: 'Waiting',
-          bookingDate: new Date().toISOString().split('T')[0],
-          bookingTime: '10:30',
-          mainService: 'Rửa xe phổ thông',
-          addons: [],
-          staffName: 'Chưa gán',
-          progress: 0,
-          washStep: 0,
-          checkInAt: new Date().toISOString(),
-          eta: '20 phút',
-          price: 35000,
-          points: 3,
-          staffNote: '',
-          services: [
-            { name: 'Nhận diện LPR', status: 'In Progress' },
-            { name: 'Rửa bọt tuyết', status: 'Pending' },
-            { name: 'Sấy khô', status: 'Pending' },
-            { name: 'Kiểm tra cuối', status: 'Pending' },
-            { name: 'Hoàn tất', status: 'Pending' }
-          ]
-        }
-      ];
-      localStorage.setItem('global_queue', JSON.stringify(localQueue));
-    }
-    setQueue(localQueue);
-    setLoading(false);
-  };
-
-  // Helper to update global queue states and sync with Customer tab
-  const saveQueueState = (updatedQueue) => {
-    setQueue(updatedQueue);
-    localStorage.setItem('global_queue', JSON.stringify(updatedQueue));
-    window.dispatchEvent(new Event('storage'));
   };
 
   // Move vehicle to next Kanban column
@@ -206,102 +135,18 @@ export const AdminQueue = () => {
         if (response.success) {
           if (window.showToast) window.showToast('Đã chuyển xe sang công đoạn tiếp theo!', 'success');
           fetchQueue();
-          return;
+        } else {
+          if (window.showToast) window.showToast(response.message || 'Lỗi khi cập nhật hàng đợi!', 'error');
         }
       }
     } catch (err) {
       console.error(err);
+      if (window.showToast) window.showToast('Lỗi kết nối khi cập nhật hàng đợi!', 'error');
     }
-
-    // Fallback logic
-    const updated = queue.map(item => {
-      if (item.queueId !== queueId) return item;
-      
-      let nextStatus = item.status;
-      if (item.status === 'Waiting') nextStatus = 'LPR_Scan';
-      else if (item.status === 'LPR_Scan') nextStatus = 'Washing';
-      else if (item.status === 'Washing') nextStatus = 'Addon_Processing';
-      else if (item.status === 'Addon_Processing') nextStatus = 'Drying';
-      else if (item.status === 'Drying') nextStatus = 'Completed';
-
-      const updatedServices = [...item.services];
-      let newWashStep = item.washStep;
-
-      if (nextStatus === 'LPR_Scan') {
-        updatedServices[0].status = 'Completed';
-        if (updatedServices[1]) updatedServices[1].status = 'In Progress';
-        newWashStep = 1;
-      } else if (nextStatus === 'Washing') {
-        updatedServices[0].status = 'Completed';
-        if (updatedServices[1]) updatedServices[1].status = 'Completed';
-        if (updatedServices[2]) updatedServices[2].status = 'In Progress';
-        newWashStep = 2;
-      } else if (nextStatus === 'Addon_Processing') {
-        updatedServices[0].status = 'Completed';
-        if (updatedServices[1]) updatedServices[1].status = 'Completed';
-        if (updatedServices[2]) updatedServices[2].status = 'Completed';
-        if (updatedServices.length > 4) {
-          updatedServices[3].status = 'In Progress';
-          newWashStep = 3;
-        } else {
-          if (updatedServices[updatedServices.length - 2]) {
-            updatedServices[updatedServices.length - 2].status = 'In Progress';
-          }
-          newWashStep = updatedServices.length - 2;
-        }
-      } else if (nextStatus === 'Drying') {
-        for (let i = 0; i < updatedServices.length - 2; i++) {
-          updatedServices[i].status = 'Completed';
-        }
-        if (updatedServices[updatedServices.length - 2]) {
-          updatedServices[updatedServices.length - 2].status = 'In Progress';
-        }
-        newWashStep = updatedServices.length - 2;
-      } else if (nextStatus === 'Completed') {
-        updatedServices.forEach(s => s.status = 'Completed');
-        newWashStep = updatedServices.length - 1;
-      }
-
-      const totalS = updatedServices.length;
-      const progressPct = Math.round((newWashStep / (totalS - 1)) * 100);
-
-      const newItem = {
-        ...item,
-        status: nextStatus,
-        services: updatedServices,
-        washStep: newWashStep,
-        progress: progressPct
-      };
-
-      syncWithCustomerTab(newItem);
-      return newItem;
-    });
-
-    saveQueueState(updated);
-    if (window.showToast) window.showToast('Đã chuyển xe sang công đoạn tiếp theo (Offline)!', 'success');
-  };
-
-  const syncWithCustomerTab = (queueItem) => {
-    try {
-      const activeStr = localStorage.getItem('active_booking');
-      if (activeStr) {
-        const active = JSON.parse(activeStr);
-        if (active.vehicle === queueItem.licensePlate) {
-          const updatedActive = {
-            ...active,
-            status: queueItem.status,
-            washStep: queueItem.washStep,
-            progress: queueItem.progress
-          };
-          localStorage.setItem('active_booking', JSON.stringify(updatedActive));
-          localStorage.setItem('wash_step', String(queueItem.washStep));
-        }
-      }
-    } catch (e) {}
   };
 
   // Complete a specific step in the detail list
-  const handleToggleStepCompleted = (stepIdx) => {
+  const handleToggleStepCompleted = async (stepIdx) => {
     if (!selectedVehicle) return;
 
     const updatedServices = selectedVehicle.services.map((s, idx) => {
@@ -332,11 +177,23 @@ export const AdminQueue = () => {
     };
 
     setSelectedVehicle(updatedItem);
+    setQueue(prevQueue => prevQueue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q));
 
-    // Sync to queue and customer tab
-    const updatedQueue = queue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q);
-    saveQueueState(updatedQueue);
-    syncWithCustomerTab(updatedItem);
+    // Call API to save to database
+    try {
+      if (typeof selectedVehicle.queueId === 'number' || !isNaN(selectedVehicle.queueId)) {
+        const response = await adminService.updateQueue(selectedVehicle.queueId, newStatus, selectedVehicle.staffNote);
+        if (response.success) {
+          if (window.showToast) window.showToast('Đã cập nhật công đoạn rửa xe!', 'success');
+          fetchQueue();
+        } else {
+          if (window.showToast) window.showToast(response.message || 'Lỗi khi cập nhật công đoạn!', 'error');
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi khi gọi API UpdateQueue:', err);
+      if (window.showToast) window.showToast('Lỗi kết nối khi cập nhật công đoạn!', 'error');
+    }
   };
 
   // Checkout and clean out queue
@@ -349,49 +206,14 @@ export const AdminQueue = () => {
             if (window.showToast) window.showToast(`Check-out thành công cho xe ${plate}! Đã cộng +${response.pointsEarned} điểm Loyalty cho khách.`, 'success');
             setSelectedVehicle(null);
             fetchQueue();
-            return;
+          } else {
+            if (window.showToast) window.showToast(response.message || 'Lỗi khi checkout!', 'error');
           }
         }
       } catch (err) {
         console.error(err);
+        if (window.showToast) window.showToast('Lỗi kết nối khi checkout!', 'error');
       }
-
-      // Fallback
-      const updated = queue.filter(item => item.queueId !== queueId);
-      saveQueueState(updated);
-
-      try {
-        const activeStr = localStorage.getItem('active_booking');
-        if (activeStr) {
-          const active = JSON.parse(activeStr);
-          if (active.vehicle === plate) {
-            localStorage.removeItem('active_booking');
-            localStorage.removeItem('wash_step');
-          }
-        }
-      } catch (e) {}
-
-      const ptsEarned = selectedVehicle ? selectedVehicle.points : 13;
-      const currentPts = Number(localStorage.getItem('user_points') || 217);
-      localStorage.setItem('user_points', String(currentPts + ptsEarned));
-
-      const reviewNotif = {
-        id: 'notif_checkout_' + Date.now(),
-        title: 'Dịch vụ hoàn tất ✨',
-        body: `Cảm ơn bạn đã sử dụng dịch vụ. Xe ${plate} đã checkout thành công! Bạn nhận được +${ptsEarned} PTS Loyalty.`,
-        time: 'Vừa xong',
-        type: 'points',
-        read: false
-      };
-      let notifications = [];
-      try {
-        notifications = JSON.parse(localStorage.getItem('user_notifications') || '[]');
-      } catch (e) {}
-      localStorage.setItem('user_notifications', JSON.stringify([reviewNotif, ...notifications]));
-
-      window.dispatchEvent(new Event('storage'));
-      setSelectedVehicle(null);
-      if (window.showToast) window.showToast(`Check-out thành công cho xe ${plate} (Offline)! Đã cộng +${ptsEarned} điểm Loyalty cho khách.`, 'success');
     };
 
     if (window.showConfirm) {
@@ -412,74 +234,21 @@ export const AdminQueue = () => {
     try {
       const response = await adminService.addWalkIn(walkInPlate.trim(), walkInName.trim());
       if (response.success) {
-        if (window.showToast) window.showToast(`Check-in thành công xe vãng lai ${walkInPlate}!`, 'success');
+        if (window.showToast) window.showToast(`Check-in thành công xe ${walkInPlate}!`, 'success');
         setShowCheckInModal(false);
         setWalkInPlate('');
         setWalkInName('');
+        setWalkInPhone('');
+        setWalkInAddons([]);
+        setWalkInNote('');
         fetchQueue();
-        return;
+      } else {
+        if (window.showToast) window.showToast(response.message || 'Lỗi check-in xe!', 'error');
       }
     } catch (err) {
       console.error(err);
+      if (window.showToast) window.showToast('Lỗi kết nối khi check-in xe!', 'error');
     }
-
-    // Fallback logic
-    let priorityVal = 1;
-    if (walkInPriority.includes('Silver')) priorityVal = 2;
-    if (walkInPriority.includes('Gold')) priorityVal = 3;
-    if (walkInPriority.includes('Platinum')) priorityVal = 4;
-
-    const duplicate = queue.find(item => item.licensePlate.trim().toUpperCase() === walkInPlate.trim().toUpperCase() && item.status === 'Waiting');
-    
-    if (duplicate) {
-      if (window.showToast) window.showToast(`Phát hiện lịch đặt của xe ${walkInPlate}! Tự động check-in và đẩy vào quy trình LPR.`, 'success');
-      handleAdvanceColumn(duplicate.queueId);
-      setShowCheckInModal(false);
-      return;
-    }
-
-    const dynamicServices = [
-      { name: 'Nhận diện LPR', status: 'In Progress' },
-      { name: 'Rửa bọt tuyết', status: 'Pending' },
-      { name: 'Sấy khô', status: 'Pending' },
-      ...walkInAddons.map(addon => ({ name: addon, status: 'Pending' })),
-      { name: 'Kiểm tra cuối', status: 'Pending' },
-      { name: 'Hoàn tất', status: 'Pending' }
-    ];
-
-    const newItem = {
-      queueId: 'q_' + Date.now(),
-      licensePlate: walkInPlate.toUpperCase(),
-      customerName: walkInName || 'Khách vãng lai',
-      phone: walkInPhone || '—',
-      tierName: walkInPriority,
-      tierId: priorityVal,
-      status: 'LPR_Scan',
-      bookingDate: new Date().toISOString().split('T')[0],
-      bookingTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      mainService: walkInMainSvc,
-      addons: walkInAddons,
-      staffName: 'Chưa gán',
-      progress: 15,
-      washStep: 0,
-      checkInAt: new Date().toISOString(),
-      eta: '25 phút',
-      price: walkInMainSvc.includes('cao cấp') ? 85000 : 35000,
-      points: 5,
-      staffNote: walkInNote,
-      services: dynamicServices
-    };
-
-    saveQueueState([...queue, newItem]);
-    
-    setWalkInPlate('');
-    setWalkInName('');
-    setWalkInPhone('');
-    setWalkInAddons([]);
-    setWalkInNote('');
-    setShowCheckInModal(false);
-    
-    if (window.showToast) window.showToast(`Check-in thành công cho xe vãng lai ${newItem.licensePlate} (Offline)!`, 'success');
   };
 
   const handleToggleAddonCheck = (addon) => {
@@ -490,29 +259,49 @@ export const AdminQueue = () => {
     }
   };
 
-  const handleAssignStaff = (staff) => {
+  const handleAssignStaff = async (staff) => {
     if (!selectedVehicle) return;
-    const updatedItem = { ...selectedVehicle, staffName: staff };
+    const updatedItem = { ...selectedVehicle, staffName: staff, staffNote: staff };
     setSelectedVehicle(updatedItem);
+    setQueue(prevQueue => prevQueue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q));
 
-    const updatedQueue = queue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q);
-    saveQueueState(updatedQueue);
-    syncWithCustomerTab(updatedItem);
+    try {
+      if (typeof selectedVehicle.queueId === 'number' || !isNaN(selectedVehicle.queueId)) {
+        const response = await adminService.updateQueue(selectedVehicle.queueId, selectedVehicle.status, staff);
+        if (response.success) {
+          if (window.showToast) window.showToast('Đã gán nhân viên phụ trách!', 'success');
+          fetchQueue();
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSaveStaffNotes = (note) => {
     if (!selectedVehicle) return;
     const updatedItem = { ...selectedVehicle, staffNote: note };
     setSelectedVehicle(updatedItem);
+    setQueue(prevQueue => prevQueue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q));
+  };
 
-    const updatedQueue = queue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q);
-    saveQueueState(updatedQueue);
+  const handleBlurStaffNotes = async () => {
+    if (!selectedVehicle) return;
+    try {
+      if (typeof selectedVehicle.queueId === 'number' || !isNaN(selectedVehicle.queueId)) {
+        await adminService.updateQueue(selectedVehicle.queueId, selectedVehicle.status, selectedVehicle.staffNote);
+        if (window.showToast) window.showToast('Đã lưu ghi chú dịch vụ!', 'success');
+        fetchQueue();
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
-    <div className="container-fluid py-4 text-start">
+    <div className="container-fluid py-0 text-start d-flex flex-column h-100">
       {/* Page Header */}
-      <div className="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2 border-bottom pb-3">
+      <div className="d-flex justify-content-between align-items-center flex-wrap mb-3 gap-2 border-bottom pb-3">
         <div>
           <h4 className="fw-bold mb-1 text-dark" style={{ letterSpacing: '-0.5px' }}>HÀNG ĐỢI XE TRONG NGÀY ({queue.length})</h4>
           <p className="text-secondary small mb-0">Hệ thống quản lý, phân bổ làn và giám sát các xe đang thực hiện dịch vụ</p>
@@ -528,7 +317,7 @@ export const AdminQueue = () => {
       </div>
 
       {/* KANBAN BOARD LAYOUT */}
-      <div className="kanban-board-container d-flex gap-3 overflow-auto pb-4" style={{ minHeight: '520px' }}>
+      <div className="kanban-board-container d-flex gap-3">
         {KANBAN_COLUMNS.map(col => {
           const colItems = queue.filter(item => item.status === col.id);
 
@@ -542,7 +331,7 @@ export const AdminQueue = () => {
               </div>
 
               {/* Kanban Column Cards List */}
-              <div className="kanban-cards-list d-flex flex-column gap-2" style={{ minHeight: '400px' }}>
+              <div className="kanban-cards-list d-flex flex-column gap-2">
                 {colItems.length === 0 ? (
                   <div className="text-center py-5 text-muted small bg-light bg-opacity-40 rounded-4 border border-dashed" style={{ borderStyle: 'dashed' }}>
                     Trống
@@ -718,6 +507,7 @@ export const AdminQueue = () => {
                   placeholder="Điền ghi chú tình trạng xe, vết xước sẵn có..."
                   value={selectedVehicle.staffNote || ''}
                   onChange={(e) => handleSaveStaffNotes(e.target.value)}
+                  onBlur={handleBlurStaffNotes}
                 ></textarea>
               </div>
 

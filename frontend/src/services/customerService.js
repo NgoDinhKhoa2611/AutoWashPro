@@ -80,5 +80,22 @@ export const customerService = {
   getActiveBooking: async () => {
     const response = await api.get('/Customer/GetActiveBooking');
     return response.data;
+  },
+
+  getVouchers: async () => {
+    const response = await api.get('/Customer/GetVouchers');
+    return response.data;
+  },
+
+  getNotifications: async () => {
+    const response = await api.get('/Customer/GetNotifications');
+    return response.data;
+  },
+
+  markNotificationAsRead: async (id) => {
+    const response = await api.post('/Customer/MarkNotificationAsRead', {
+      Id: id
+    });
+    return response.data;
   }
 };

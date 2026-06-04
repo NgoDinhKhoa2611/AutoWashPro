@@ -78,8 +78,8 @@ export const AuthProvider = ({ children }) => {
     throw new Error(data.message || 'Đăng nhập thất bại!');
   };
 
-  const register = async (email, fullName, phone, password) => {
-    const data = await authService.register(email, fullName, phone, password);
+  const register = async (email, fullName, phone, password, otpCode) => {
+    const data = await authService.register(email, fullName, phone, password, otpCode);
     if (data.success) {
       localStorage.setItem('user_role', data.role);
       localStorage.setItem('user_display_name', data.name || '');
@@ -117,8 +117,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user_tier');
     localStorage.removeItem('user_points');
     localStorage.removeItem('user_avatar');
-    localStorage.removeItem('active_booking');
-    localStorage.removeItem('wash_step');
     
     setUser(null);
     window.dispatchEvent(new Event('storage'));

@@ -46,46 +46,47 @@ export const AdminDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
     calculateRealtimeStats();
-    
-    const handleStorageChange = () => {
-      calculateRealtimeStats();
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const calculateRealtimeStats = () => {
-    let queue = [];
+  const calculateRealtimeStats = async () => {
     try {
-      queue = JSON.parse(localStorage.getItem('global_queue') || '[]');
-    } catch (e) {}
+      const response = await adminService.getQueue();
+      if (response) {
+        const waiting = response.filter(item => item.status === 'Waiting' || item.status === 'LPR_Scan').length;
+        const washing = response.filter(item => item.status === 'Washing' || item.status === 'Addon_Processing' || item.status === 'Drying').length;
+        const completed = response.filter(item => item.status === 'Completed').length;
 
-    // Count today's items
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayBookings = queue.filter(item => item.bookingDate === todayStr);
+        // Calculate revenue from completed orders today
+        const completedRevenue = response
+          .filter(item => item.status === 'Completed')
+          .reduce((sum, item) => sum + (item.finalPrice || 0), 0);
 
-    const waiting = queue.filter(item => item.status === 'Waiting' || item.status === 'LPR_Scan').length;
-    const washing = queue.filter(item => item.status === 'Washing' || item.status === 'Addon_Processing' || item.status === 'Drying').length;
-    const completed = queue.filter(item => item.status === 'Completed').length;
+        const pointsGranted = response
+          .filter(item => item.status === 'Completed')
+          .reduce((sum, item) => sum + (item.pointsEarned || 0), 0);
 
-    // Calculate revenue from completed orders today
-    const completedRevenue = queue
-      .filter(item => item.status === 'Completed' || item.status === 'Checkout')
-      .reduce((sum, item) => sum + (item.price || 0), 0);
-
-    const pointsGranted = queue
-      .filter(item => item.status === 'Completed' || item.status === 'Checkout')
-      .reduce((sum, item) => sum + (item.points || 0), 0);
-
-    setRealtimeCounters({
-      todayRevenue: completedRevenue > 0 ? completedRevenue : 215000, // mock fallback
-      todayBookingsCount: todayBookings.length > 0 ? todayBookings.length : 1,
-      waitingCount: waiting,
-      washingCount: washing,
-      completedCount: completed,
-      voucherUsedCount: 3,
-      loyaltyPointsGrantedToday: pointsGranted > 0 ? pointsGranted : 32
-    });
+        setRealtimeCounters({
+          todayRevenue: completedRevenue,
+          todayBookingsCount: response.length,
+          waitingCount: waiting,
+          washingCount: washing,
+          completedCount: completed,
+          voucherUsedCount: 0,
+          loyaltyPointsGrantedToday: pointsGranted
+        });
+      }
+    } catch (e) {
+      console.error('Lỗi khi tính toán chỉ số thời gian thực:', e);
+      setRealtimeCounters({
+        todayRevenue: 0,
+        todayBookingsCount: 0,
+        waitingCount: 0,
+        washingCount: 0,
+        completedCount: 0,
+        voucherUsedCount: 0,
+        loyaltyPointsGrantedToday: 0
+      });
+    }
   };
 
   const fetchDashboardData = async () => {
@@ -161,12 +162,11 @@ export const AdminDashboard = () => {
       if (response.success) {
         if (window.showToast) window.showToast('Lưu cấu hình AutoWash Loyalty thành công!', 'success');
       } else {
-        if (window.showToast) window.showToast('Lưu cấu hình thành công (Local)!', 'success');
+        if (window.showToast) window.showToast(response.message || 'Lưu cấu hình thất bại!', 'error');
       }
     } catch (err) {
-      // Local Save fallback
-      localStorage.setItem('loyalty_config', JSON.stringify(loyaltyConfig));
-      if (window.showToast) window.showToast('Đã lưu cấu hình AutoWash Loyalty lên hệ thống!', 'success');
+      console.error(err);
+      if (window.showToast) window.showToast('Lỗi kết nối khi lưu cấu hình!', 'error');
     }
   };
 

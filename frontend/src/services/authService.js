@@ -34,12 +34,20 @@ export const authService = {
     return response.data;
   },
 
-  register: async (email, fullName, phone, password) => {
+  sendRegisterOtp: async (email) => {
+    const response = await api.post('/Account/SendRegisterOtp', {
+      Email: email
+    });
+    return response.data;
+  },
+
+  register: async (email, fullName, phone, password, otpCode) => {
     const response = await api.post('/Account/Register', {
       Email: email,
       FullName: fullName,
       Phone: phone,
-      Password: password
+      Password: password,
+      OtpCode: otpCode
     });
     return response.data;
   }

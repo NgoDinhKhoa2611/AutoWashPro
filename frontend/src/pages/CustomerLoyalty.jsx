@@ -60,16 +60,19 @@ export const CustomerLoyalty = () => {
   const [pendingRedeem, setPendingRedeem] = useState(null);
   const [redeemModalOpen, setRedeemModalOpen] = useState(false);
 
-  useEffect(() => {
-    const syncData = () => {
-      try {
-        const claimed = JSON.parse(localStorage.getItem('user_claimed_vouchers') || '[]');
-        setClaimedVouchers(claimed);
-      } catch (e) {}
-    };
+  const fetchClaimedVouchers = async () => {
+    try {
+      const response = await customerService.getVouchers();
+      if (response && response.success && response.vouchers) {
+        setClaimedVouchers(response.vouchers);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-    syncData();
-    window.addEventListener('storage', syncData);
+  useEffect(() => {
+    fetchClaimedVouchers();
 
     const query = new URLSearchParams(window.location.search);
     const tab = query.get('tab');
@@ -81,10 +84,6 @@ export const CustomerLoyalty = () => {
         }, 350);
       }
     }
-
-    return () => {
-      window.removeEventListener('storage', syncData);
-    };
   }, [window.location.search]);
 
   const handleChangeTier = (tierName) => {
@@ -107,82 +106,37 @@ export const CustomerLoyalty = () => {
   };
 
   const handleConfirmRedeem = () => {
-    if (!pendingRedeem) return;
-    const currentPts = user?.points || 0;
-
-    if (currentPts < pendingRedeem.pointsRequired) {
-      if (window.showToast) window.showToast('Bạn không đủ điểm để đổi phần thưởng này!', 'error');
-      setRedeemModalOpen(false);
-      return;
-    }
-
-    const newPts = Math.max(0, currentPts - pendingRedeem.pointsRequired);
-    localStorage.setItem('user_points', String(newPts));
-    updateUser({ points: newPts });
-
-    const randCode = 'AW-RED-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
-    const expiryStr = expiryDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-    const newVoucher = {
-      redemptionId: 'red_' + Date.now(),
-      rewardId: pendingRedeem.rewardId,
-      title: pendingRedeem.rewardName,
-      rewardType: pendingRedeem.rewardType,
-      rewardValue: pendingRedeem.rewardValue,
-      icon: pendingRedeem.icon,
-      code: randCode,
-      status: 1, // 1 = Available
-      redeemedAt: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-      expiredAt: expiryStr
-    };
-
-    const updatedVouchers = [newVoucher, ...claimedVouchers];
-    setClaimedVouchers(updatedVouchers);
-    localStorage.setItem('user_claimed_vouchers', JSON.stringify(updatedVouchers));
-
-    // Create notification
-    const notif = {
-      id: 'notif_redeem_' + Date.now(),
-      title: 'Đổi thưởng thành công',
-      body: `Bạn đã đổi "${pendingRedeem.rewardName}" (Mã: ${randCode}). Hạn sử dụng đến ${expiryStr}.`,
-      time: 'Vừa xong',
-      type: 'points',
-      read: false
-    };
-    let notifications = [];
-    try {
-      notifications = JSON.parse(localStorage.getItem('user_notifications') || '[]');
-    } catch (e) {}
-    localStorage.setItem('user_notifications', JSON.stringify([notif, ...notifications]));
-    window.dispatchEvent(new Event('storage'));
-
+    // TODO Phase 2: RewardService API, Voucher API, Point API
     setRedeemModalOpen(false);
-    if (window.showToast) window.showToast(`Đổi quà thành công! Đã trừ ${pendingRedeem.pointsRequired} PTS.`, 'success');
+    if (window.showToast) {
+      window.showToast('Tính năng đổi phần thưởng sẽ được đồng bộ qua API ở Phase 2.', 'info');
+    } else {
+      alert('Tính năng đổi phần thưởng sẽ được đồng bộ qua API ở Phase 2.');
+    }
   };
 
   const handleUseVoucher = (redemptionId) => {
-    const applyVoucher = () => {
-      const updated = claimedVouchers.map(v => v.redemptionId === redemptionId ? { ...v, status: 2 } : v);
-      setClaimedVouchers(updated);
-      localStorage.setItem('user_claimed_vouchers', JSON.stringify(updated));
-      window.dispatchEvent(new Event('storage'));
-      if (window.showToast) window.showToast('Áp dụng voucher thành công!', 'success');
-    };
-
-    if (window.showConfirm) {
-      window.showConfirm('Áp dụng ưu đãi', 'Bạn có chắc chắn muốn sử dụng voucher này cho lượt đặt lịch rửa xe tiếp theo?', applyVoucher);
+    // TODO Phase 2: Voucher API
+    if (window.showToast) {
+      window.showToast('Tính năng áp dụng voucher sẽ được đồng bộ qua API ở Phase 2.', 'info');
     } else {
-      if (window.confirm('Bạn có chắc chắn muốn sử dụng voucher này?')) {
-        applyVoucher();
-      }
+      alert('Tính năng áp dụng voucher sẽ được đồng bộ qua API ở Phase 2.');
     }
   };
 
-  const currentTier = user?.tier || 'Gold Member';
-  const pts = user?.points || 550;
-  const nextTierDetails = TIER_DATA[currentTier] || TIER_DATA['Gold Member'];
+  const rawTier = user?.tier || 'Standard Member';
+  let currentTier = rawTier;
+  if (rawTier === 'Member' || rawTier === 'Standard' || rawTier === 'Standard Member') {
+    currentTier = 'Standard Member';
+  } else if (rawTier === 'Silver' || rawTier === 'Silver Member') {
+    currentTier = 'Silver Member';
+  } else if (rawTier === 'Gold' || rawTier === 'Gold Member') {
+    currentTier = 'Gold Member';
+  } else if (rawTier === 'Platinum' || rawTier === 'Platinum Member') {
+    currentTier = 'Platinum Member';
+  }
+  const pts = user?.points ?? 0;
+  const nextTierDetails = TIER_DATA[currentTier] || TIER_DATA['Standard Member'];
   const remaining = nextTierDetails.neededPts ? Math.max(0, nextTierDetails.neededPts - pts) + ' PTS' : 'Tối cao';
 
   return (
