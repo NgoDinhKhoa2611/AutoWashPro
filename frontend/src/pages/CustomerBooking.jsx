@@ -8,7 +8,10 @@ import '../styles/customer/booking.css';
 const DEFAULT_MAIN_SERVICES = [];
 const DEFAULT_ADDON_SERVICES = [];
 
-const TIME_SLOTS = ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00'];
+const DEFAULT_TIME_SLOTS = [
+  '08:00', '09:00', '10:00', '11:00', '12:00', 
+  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+];
 
 export const CustomerBooking = () => {
   const { user } = useAuth();
@@ -139,6 +142,33 @@ export const CustomerBooking = () => {
     fetchVouchers();
   }, [user]);
 
+  const getAvailableTimeSlots = () => {
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + 
+      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(today.getDate()).padStart(2, '0');
+
+    if (bookingDate === todayStr) {
+      const minAllowedTime = new Date(today.getTime() + 15 * 60 * 1000);
+      return DEFAULT_TIME_SLOTS.filter(t => {
+        const [hours, minutes] = t.split(':').map(Number);
+        const slotDate = new Date();
+        slotDate.setHours(hours, minutes, 0, 0);
+        return slotDate > minAllowedTime;
+      });
+    }
+    return DEFAULT_TIME_SLOTS;
+  };
+
+  useEffect(() => {
+    if (bookingTime && bookingDate) {
+      const slots = getAvailableTimeSlots();
+      if (!slots.includes(bookingTime)) {
+        setBookingTime('');
+      }
+    }
+  }, [bookingDate]);
+
   const handleSelectVehicle = (plate) => {
     setSelectedVehicle(plate);
   };
@@ -203,11 +233,14 @@ export const CustomerBooking = () => {
   const tierDiscountPercent = 0;
   const tierDiscountAmount = 0;
 
-  // Voucher discount - Disabled in this phase as backend calculates base total
-  const promoDiscountAmount = 0;
+  // Voucher discount
+  const promoDiscountAmount = appliedVoucher && baseTotal > 0
+    ? (appliedVoucher.rewardType === 'DiscountPercent' 
+        ? baseTotal * (Number(appliedVoucher.rewardValue) / 100) 
+        : Number(appliedVoucher.rewardValue))
+    : 0;
 
-  const totalDiscount = 0;
-  const finalTotal = baseTotal;
+  const finalTotal = Math.max(0, baseTotal - promoDiscountAmount);
 
   // Earned points (+1 point for every 10,000đ spent)
   const earnedPoints = Math.round(finalTotal / 10000);
@@ -235,6 +268,7 @@ export const CustomerBooking = () => {
         AddonServiceNames: Object.values(selectedAddons).map(a => a.name),
         BookingDate: bookingDate,
         BookingTime: bookingTime,
+        AppliedRedemptionId: appliedVoucher ? appliedVoucher.redemptionId : null,
         Notes: ''
       });
 
@@ -400,19 +434,25 @@ export const CustomerBooking = () => {
               <div className="col-md-6">
                 <label className="form-label small fw-bold text-secondary mb-2">KHUNG GIỜ</label>
                 <div className="row g-2" id="time-slots">
-                  {TIME_SLOTS.map((t) => (
-                    <div key={t} className="col-4">
-                      <div
-                        className={`text-center py-2.5 rounded-3 border fw-bold selectable-card ${
-                          bookingTime === t ? 'selected' : 'bg-light border-light text-muted'
-                        }`}
-                        style={{ cursor: 'pointer', fontSize: '0.8rem' }}
-                        onClick={() => setBookingTime(t)}
-                      >
-                        {t}
-                      </div>
+                  {getAvailableTimeSlots().length === 0 ? (
+                    <div className="col-12 text-center text-danger py-2 small fw-bold">
+                      Không còn khung giờ trống cho hôm nay. Vui lòng chọn ngày khác!
                     </div>
-                  ))}
+                  ) : (
+                    getAvailableTimeSlots().map((t) => (
+                      <div key={t} className="col-4">
+                        <div
+                          className={`text-center py-2.5 rounded-3 border fw-bold selectable-card ${
+                            bookingTime === t ? 'selected' : 'bg-light border-light text-muted'
+                          }`}
+                          style={{ cursor: 'pointer', fontSize: '0.8rem' }}
+                          onClick={() => setBookingTime(t)}
+                        >
+                          {t}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

@@ -162,6 +162,41 @@ namespace Auto_Wash.Services
 
                 int calculatedBasePrice = mainService.BasePrice + addonsList.Sum(a => a.BasePrice);
                 int finalPrice = calculatedBasePrice;
+                int promoDiscount = 0;
+                RewardRedemption? redemption = null;
+
+                if (request.AppliedRedemptionId.HasValue)
+                {
+                    redemption = await _context.RewardRedemptions
+                        .Include(r => r.Reward)
+                        .FirstOrDefaultAsync(r => r.RedemptionId == request.AppliedRedemptionId.Value 
+                                               && r.CustomerId == customer.CustomerId 
+                                               && r.Status == "Active");
+                    if (redemption != null)
+                    {
+                        if (redemption.Reward.RewardType == "DiscountPercent")
+                        {
+                            promoDiscount = (int)(calculatedBasePrice * (redemption.Reward.DiscountValue ?? 0) / 100);
+                        }
+                        else
+                        {
+                            promoDiscount = (int)(redemption.Reward.DiscountValue ?? 0);
+                        }
+
+                        if (promoDiscount > calculatedBasePrice)
+                        {
+                            promoDiscount = calculatedBasePrice;
+                        }
+
+                        finalPrice = calculatedBasePrice - promoDiscount;
+                        Console.WriteLine($"\n==============================================");
+                        Console.WriteLine($"[VOUCHER APPLIED] RedemptionId: {redemption.RedemptionId}");
+                        Console.WriteLine($"Voucher Name: '{redemption.Reward.RewardName}'");
+                        Console.WriteLine($"Discount: -{promoDiscount:N0} VND");
+                        Console.WriteLine($"Base Price: {calculatedBasePrice:N0} VND | Final Price: {finalPrice:N0} VND");
+                        Console.WriteLine("==============================================\n");
+                    }
+                }
 
                 // Backend loyalty points calculation
                 var config = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
@@ -176,14 +211,23 @@ namespace Auto_Wash.Services
                     ScheduledAt = scheduledAt,
                     Status = (int)BookingStatus.Pending,
                     BasePrice = calculatedBasePrice,
+                    PromoDiscount = promoDiscount,
                     FinalPrice = finalPrice,
                     PointsEarned = pointsEarned,
+                    RedemptionId = redemption?.RedemptionId,
                     Notes = request.Notes,
                     CreatedAt = DateTime.Now
                 };
 
                 _context.Bookings.Add(booking);
                 await _context.SaveChangesAsync();
+
+                if (redemption != null)
+                {
+                    redemption.Status = "Used";
+                    redemption.UsedAt = DateTime.Now;
+                    redemption.BookingId = booking.BookingId;
+                }
 
                 // Save BookingServices with PriceSnapshot
                 _context.BookingServices.Add(new Auto_Wash.Data.Entities.BookingService
