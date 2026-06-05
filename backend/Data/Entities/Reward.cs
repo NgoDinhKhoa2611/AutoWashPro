@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Auto_Wash.Data.Entities
 {
-    [Table("Rewards")]
+    [Table("rewards")]
     public class Reward
     {
         [Key]

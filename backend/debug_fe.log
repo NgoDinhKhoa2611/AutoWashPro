@@ -1,0 +1,4 @@
+[6/5/2026, 9:17:31 PM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/5/2026, 9:17:32 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.

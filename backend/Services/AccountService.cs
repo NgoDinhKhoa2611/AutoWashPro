@@ -38,6 +38,11 @@ namespace Auto_Wash.Services
             return await _context.Accounts.FirstOrDefaultAsync(a => a.Phone == phone.Trim());
         }
 
+        public async Task<Account?> FindByGoogleIdAsync(string googleId)
+        {
+            return await _context.Accounts.FirstOrDefaultAsync(a => a.GoogleId == googleId.Trim());
+        }
+
         public async Task UpdateGoogleIdAsync(Account account, string googleId)
         {
             account.GoogleId = googleId.Trim();

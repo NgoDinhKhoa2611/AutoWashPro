@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Auto_Wash.Data.Entities
 {
-    [Table("Accounts")]
+    [Table("accounts")]
     public class Account
     {
         [Key]
@@ -23,7 +21,7 @@ namespace Auto_Wash.Data.Entities
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
-        [MaxLength(15)]
+        [MaxLength(10)]
         public string? Phone { get; set; }
 
         [MaxLength(256)]

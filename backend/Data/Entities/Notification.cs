@@ -1,10 +1,9 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Auto_Wash.Data.Entities
 {
-    [Table("Notifications")]
+    [Table("notifications")]
     public class Notification
     {
         [Key]

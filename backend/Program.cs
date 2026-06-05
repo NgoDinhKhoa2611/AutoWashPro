@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Auto_Wash.Data;
+using Supabase;
 using Auto_Wash.Data.Entities;
 using Auto_Wash.Services;
 using Auto_Wash.Helpers;
+using System.IO;
 
 namespace Auto_Wash
 {
@@ -10,7 +12,12 @@ namespace Auto_Wash
     {
         public static async Task Main(string[] args)
         {
+
             var builder = WebApplication.CreateBuilder(args);
+
+            // Register Custom File Logger Provider
+            var debugBePath = Path.Combine(builder.Environment.ContentRootPath, "debug_be.log");
+            builder.Logging.AddProvider(new FileLoggerProvider(debugBePath));
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
@@ -30,9 +37,29 @@ namespace Auto_Wash
             // Register database context
             builder.Services.AddDbContext<AutoWashDbContext>(options =>
             {
-                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-                options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 30)));
+                var supabaseUrl = builder.Configuration["Supabase:Url"] ?? throw new InvalidOperationException("Supabase Url is not configured.");
+
+                var uri = new Uri(supabaseUrl);
+                var projectRef = uri.Host.Split('.')[0];
+
+                var connectionString = $"Host=aws-1-ap-northeast-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.chsdplwgdyfwavepibwo;Password=eUTvJp#-WFvpdu5;SSL Mode=Require;Trust Server Certificate=true";
+                options.UseNpgsql(connectionString)
+                       .UseLowerCaseNamingConvention(); // Map tất cả sang lowercase
             });
+
+            //// Register Supabase Client
+            //builder.Services.AddSingleton(provider =>
+            //{
+            //    var supabaseUrl = builder.Configuration["Supabase:Url"] ?? throw new InvalidOperationException("Supabase Url is not configured.");
+            //    var supabaseKey = builder.Configuration["Supabase:Key"] ?? throw new InvalidOperationException("Supabase Key is not configured.");
+                
+            //    var options = new SupabaseOptions
+            //    {
+            //        AutoRefreshToken = true,
+            //        AutoConnectRealtime = true
+            //    };
+            //    return new Client(supabaseUrl, supabaseKey, options);
+            //});
 
             // Register HttpContextAccessor and Services
             builder.Services.AddHttpContextAccessor();
@@ -55,23 +82,14 @@ namespace Auto_Wash
 
             var app = builder.Build();
 
-            // Seed default admin account on startup
-            if (app.Environment.IsDevelopment())
-            {
-                using (var scope = app.Services.CreateScope())
-                {
-                    var db = scope.ServiceProvider.GetRequiredService<AutoWashDbContext>();
-                    await SeedAdminAsync(db);
-                }
-            }
+
 
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseHsts();
+                app.UseHttpsRedirection();
             }
-
-            app.UseHttpsRedirection();
             app.UseDefaultFiles(); // Enables serving index.html as default page
             app.UseStaticFiles();
             app.UseSession();
@@ -103,31 +121,6 @@ namespace Auto_Wash
 
             await app.RunAsync();
         }
-
-        private static async Task SeedAdminAsync(AutoWashDbContext db)
-        {
-            try
-            {
-                const string adminEmail = "admin@autowash.vn";
-                if (!await db.Accounts.AnyAsync(a => a.Email == adminEmail))
-                {
-                    db.Accounts.Add(new Account
-                    {
-                        Email = adminEmail,
-                        FullName = "Admin AutoWash",
-                        PasswordHash = PasswordHelper.HashPassword("Admin@123"),
-                        Role = 1,
-                        IsActive = true,
-                        CreatedAt = DateTime.Now
-                    });
-                    await db.SaveChangesAsync();
-                }
-            }
-            catch
-            {
-                // DB not available at startup — skip seed
-            }
         }
-    }
 }
 

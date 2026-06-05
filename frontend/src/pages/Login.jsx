@@ -52,7 +52,7 @@ export const Login = () => {
     const initGoogle = () => {
       if (window.google && panel === 'login') {
         window.google.accounts.id.initialize({
-          client_id: "822970711625-j7g9i1mvivrff2djnv0gi96bsqn28t4c.apps.googleusercontent.com",
+          client_id: "40329422268-s3m1sqlniabg1f8o7roo5pmfckb4j3te.apps.googleusercontent.com",
           callback: handleGoogleCredential
         });
 
