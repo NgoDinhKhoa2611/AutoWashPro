@@ -322,7 +322,7 @@ export const CustomerDashboard = () => {
       <div className="row g-3 mb-4">
         {/* Card 1: Xe của tôi */}
         <div className="col-6 col-md-3">
-          <Link to="/customer/profile" className="app-card summary-widget-card">
+          <Link to="/customer/vehicles" className="app-card summary-widget-card">
             <div className="summary-icon-wrapper" style={{ background: 'rgba(2, 132, 199, 0.08)', color: '#0284c7' }}>
               <i className="fas fa-motorcycle"></i>
             </div>
@@ -393,7 +393,7 @@ export const CustomerDashboard = () => {
               <h5 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
                 <i className="fas fa-motorcycle text-cyan me-2"></i>GARAGE XE CỦA TÔI
               </h5>
-              <Link to="/customer/profile" className="compact-action-link">
+              <Link to="/customer/vehicles" className="compact-action-link">
                 Quản lý garage ➔
               </Link>
             </div>
@@ -401,7 +401,7 @@ export const CustomerDashboard = () => {
             {vehicles.length === 0 ? (
               <div className="text-center py-4 text-muted small" style={{ background: '#f8fafc', borderRadius: '14px', border: '1px dashed #e2e8f0' }}>
                 <p className="mb-3">Bạn chưa đăng ký phương tiện nào</p>
-                <Link to="/customer/profile" className="app-btn-primary px-3 py-2 text-dark fw-bold text-decoration-none d-inline-block" style={{ fontSize: '0.75rem', borderRadius: '8px' }}>
+                <Link to="/customer/vehicles" className="app-btn-primary px-3 py-2 text-dark fw-bold text-decoration-none d-inline-block" style={{ fontSize: '0.75rem', borderRadius: '8px' }}>
                   + Thêm phương tiện đầu tiên
                 </Link>
               </div>
