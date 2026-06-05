@@ -93,46 +93,66 @@ namespace Auto_Wash.Controllers
         [HttpPost]
         public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Email))
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.GoogleId))
             {
-                return BadRequest(new { success = false, message = "Email không hợp lệ!" });
+                return BadRequest(new { success = false, message = "Dữ liệu đăng nhập Google không hợp lệ!" });
             }
 
             try
             {
-                var account = await _accountService.FindByEmailAsync(request.Email);
+                // 1. Try to find the account by Google ID first
+                var account = await _accountService.FindByGoogleIdAsync(request.GoogleId);
 
                 if (account == null)
                 {
+                    // 2. If not found by Google ID, find by Email
+                    account = await _accountService.FindByEmailAsync(request.Email);
+                }
+
+                if (account == null)
+                {
+                    // New user: must complete profile
                     return Ok(new { success = true, isNewUser = true });
                 }
-                else
-                {
-                    if (string.IsNullOrEmpty(account.Phone))
-                    {
-                        return Ok(new { success = true, isNewUser = true });
-                    }
 
-                    if (string.IsNullOrEmpty(account.GoogleId))
-                    {
-                        await _accountService.UpdateGoogleIdAsync(account, request.GoogleId);
-                    }
-                    else if (account.GoogleId != request.GoogleId.Trim())
-                    {
-                        return BadRequest(new { success = false, message = "Tài khoản này đã được liên kết với một tài khoản Google khác!" });
-                    }
+                // 3. Security check: is the account active?
+                if (!account.IsActive)
+                {
+                    return BadRequest(new { success = false, message = "Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động!" });
                 }
 
+                // 4. If email matches but Google ID is not linked, attempt to link it
+                if (string.IsNullOrEmpty(account.GoogleId))
+                {
+                    await _accountService.UpdateGoogleIdAsync(account, request.GoogleId);
+                }
+                else if (account.GoogleId != request.GoogleId.Trim())
+                {
+                    return BadRequest(new { success = false, message = "Tài khoản này đã được liên kết với một tài khoản Google khác!" });
+                }
+
+                // 5. If phone is missing, prompt profile completion
+                if (string.IsNullOrEmpty(account.Phone))
+                {
+                    return Ok(new { success = true, isNewUser = true });
+                }
+
+                // Get customer details if customer
                 string? tier = "Member";
                 int points = 0;
-                var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
-                if (customer != null)
+                if (account.Role == 3)
                 {
-                    tier = customer.Tier?.TierName ?? "Member";
-                    points = customer.PointBalance;
+                    var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
+                    if (customer != null)
+                    {
+                        tier = customer.Tier?.TierName ?? "Member";
+                        points = customer.PointBalance;
+                    }
                 }
 
-                HttpContext.Session.SetString("UserRole", "customer");
+                // Dynamic role assignment
+                var roleStr = account.Role == 1 ? "admin" : account.Role == 2 ? "staff" : "customer";
+                HttpContext.Session.SetString("UserRole", roleStr);
                 HttpContext.Session.SetString("UserName", account.FullName);
                 HttpContext.Session.SetString("UserEmail", account.Email ?? "");
                 HttpContext.Session.SetInt32("AccountId", account.AccountId);
@@ -149,7 +169,7 @@ namespace Auto_Wash.Controllers
                 return Ok(new {
                     success = true,
                     isNewUser = false,
-                    role = "customer",
+                    role = roleStr,
                     name = account.FullName,
                     email = account.Email,
                     phone = account.Phone,
@@ -166,17 +186,25 @@ namespace Auto_Wash.Controllers
         [HttpPost]
         public async Task<IActionResult> CompleteGoogleSignup([FromBody] CompleteGoogleSignupRequestDto request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password))
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.GoogleId))
             {
                 return BadRequest(new { success = false, message = "Dữ liệu hoàn thành đăng ký không hợp lệ!" });
             }
 
             try
             {
+                // Validate phone is not already in use
                 var existingPhone = await _accountService.FindByPhoneAsync(request.Phone);
                 if (existingPhone != null)
                 {
                     return BadRequest(new { success = false, message = "Số điện thoại này đã được sử dụng bởi một tài khoản khác!" });
+                }
+
+                // Validate GoogleId is not already linked to another account
+                var existingGoogle = await _accountService.FindByGoogleIdAsync(request.GoogleId);
+                if (existingGoogle != null && existingGoogle.Email != request.Email.Trim())
+                {
+                    return BadRequest(new { success = false, message = "Tài khoản Google này đã được liên kết với một tài khoản khác!" });
                 }
 
                 var account = await _accountService.CompleteGoogleSignupAsync(request);

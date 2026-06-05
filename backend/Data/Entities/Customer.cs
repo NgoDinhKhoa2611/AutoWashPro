@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Auto_Wash.Data.Entities
 {
-    [Table("Customers")]
+    [Table("customers")]
     public class Customer
     {
         [Key]

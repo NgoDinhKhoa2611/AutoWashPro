@@ -30,6 +30,8 @@ namespace Auto_Wash.Data
         {
             base.OnModelCreating(builder);
 
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
             // 1. OtpVerifications
             builder.Entity<OtpVerification>()
                 .HasIndex(o => o.Phone)
@@ -316,7 +318,49 @@ namespace Auto_Wash.Data
                 .HasOne(n => n.Customer)
                 .WithMany(c => c.Notifications)
                 .HasForeignKey(n => n.CustomerId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Cascade);            
+
+            // Configure all tables and columns to be lowercase for Supabase PostgreSQL compatibility
+            foreach (var entity in builder.Model.GetEntityTypes())
+            {
+                var tableName = entity.GetTableName();
+                if (!string.IsNullOrEmpty(tableName))
+                {
+                    entity.SetTableName(tableName.ToLowerInvariant());
+                }
+
+                foreach (var property in entity.GetProperties())
+                {
+                    property.SetColumnName(property.Name.ToLowerInvariant());
+                }
+
+                foreach (var key in entity.GetKeys())
+                {
+                    var keyName = key.GetName();
+                    if (!string.IsNullOrEmpty(keyName))
+                    {
+                        key.SetName(keyName.ToLowerInvariant());
+                    }
+                }
+
+                foreach (var foreignKey in entity.GetForeignKeys())
+                {
+                    var constraintName = foreignKey.GetConstraintName();
+                    if (!string.IsNullOrEmpty(constraintName))
+                    {
+                        foreignKey.SetConstraintName(constraintName.ToLowerInvariant());
+                    }
+                }
+
+                foreach (var index in entity.GetIndexes())
+                {
+                    var indexName = index.GetDatabaseName();
+                    if (!string.IsNullOrEmpty(indexName))
+                    {
+                        index.SetDatabaseName(indexName.ToLowerInvariant());
+                    }
+                }
+            }
         }
     }
 }
