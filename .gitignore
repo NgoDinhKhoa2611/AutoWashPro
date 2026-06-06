@@ -77,3 +77,8 @@ local.settings.json
 *.md
 *.sql
 !docs/**/*.md
+gha-creds-*.json
+
+# Debug logs
+backend/debug_be.log
+backend/debug_fe.log
