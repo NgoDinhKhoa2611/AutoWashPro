@@ -2,3 +2,77 @@
 Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
     at <anonymous>:1:7
 [6/5/2026, 9:17:32 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/7/2026, 10:39:49 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/7/2026, 10:40:21 AM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/7/2026, 10:44:32 AM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at fetchClaimedVouchers (http://localhost:5173/src/pages/CustomerLoyalty.jsx:127:21)
+    at http://localhost:5173/src/pages/CustomerLoyalty.jsx:136:3
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:12904:13)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:851:66)
+    at commitHookEffectListMount (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6617:153)
+    at commitHookPassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6652:55)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7618:22)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7672:14)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+[6/7/2026, 10:44:40 AM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at fetchClaimedVouchers (http://localhost:5173/src/pages/CustomerLoyalty.jsx:127:21)
+    at http://localhost:5173/src/pages/CustomerLoyalty.jsx:136:3
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:12904:13)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:851:66)
+    at commitHookEffectListMount (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6617:153)
+    at commitHookPassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6652:55)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7618:22)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7672:14)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+[6/7/2026, 10:59:38 AM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at fetchClaimedVouchers (http://localhost:5173/src/pages/CustomerLoyalty.jsx:127:21)
+    at http://localhost:5173/src/pages/CustomerLoyalty.jsx:136:3
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:12904:13)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:851:66)
+    at commitHookEffectListMount (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6617:153)
+    at commitHookPassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6652:55)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7618:22)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7672:14)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+[6/7/2026, 10:59:47 AM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at fetchClaimedVouchers (http://localhost:5173/src/pages/CustomerLoyalty.jsx:127:21)
+    at http://localhost:5173/src/pages/CustomerLoyalty.jsx:136:3
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:12904:13)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:851:66)
+    at commitHookEffectListMount (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6617:153)
+    at commitHookPassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6652:55)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7618:22)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7672:14)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+[6/7/2026, 11:00:58 AM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/7/2026, 11:02:01 AM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at fetchClaimedVouchers (http://localhost:5173/src/pages/CustomerLoyalty.jsx:127:21)
+    at http://localhost:5173/src/pages/CustomerLoyalty.jsx:136:3
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:12904:13)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:851:66)
+    at commitHookEffectListMount (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6617:153)
+    at commitHookPassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:6652:55)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7618:22)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7672:14)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=d12e6a42:7606:5)
+[6/7/2026, 11:02:15 AM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/7/2026, 11:02:15 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/7/2026, 11:02:32 AM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/7/2026, 11:02:33 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/7/2026, 11:02:37 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/7/2026, 11:02:42 AM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/7/2026, 4:55:57 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
