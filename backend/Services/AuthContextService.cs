@@ -27,32 +27,6 @@ namespace Auto_Wash.Services
                     .FirstOrDefaultAsync(a => a.AccountId == accountId.Value && a.IsActive);
             }
 
-            // TODO: In production, use JWT or Secure Auth Token instead of UserEmail/UserPhone plaintext cookies.
-            // Cookie fallback to restore session
-            string? email = httpContext.Request.Cookies["UserEmail"];
-            if (!string.IsNullOrEmpty(email))
-            {
-                var acc = await _context.Accounts
-                    .FirstOrDefaultAsync(a => a.Email == email.Trim() && a.IsActive);
-                if (acc != null)
-                {
-                    httpContext.Session.SetInt32("AccountId", acc.AccountId);
-                    return acc;
-                }
-            }
-
-            string? phone = httpContext.Request.Cookies["UserPhone"];
-            if (!string.IsNullOrEmpty(phone))
-            {
-                var acc = await _context.Accounts
-                    .FirstOrDefaultAsync(a => a.Phone == phone.Trim() && a.IsActive);
-                if (acc != null)
-                {
-                    httpContext.Session.SetInt32("AccountId", acc.AccountId);
-                    return acc;
-                }
-            }
-
             return null;
         }
 

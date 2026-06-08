@@ -24,9 +24,6 @@ export const AdminLayout = () => {
   const handleLogout = () => {
     if (window.showConfirm) {
       window.showConfirm('Đăng xuất Admin', 'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống quản trị AutoWash Pro?', async () => {
-        document.cookie = "UserEmail=; path=/; max-age=0";
-        document.cookie = "UserPhone=; path=/; max-age=0";
-        document.cookie = "UserAvatar=; path=/; max-age=0";
         await logout();
         if (window.showToast) window.showToast('Đăng xuất thành công!', 'success');
         navigate('/login');

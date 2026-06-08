@@ -21,11 +21,23 @@ namespace Auto_Wash.Services
 
         public async Task<Account?> AuthenticateAsync(string identifier, string password)
         {
-            var hash = PasswordHelper.HashPassword(password);
-            return await _context.Accounts
+            var account = await _context.Accounts
                 .FirstOrDefaultAsync(a => (a.Email == identifier.Trim() || a.Phone == identifier.Trim())
-                                          && a.PasswordHash == hash
                                           && a.IsActive);
+
+            if (account == null) return null;
+
+            bool isValid = PasswordHelper.VerifyPassword(password, account.PasswordHash ?? string.Empty);
+            if (!isValid) return null;
+
+            // Soft Migration: If the stored hash is a legacy SHA256 hash, upgrade it to BCrypt on successful login!
+            if (PasswordHelper.IsLegacyHash(account.PasswordHash ?? string.Empty))
+            {
+                account.PasswordHash = PasswordHelper.HashPassword(password);
+                await _context.SaveChangesAsync();
+            }
+
+            return account;
         }
 
         public async Task<Account?> FindByEmailAsync(string email)
@@ -56,6 +68,11 @@ namespace Auto_Wash.Services
                 .FirstOrDefaultAsync(c => c.AccountId == accountId);
         }
 
+        public async Task<Account?> GetAccountByIdAsync(int accountId)
+        {
+            return await _context.Accounts.FirstOrDefaultAsync(a => a.AccountId == accountId);
+        }
+
         private async Task<Customer> CreateDefaultCustomerAsync(Account account)
         {
             var customer = new Customer
@@ -81,9 +98,9 @@ namespace Auto_Wash.Services
                 {
                     await _welcomeRewardService.GrantWelcomeRewardAsync(customer.CustomerId);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Fail-safe to avoid blocking registration if welcome reward fails
+                    Console.WriteLine($"[WELCOME_REWARD_ERROR] CustomerId={customer.CustomerId}, Error={ex.Message}");
                 }
             }
 
@@ -92,15 +109,19 @@ namespace Auto_Wash.Services
 
         public async Task<Account> CompleteGoogleSignupAsync(CompleteGoogleSignupRequestDto request)
         {
-            var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == request.Email.Trim());
+            var emailTrimmed = request.Email.Trim();
+            var googleIdTrimmed = request.GoogleId.Trim();
+            var phoneTrimmed = request.Phone.Trim();
+
+            var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == emailTrimmed);
             if (account == null)
             {
                 account = new Account
                 {
-                    Email = request.Email.Trim(),
+                    Email = emailTrimmed,
                     FullName = request.FullName.Trim(),
-                    GoogleId = request.GoogleId.Trim(),
-                    Phone = request.Phone.Trim(),
+                    GoogleId = googleIdTrimmed,
+                    Phone = phoneTrimmed,
                     PasswordHash = PasswordHelper.HashPassword(request.Password.Trim()),
                     Role = 3, // Customer
                     IsActive = true,
@@ -111,9 +132,26 @@ namespace Auto_Wash.Services
             }
             else
             {
-                account.Phone = request.Phone.Trim();
-                account.GoogleId = request.GoogleId.Trim();
-                account.PasswordHash = PasswordHelper.HashPassword(request.Password.Trim());
+                if (!string.IsNullOrEmpty(account.GoogleId) && account.GoogleId != googleIdTrimmed)
+                {
+                    throw new InvalidOperationException("Tài khoản này đã được liên kết với một tài khoản Google khác!");
+                }
+
+                if (string.IsNullOrEmpty(account.GoogleId))
+                {
+                    account.GoogleId = googleIdTrimmed;
+                }
+
+                if (string.IsNullOrEmpty(account.Phone))
+                {
+                    var existingPhone = await FindByPhoneAsync(phoneTrimmed);
+                    if (existingPhone != null && existingPhone.AccountId != account.AccountId)
+                    {
+                        throw new InvalidOperationException("Số điện thoại này đã được sử dụng bởi một tài khoản khác!");
+                    }
+                    account.Phone = phoneTrimmed;
+                }
+
                 await _context.SaveChangesAsync();
             }
 
@@ -128,11 +166,20 @@ namespace Auto_Wash.Services
 
         public async Task<Account> RegisterAccountAsync(RegisterRequestDto request)
         {
+            var emailTrimmed = request.Email.Trim();
+            var phoneTrimmed = request.Phone.Trim();
+
+            if (await FindByEmailAsync(emailTrimmed) != null)
+                throw new InvalidOperationException("Email này đã được sử dụng!");
+
+            if (await FindByPhoneAsync(phoneTrimmed) != null)
+                throw new InvalidOperationException("Số điện thoại này đã được sử dụng!");
+
             var account = new Account
             {
-                Email = request.Email.Trim(),
+                Email = emailTrimmed,
                 FullName = request.FullName.Trim(),
-                Phone = request.Phone.Trim(),
+                Phone = phoneTrimmed,
                 PasswordHash = PasswordHelper.HashPassword(request.Password.Trim()),
                 Role = 3, // Customer
                 IsActive = true,

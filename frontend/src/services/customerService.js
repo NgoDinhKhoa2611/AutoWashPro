@@ -16,18 +16,10 @@ export const customerService = {
     return response.data;
   },
 
-  verifyEmailAndChangePassword: async (email, otpCode, newPassword) => {
+  verifyEmailAndChangePassword: async (email, otpCode, currentPassword, newPassword) => {
     const response = await api.post('/Customer/VerifyEmailAndChangePassword', {
       Email: email,
       OtpCode: otpCode,
-      NewPassword: newPassword
-    });
-    return response.data;
-  },
-
-  changePasswordWithPhoneOtp: async (phone, currentPassword, newPassword) => {
-    const response = await api.post('/Customer/ChangePasswordWithPhoneOtp', {
-      Phone: phone,
       CurrentPassword: currentPassword,
       NewPassword: newPassword
     });
@@ -95,6 +87,18 @@ export const customerService = {
   markNotificationAsRead: async (id) => {
     const response = await api.post('/Customer/MarkNotificationAsRead', {
       Id: id
+    });
+    return response.data;
+  },
+
+  getRewards: async () => {
+    const response = await api.get('/Customer/GetRewards');
+    return response.data;
+  },
+
+  redeemReward: async (rewardId) => {
+    const response = await api.post('/Customer/RedeemReward', {
+      RewardId: rewardId
     });
     return response.data;
   }

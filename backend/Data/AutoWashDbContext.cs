@@ -33,9 +33,10 @@ namespace Auto_Wash.Data
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
             // 1. OtpVerifications
+
             builder.Entity<OtpVerification>()
-                .HasIndex(o => o.Phone)
-                .HasDatabaseName("idx_otp_email");
+                .HasIndex(o => o.PlateNumber)
+                .HasDatabaseName("idx_otp_platenumber");
 
             // 2. Tiers (No special index or unique keys other than PK)
 

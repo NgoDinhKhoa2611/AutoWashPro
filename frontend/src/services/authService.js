@@ -10,7 +10,12 @@ export const authService = {
   },
 
   logout: async () => {
-    const response = await api.get('/Account/Logout');
+    const response = await api.post('/api/account/logout');
+    return response.data;
+  },
+
+  getCurrentUser: async () => {
+    const response = await api.get('/api/account/me');
     return response.data;
   },
 

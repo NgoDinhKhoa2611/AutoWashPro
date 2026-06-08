@@ -60,5 +60,82 @@ export const adminService = {
       CustomerName: customerName
     });
     return response.data;
+  },
+
+  getServices: async () => {
+    const response = await api.get('/Admin/GetServices');
+    return response.data;
+  },
+
+  saveService: async (service) => {
+    const response = await api.post('/Admin/SaveService', service);
+    return response.data;
+  },
+
+  toggleService: async (id) => {
+    const response = await api.post(`/Admin/ToggleService?id=${id}`);
+    return response.data;
+  },
+
+  deleteService: async (id) => {
+    const response = await api.post(`/Admin/DeleteService?id=${id}`);
+    return response.data;
+  },
+
+  getCustomers: async (search) => {
+    const response = await api.get('/Admin/GetCustomers', { params: { search } });
+    return response.data;
+  },
+
+  getCustomerDetail: async (id) => {
+    const response = await api.get(`/Admin/GetCustomerDetail?id=${id}`);
+    return response.data;
+  },
+
+  adjustCustomerPoints: async (customerId, pointsChange, reason) => {
+    const response = await api.post('/Admin/AdjustCustomerPoints', {
+      CustomerId: customerId,
+      PointsChange: pointsChange,
+      Reason: reason
+    });
+    return response.data;
+  },
+
+  getAvailableVouchers: async () => {
+    const response = await api.get('/Admin/GetAvailableVouchers');
+    return response.data;
+  },
+
+  assignVoucher: async (customerId, rewardId) => {
+    const response = await api.post('/Admin/AssignVoucher', {
+      CustomerId: customerId,
+      RewardId: rewardId
+    });
+    return response.data;
+  },
+
+  getPromotions: async () => {
+    const response = await api.get('/api/admin/promotions');
+    return response.data;
+  },
+
+  createPromotion: async (data) => {
+    const response = await api.post('/api/admin/promotions', data);
+    return response.data;
+  },
+
+  updatePromotion: async (id, data) => {
+    const response = await api.put(`/api/admin/promotions/${id}`, data);
+    return response.data;
+  },
+
+  togglePromotionStatus: async (id) => {
+    const response = await api.patch(`/api/admin/promotions/${id}/toggle`);
+    return response.data;
+  },
+
+  deletePromotion: async (id) => {
+    const response = await api.delete(`/api/admin/promotions/${id}`);
+    return response.data;
   }
 };
