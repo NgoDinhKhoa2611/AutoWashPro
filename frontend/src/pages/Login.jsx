@@ -47,38 +47,36 @@ export const Login = () => {
   const [showFbResendOtp, setShowFbResendOtp] = useState(false);
   const fbOtpTimerRef = useRef(null);
 
+  const googleInitializedRef = useRef(false);
+
   useEffect(() => {
-    // Google Sign-In button rendering inside the login panel
-    const initGoogle = () => {
-      if (window.google && panel === 'login') {
-        window.google.accounts.id.initialize({
-          client_id: "40329422268-s3m1sqlniabg1f8o7roo5pmfckb4j3te.apps.googleusercontent.com",
-          callback: handleGoogleCredential
-        });
-
-        const renderBtns = () => {
-          const containerLogin = document.getElementById("google-login-btn-login");
-          if (containerLogin) {
-            window.google.accounts.id.renderButton(containerLogin, {
-              theme: "outline",
-              size: "large",
-              width: 320,
-              text: "signin_with",
-              shape: "pill",
-              logo_alignment: "left"
-            });
-          }
-        };
-
-        renderBtns();
-        // Fallback timeout in case element rendering is delayed by slide animation transition
-        setTimeout(renderBtns, 300);
-      } else {
-        setTimeout(initGoogle, 100);
-      }
-    };
-
-    if (panel === 'login') {
+    if (panel === 'login' && !googleInitializedRef.current) {
+      const initGoogle = () => {
+        if (window.google) {
+          googleInitializedRef.current = true;
+          window.google.accounts.id.initialize({
+            client_id: "40329422268-s3m1sqlniabg1f8o7roo5pmfckb4j3te.apps.googleusercontent.com",
+            callback: handleGoogleCredential
+          });
+          const renderBtn = () => {
+            const container = document.getElementById("google-login-btn-login");
+            if (container) {
+              window.google.accounts.id.renderButton(container, {
+                theme: "outline",
+                size: "large",
+                width: 320,
+                text: "signin_with",
+                shape: "pill",
+                logo_alignment: "left"
+              });
+            }
+          };
+          renderBtn();
+          setTimeout(renderBtn, 300);
+        } else {
+          setTimeout(initGoogle, 100);
+        }
+      };
       initGoogle();
     }
 
@@ -86,7 +84,7 @@ export const Login = () => {
       clearInterval(otpTimerRef.current);
       clearInterval(fbOtpTimerRef.current);
     };
-  }, [panel, isRegisterActive]);
+  }, [panel]);
 
   // Google callback
   const handleGoogleCredential = async (response) => {

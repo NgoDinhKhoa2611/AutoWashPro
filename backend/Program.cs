@@ -12,6 +12,9 @@ namespace Auto_Wash
     {
         public static async Task Main(string[] args)
         {
+            // All DB columns are "timestamp without time zone"; this makes Npgsql 6+ treat
+            // DateTime values as local timestamps (no UTC conversion) to match that schema.
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
             var builder = WebApplication.CreateBuilder(args);
 
@@ -36,30 +39,11 @@ namespace Auto_Wash
 
             // Register database context
             builder.Services.AddDbContext<AutoWashDbContext>(options =>
-            {
-                var supabaseUrl = builder.Configuration["Supabase:Url"] ?? throw new InvalidOperationException("Supabase Url is not configured.");
-
-                var uri = new Uri(supabaseUrl);
-                var projectRef = uri.Host.Split('.')[0];
-
+            {                
                 var connectionString = $"Host=aws-1-ap-northeast-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.chsdplwgdyfwavepibwo;Password=eUTvJp#-WFvpdu5;SSL Mode=Require;Trust Server Certificate=true";
                 options.UseNpgsql(connectionString)
                        .UseLowerCaseNamingConvention(); // Map tất cả sang lowercase
-            });
-
-            //// Register Supabase Client
-            //builder.Services.AddSingleton(provider =>
-            //{
-            //    var supabaseUrl = builder.Configuration["Supabase:Url"] ?? throw new InvalidOperationException("Supabase Url is not configured.");
-            //    var supabaseKey = builder.Configuration["Supabase:Key"] ?? throw new InvalidOperationException("Supabase Key is not configured.");
-                
-            //    var options = new SupabaseOptions
-            //    {
-            //        AutoRefreshToken = true,
-            //        AutoConnectRealtime = true
-            //    };
-            //    return new Client(supabaseUrl, supabaseKey, options);
-            //});
+            });           
 
             // Register HttpContextAccessor and Services
             builder.Services.AddHttpContextAccessor();

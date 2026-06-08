@@ -8,13 +8,16 @@ namespace Auto_Wash.Data.Entities
     public class OtpVerification
     {
         [Key]
-        public int OtpId { get; set; }
-
-        [MaxLength(10)]
-        public string? Phone { get; set; }
+        public int OtpId { get; set; }        
 
         [MaxLength(150)]
         public string? Email { get; set; }
+
+        [MaxLength(20)]
+        public string? PlateNumber { get; set; }
+
+        [MaxLength(50)]
+        public string? Purpose { get; set; }
 
         [Required]
         [MaxLength(6)]

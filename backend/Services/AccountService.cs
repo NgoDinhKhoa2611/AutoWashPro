@@ -70,7 +70,7 @@ namespace Auto_Wash.Services
                 RankingBalance = 0,
                 TotalVisits = 0,
                 TotalSpend = 0,
-                JoinedAt = DateTime.UtcNow
+                JoinedAt = DateTime.Now
             };
 
             _context.Customers.Add(customer);
@@ -114,7 +114,7 @@ namespace Auto_Wash.Services
                     PasswordHash = PasswordHelper.HashPassword(request.Password.Trim()),
                     Role = 3, // Customer
                     IsActive = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 };
                 _context.Accounts.Add(account);
                 await _context.SaveChangesAsync();
@@ -146,7 +146,7 @@ namespace Auto_Wash.Services
                 PasswordHash = PasswordHelper.HashPassword(request.Password.Trim()),
                 Role = 3, // Customer
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now
             };
 
             // Kiểm tra trùng email

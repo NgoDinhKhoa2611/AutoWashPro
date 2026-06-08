@@ -70,7 +70,7 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                string code = await _otpService.GenerateAndSaveOtpAsync(request.Email, "");
+                string code = await _otpService.GenerateAndSaveOtpAsync(request.Email);
 
                 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
                 {

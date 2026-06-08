@@ -242,7 +242,7 @@ namespace Auto_Wash.Controllers
                     return BadRequest(new { success = false, message = "Email này đã được sử dụng bởi một tài khoản khác!" });
                 }
 
-                string code = await _otpService.GenerateAndSaveOtpAsync(request.Email, "");
+                string code = await _otpService.GenerateAndSaveOtpAsync(request.Email);
 
                 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
                 {

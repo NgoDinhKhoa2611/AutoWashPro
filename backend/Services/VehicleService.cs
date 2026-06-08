@@ -47,14 +47,7 @@ namespace Auto_Wash.Services
             {
                 throw new ArgumentException("Biển số xe không được để trống!");
             }
-            if (normPlate.Length > 10)
-            {
-                throw new ArgumentException("Biển số xe quá dài (tối đa 10 ký tự sau khi chuẩn hóa)!");
-            }
-
-            // TODO: Vehicle OTP currently stores normalized license plate in Phone field to avoid schema change in this phase.
-            // Production should add Purpose + LicensePlate columns to OtpVerification.
-            return await _otpService.GenerateAndSaveOtpAsync(email, normPlate);
+            return await _otpService.GenerateAndSaveOtpAsync(email, plateNumber: normPlate, purpose: "AddVehicle");
         }
 
         public async Task<bool> VerifyVehicleOtpAsync(string email, string code, string licensePlate)
@@ -72,7 +65,7 @@ namespace Auto_Wash.Services
             // TODO: Vehicle OTP currently stores normalized license plate in Phone field to avoid schema change in this phase.
             // Production should add Purpose + LicensePlate columns to OtpVerification.
             var otp = await _context.OtpVerifications
-                .Where(o => o.Email == email.Trim() && o.Code == code.Trim() && o.Phone == normPlate && !o.IsUsed && o.ExpiresAt > DateTime.Now)
+                .Where(o => o.Email == email.Trim() && o.Code == code.Trim() && o.PlateNumber == normPlate && o.Purpose == "AddVehicle" && !o.IsUsed && o.ExpiresAt > DateTime.Now)
                 .OrderByDescending(o => o.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -90,9 +83,9 @@ namespace Auto_Wash.Services
             {
                 throw new ArgumentException("Biển số xe không được để trống!");
             }
-            if (normPlate.Length > 20)
+            if (normPlate.Length > 10)
             {
-                throw new ArgumentException("Biển số xe quá dài (tối đa 20 ký tự sau khi chuẩn hóa)!");
+                throw new ArgumentException("Biển số xe quá dài (tối đa 10 ký tự sau khi chuẩn hóa)!");
             }
             
             // Check duplicate after normalization
@@ -109,8 +102,7 @@ namespace Auto_Wash.Services
                 CustomerId = customerId,
                 LicensePlate = normPlate,
                 Brand = brandType,
-                Name = brandType,
-                RegisteredAt = DateTime.Now
+                Name = brandType                
             };
 
             _context.Vehicles.Add(vehicle);

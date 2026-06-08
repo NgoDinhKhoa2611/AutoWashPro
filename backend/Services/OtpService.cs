@@ -22,7 +22,7 @@ namespace Auto_Wash.Services
             _configuration = configuration;
         }
 
-        public async Task<string> GenerateAndSaveOtpAsync(string email, string phone)
+        public async Task<string> GenerateAndSaveOtpAsync(string email, string? plateNumber = null, string? purpose = null)
         {
             var rnd = new Random();
             string code = rnd.Next(100000, 999999).ToString();
@@ -30,7 +30,8 @@ namespace Auto_Wash.Services
             var otp = new OtpVerification
             {
                 Email = email.Trim(),
-                Phone = phone?.Trim() ?? "",
+                PlateNumber = plateNumber?.Trim(),
+                Purpose = purpose?.Trim(),
                 Code = code,
                 ExpiresAt = DateTime.Now.AddMinutes(5),
                 IsUsed = false,

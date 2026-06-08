@@ -34,7 +34,7 @@ namespace Auto_Wash.Data
 
             // 1. OtpVerifications
             builder.Entity<OtpVerification>()
-                .HasIndex(o => o.Phone)
+                .HasIndex(o => o.Email)
                 .HasDatabaseName("idx_otp_email");
 
             // 2. Tiers (No special index or unique keys other than PK)
