@@ -12,11 +12,13 @@ namespace Auto_Wash.Services
     {
         private readonly AutoWashDbContext _context;
         private readonly WelcomeRewardService _welcomeRewardService;
+        private readonly ILogger<AccountService> _logger;
 
-        public AccountService(AutoWashDbContext context, WelcomeRewardService welcomeRewardService)
+        public AccountService(AutoWashDbContext context, WelcomeRewardService welcomeRewardService, ILogger<AccountService> logger)
         {
             _context = context;
             _welcomeRewardService = welcomeRewardService;
+            _logger = logger;
         }
 
         public async Task<Account?> AuthenticateAsync(string identifier, string password)
@@ -68,11 +70,19 @@ namespace Auto_Wash.Services
                 RankingBalance = 0,
                 TotalVisits = 0,
                 TotalSpend = 0,
-                JoinedAt = DateTime.Now
+                JoinedAt = DateTime.UtcNow
             };
 
             _context.Customers.Add(customer);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException != null)
+            {
+                _logger?.LogError(ex, "CreateDefaultCustomerAsync SaveChanges failed: {Message}", ex.InnerException.Message);
+                throw new InvalidOperationException($"Lưu hồ sơ khách hàng thất bại: {ex.InnerException.Message}");
+            }
 
             // Grant welcome reward if welcome reward service is registered / exists
             if (_welcomeRewardService != null)
@@ -104,7 +114,7 @@ namespace Auto_Wash.Services
                     PasswordHash = PasswordHelper.HashPassword(request.Password.Trim()),
                     Role = 3, // Customer
                     IsActive = true,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.UtcNow
                 };
                 _context.Accounts.Add(account);
                 await _context.SaveChangesAsync();
@@ -128,7 +138,7 @@ namespace Auto_Wash.Services
 
         public async Task<Account> RegisterAccountAsync(RegisterRequestDto request)
         {
-            var account = new Account
+                        var account = new Account
             {
                 Email = request.Email.Trim(),
                 FullName = request.FullName.Trim(),
@@ -136,11 +146,28 @@ namespace Auto_Wash.Services
                 PasswordHash = PasswordHelper.HashPassword(request.Password.Trim()),
                 Role = 3, // Customer
                 IsActive = true,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow
             };
 
+            // Kiểm tra trùng email
+            if (await _context.Accounts.AnyAsync(a => a.Email == account.Email))
+                throw new InvalidOperationException("Email đã tồn tại.");
+
+            // Kiểm tra trùng số điện thoại
+            if (await _context.Accounts.AnyAsync(a => a.Phone == account.Phone))
+                throw new InvalidOperationException("Số điện thoại đã được sử dụng.");
+
             _context.Accounts.Add(account);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException != null)
+            {
+                _logger?.LogError(ex, "RegisterAccountAsync SaveChanges failed: {Message}", ex.InnerException.Message);
+                // Trả về lỗi chi tiết cho caller (controller sẽ chuyển thành 400/500)
+                throw new InvalidOperationException($"Lưu tài khoản thất bại: {ex.InnerException.Message}");
+            }
 
             await CreateDefaultCustomerAsync(account);
 

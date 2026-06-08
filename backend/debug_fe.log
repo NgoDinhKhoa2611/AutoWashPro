@@ -76,3 +76,355 @@ Stack Trace: Error: React has blocked a javascript: URL as a security precaution
 [6/7/2026, 11:02:37 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
 [6/7/2026, 11:02:42 AM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
 [6/7/2026, 4:55:57 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 4:18:48 PM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at u (http://localhost:5023/assets/index-Cd9KuUCv.js:24:119641)
+    at http://localhost:5023/assets/index-Cd9KuUCv.js:24:119769
+    at Bc (http://localhost:5023/assets/index-Cd9KuUCv.js:16:91794)
+    at El (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106942)
+    at Tl (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106826)
+    at El (http://localhost:5023/assets/index-Cd9KuUCv.js:16:107706)
+    at Tl (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106826)
+    at El (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106922)
+    at Tl (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106826)
+    at El (http://localhost:5023/assets/index-Cd9KuUCv.js:16:107706)
+[6/8/2026, 4:18:51 PM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at u (http://localhost:5023/assets/index-Cd9KuUCv.js:24:119641)
+    at http://localhost:5023/assets/index-Cd9KuUCv.js:24:119769
+    at Bc (http://localhost:5023/assets/index-Cd9KuUCv.js:16:91794)
+    at El (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106942)
+    at Tl (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106826)
+    at El (http://localhost:5023/assets/index-Cd9KuUCv.js:16:107706)
+    at Tl (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106826)
+    at El (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106922)
+    at Tl (http://localhost:5023/assets/index-Cd9KuUCv.js:16:106826)
+    at El (http://localhost:5023/assets/index-Cd9KuUCv.js:16:107706)
+[6/8/2026, 4:35:57 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 4:36:23 PM] [ERROR] {"message":"Request failed with status code 400","name":"AxiosError","stack":"AxiosError: Request failed with status code 400\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":400}
+Stack Trace: AxiosError: Request failed with status code 400
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:37:09 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:37:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:37:16 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:37:22 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:37:43 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:37:52 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:38:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:39:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:39:59 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 4:40:01 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 4:40:03 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:40:06 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 4:40:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:40:23 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:41:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:42:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:42:55 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:43:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:44:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:45:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:46:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:47:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:48:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:49:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:50:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:50:12 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 4:50:27 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:50:30 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (http://localhost:5023/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (http://localhost:5023/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (http://localhost:5023/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:51:10 PM] [ERROR] {"message":"Request failed with status code 401","name":"AxiosError","stack":"AxiosError: Request failed with status code 401\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)\n    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"get","url":"/Customer/GetActiveBooking","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":401}
+Stack Trace: AxiosError: Request failed with status code 401
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.getActiveBooking (https://localhost:7069/assets/index-Cd9KuUCv.js:24:2598)
+    at async i (https://localhost:7069/assets/index-Cd9KuUCv.js:24:77496)
+[6/8/2026, 4:51:34 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 4:52:19 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:54:59 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:56:39 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 4:56:45 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 5:08:30 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 5:09:22 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 5:10:19 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 5:10:22 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 5:14:58 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 5:15:34 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 5:17:21 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 5:17:23 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 5:17:44 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 5:18:04 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 5:18:42 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 5:27:22 PM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)\n    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"trankhoa1333@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
+Stack Trace: AxiosError: Request failed with status code 500
+    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
+    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)
+    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)
+    at async Object.sendRegisterOtp (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27348)
+    at async we (https://localhost:7069/assets/index-Cd9KuUCv.js:24:56143)
+[6/8/2026, 6:10:02 PM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at u (https://localhost:7069/assets/index-Cd9KuUCv.js:24:119641)
+    at https://localhost:7069/assets/index-Cd9KuUCv.js:24:119769
+    at Bc (https://localhost:7069/assets/index-Cd9KuUCv.js:16:91794)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106942)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106922)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+[6/8/2026, 6:11:20 PM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at u (https://localhost:7069/assets/index-Cd9KuUCv.js:24:119641)
+    at https://localhost:7069/assets/index-Cd9KuUCv.js:24:119769
+    at Bc (https://localhost:7069/assets/index-Cd9KuUCv.js:16:91794)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106942)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106922)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+[6/8/2026, 6:11:24 PM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at u (https://localhost:7069/assets/index-Cd9KuUCv.js:24:119641)
+    at https://localhost:7069/assets/index-Cd9KuUCv.js:24:119769
+    at Bc (https://localhost:7069/assets/index-Cd9KuUCv.js:16:91794)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106942)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106922)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+[6/8/2026, 6:11:29 PM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at u (https://localhost:7069/assets/index-Cd9KuUCv.js:24:119641)
+    at https://localhost:7069/assets/index-Cd9KuUCv.js:24:119769
+    at Bc (https://localhost:7069/assets/index-Cd9KuUCv.js:16:91794)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106942)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106922)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+[6/8/2026, 7:07:28 PM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at u (https://localhost:7069/assets/index-Cd9KuUCv.js:24:119641)
+    at https://localhost:7069/assets/index-Cd9KuUCv.js:24:119769
+    at Bc (https://localhost:7069/assets/index-Cd9KuUCv.js:16:91794)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106942)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106922)
+    at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
+    at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
+[6/8/2026, 7:08:21 PM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/8/2026, 7:08:22 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
