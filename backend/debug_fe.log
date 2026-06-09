@@ -467,3 +467,62 @@ Stack Trace: Error: React has blocked a javascript: URL as a security precaution
 [6/8/2026, 8:25:52 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
 [6/8/2026, 8:40:18 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
 [6/8/2026, 8:42:19 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/9/2026, 10:29:08 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 10:29:13 AM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/9/2026, 10:29:18 AM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/9/2026, 10:29:19 AM] [ERROR] Lỗi khi gọi API logout: {"message":"Request failed with status code 404","name":"AxiosError","stack":"AxiosError: Request failed with status code 404\n    at settle (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:1738:14)\n    at XMLHttpRequest.onloadend (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2091:4)\n    at Axios$1.request (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2792:37)\n    at async Object.logout (http://localhost:5173/src/services/authService.js:11:20)\n    at async logout (http://localhost:5173/src/hooks/useAuth.jsx:132:4)\n    at async http://localhost:5173/src/layouts/CustomerLayout.jsx:96:5","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/api/account/logout","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":404}
+Stack Trace: AxiosError: Request failed with status code 404
+    at settle (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:1738:14)
+    at XMLHttpRequest.onloadend (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2091:4)
+    at Axios$1.request (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2792:37)
+    at async Object.logout (http://localhost:5173/src/services/authService.js:11:20)
+    at async logout (http://localhost:5173/src/hooks/useAuth.jsx:132:4)
+    at async http://localhost:5173/src/layouts/CustomerLayout.jsx:96:5
+[6/9/2026, 10:43:55 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 10:44:03 AM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/9/2026, 10:48:50 AM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/9/2026, 10:48:51 AM] [ERROR] Lỗi khi gọi API logout: {"message":"Request failed with status code 404","name":"AxiosError","stack":"AxiosError: Request failed with status code 404\n    at settle (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:1738:14)\n    at XMLHttpRequest.onloadend (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2091:4)\n    at Axios$1.request (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2792:37)\n    at async Object.logout (http://localhost:5173/src/services/authService.js:11:20)\n    at async logout (http://localhost:5173/src/hooks/useAuth.jsx:132:4)\n    at async http://localhost:5173/src/layouts/CustomerLayout.jsx:96:5","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/api/account/logout","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":404}
+Stack Trace: AxiosError: Request failed with status code 404
+    at settle (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:1738:14)
+    at XMLHttpRequest.onloadend (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2091:4)
+    at Axios$1.request (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2792:37)
+    at async Object.logout (http://localhost:5173/src/services/authService.js:11:20)
+    at async logout (http://localhost:5173/src/hooks/useAuth.jsx:132:4)
+    at async http://localhost:5173/src/layouts/CustomerLayout.jsx:96:5
+[6/9/2026, 10:55:09 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 11:05:10 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 11:12:55 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 11:42:24 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 12:54:25 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 12:57:45 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 12:57:53 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:07:47 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:10:58 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:17:13 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:23:11 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:23:26 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/9/2026, 7:23:31 PM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/9/2026, 7:23:31 PM] [ERROR] Lỗi khi gọi API logout: {"message":"Request failed with status code 404","name":"AxiosError","stack":"AxiosError: Request failed with status code 404\n    at settle (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:1738:14)\n    at XMLHttpRequest.onloadend (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2091:4)\n    at Axios$1.request (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2792:37)\n    at async Object.logout (http://localhost:5173/src/services/authService.js:11:20)\n    at async logout (http://localhost:5173/src/hooks/useAuth.jsx:132:4)\n    at async http://localhost:5173/src/layouts/CustomerLayout.jsx:96:5","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/api/account/logout","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":404}
+Stack Trace: AxiosError: Request failed with status code 404
+    at settle (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:1738:14)
+    at XMLHttpRequest.onloadend (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2091:4)
+    at Axios$1.request (http://localhost:5173/node_modules/.vite/deps/axios.js?v=ecaa3c7d:2792:37)
+    at async Object.logout (http://localhost:5173/src/services/authService.js:11:20)
+    at async logout (http://localhost:5173/src/hooks/useAuth.jsx:132:4)
+    at async http://localhost:5173/src/layouts/CustomerLayout.jsx:96:5
+[6/9/2026, 7:29:58 PM] [ERROR] The final argument passed to %s changed size between renders. The order and size of this array must remain constant.
+
+Previous: %s
+Incoming: %s useEffect [] []
+[6/9/2026, 7:47:22 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:47:27 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/9/2026, 7:55:37 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:55:45 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/9/2026, 8:03:44 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/9/2026, 9:07:45 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth

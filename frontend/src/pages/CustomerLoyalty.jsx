@@ -77,18 +77,7 @@ export const CustomerLoyalty = () => {
   useEffect(() => {
     fetchClaimedVouchers();
     loadRewards();
-
-    const query = new URLSearchParams(window.location.search);
-    const tab = query.get('tab');
-    if (tab === 'vouchers') {
-      const el = document.getElementById('my-vouchers-section');
-      if (el) {
-        setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 350);
-      }
-    }
-  }, [window.location.search]);
+  }, []);
 
   const handleChangeTier = (tierName) => {
     localStorage.setItem('user_tier', tierName);
@@ -235,14 +224,24 @@ export const CustomerLoyalty = () => {
             </div>
 
             {/* Filter buttons */}
-            <div className="d-flex flex-wrap gap-1.5 mb-4">
+            <div className="d-flex flex-wrap gap-2 mb-4">
               {['Tất cả', 'Giảm giá', 'Dịch vụ', 'Quà tặng'].map(f => (
                 <button
                   key={f}
-                  className={`btn btn-sm px-3.5 py-2 border-0 rounded-pill ${
+                  className={`btn btn-sm border-0 rounded-pill ${
                     activeFilter === f ? 'app-btn-primary text-dark' : 'bg-light text-muted'
                   }`}
-                  style={{ fontSize: '0.75rem' }}
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    width: '110px',
+                    height: '36px',
+                    padding: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
                   onClick={() => setActiveFilter(f)}
                 >
                   {f}
@@ -297,14 +296,21 @@ export const CustomerLoyalty = () => {
         </div>
       </div>
 
-      {/* Claimed Vouchers lists */}
-      {claimedVouchers.length > 0 && (
-        <div className="row g-4 mt-2" id="my-vouchers-section">
-          <div className="col-12 text-start">
-            <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4">
-              <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-                VÍ VOUCHER ĐÃ ĐỔI CỦA TÔI ({claimedVouchers.length})
-              </h5>
+      {/* Claimed Vouchers section — always visible */}
+      <div className="row g-4 mt-2" id="my-vouchers-section">
+        <div className="col-12 text-start">
+          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4">
+            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
+              <i className="fas fa-ticket-alt text-cyan me-2"></i>
+              VÍ VOUCHER CỦA TÔI {claimedVouchers.length > 0 && `(${claimedVouchers.length})`}
+            </h5>
+            {claimedVouchers.length === 0 ? (
+              <div className="text-center py-5 text-muted">
+                <i className="fas fa-ticket-alt fa-3x mb-3" style={{ opacity: 0.18 }}></i>
+                <p className="small mb-0 fw-bold">Bạn chưa có voucher nào.</p>
+                <p className="small">Hãy đổi điểm ở mục phía trên để nhận ưu đãi!</p>
+              </div>
+            ) : (
               <div className="row g-3" id="my-vouchers-grid">
                 {claimedVouchers.map((v, i) => {
                   const isUsed = v.status === 2;
@@ -344,10 +350,10 @@ export const CustomerLoyalty = () => {
                   );
                 })}
               </div>
-            </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Redeem Confirmation Modal */}
       {redeemModalOpen && pendingRedeem && (
