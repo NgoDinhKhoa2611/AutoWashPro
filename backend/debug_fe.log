@@ -428,3 +428,34 @@ Stack Trace: ReferenceError: customerService is not defined
 Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
     at <anonymous>:1:7
 [6/8/2026, 7:08:22 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:40:25 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:40:27 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:40:55 AM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/9/2026, 7:40:56 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:41:37 AM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/9/2026, 7:41:38 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:42:00 AM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/9/2026, 7:42:01 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:42:03 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 7:42:23 AM] [ERROR] {"message":"Request failed with status code 400","name":"AxiosError","stack":"AxiosError: Request failed with status code 400\n    at Bt (http://localhost:5023/assets/index-wdZL5p42.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-wdZL5p42.js:3:15060)\n    at jn.request (http://localhost:5023/assets/index-wdZL5p42.js:5:2128)\n    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-wdZL5p42.js:19:27416)\n    at async Te (http://localhost:5023/assets/index-wdZL5p42.js:24:55325)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/SendRegisterOtp","data":"{\"Email\":\"quoctrinnh.2007@gmail.com\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":400}
+Stack Trace: AxiosError: Request failed with status code 400
+    at Bt (http://localhost:5023/assets/index-wdZL5p42.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-wdZL5p42.js:3:15060)
+    at jn.request (http://localhost:5023/assets/index-wdZL5p42.js:5:2128)
+    at async Object.sendRegisterOtp (http://localhost:5023/assets/index-wdZL5p42.js:19:27416)
+    at async Te (http://localhost:5023/assets/index-wdZL5p42.js:24:55325)
+[6/9/2026, 7:44:58 AM] [ERROR] {"message":"Request failed with status code 400","name":"AxiosError","stack":"AxiosError: Request failed with status code 400\n    at Bt (http://localhost:5023/assets/index-wdZL5p42.js:3:9823)\n    at XMLHttpRequest.g (http://localhost:5023/assets/index-wdZL5p42.js:3:15060)\n    at jn.request (http://localhost:5023/assets/index-wdZL5p42.js:5:2128)\n    at async Object.register (http://localhost:5023/assets/index-wdZL5p42.js:19:27501)\n    at async register (http://localhost:5023/assets/index-wdZL5p42.js:19:30431)\n    at async onClick (http://localhost:5023/assets/index-wdZL5p42.js:24:65816)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/Register","data":"{\"Email\":\"trankhoa1333@gmail.com\",\"FullName\":\"Tran Dang Khoa\",\"Phone\":\"0988625153\",\"Password\":\"123456\",\"OtpCode\":\"144175\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_REQUEST","status":400}
+Stack Trace: AxiosError: Request failed with status code 400
+    at Bt (http://localhost:5023/assets/index-wdZL5p42.js:3:9823)
+    at XMLHttpRequest.g (http://localhost:5023/assets/index-wdZL5p42.js:3:15060)
+    at jn.request (http://localhost:5023/assets/index-wdZL5p42.js:5:2128)
+    at async Object.register (http://localhost:5023/assets/index-wdZL5p42.js:19:27501)
+    at async register (http://localhost:5023/assets/index-wdZL5p42.js:19:30431)
+    at async onClick (http://localhost:5023/assets/index-wdZL5p42.js:24:65816)
+[6/9/2026, 7:45:03 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
