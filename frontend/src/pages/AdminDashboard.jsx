@@ -129,13 +129,13 @@ export const AdminDashboard = () => {
       }
       setLoyaltyConfig(configRes);
 
-      // Generate dynamic predictions based on real limits
-      const reviewRes = [
-        { name: 'Nguyễn Văn A', currentTier: 'Silver Loyalty', rankingBalance: 2150000, predictedTier: 'Gold Loyalty', direction: 'up', reason: 'Tích lũy đạt 2,150 PTS (Ngưỡng Gold: 2,000)' },
-        { name: 'Trần Thị B', currentTier: 'Standard Loyalty', rankingBalance: 580000, predictedTier: 'Silver Loyalty', direction: 'up', reason: 'Tích lũy đạt 580 PTS (Ngưỡng Silver: 500)' },
-        { name: 'Lê Văn C', currentTier: 'Gold Loyalty', rankingBalance: 1200000, predictedTier: 'Silver Loyalty', direction: 'down', reason: 'Tích lũy tụt xuống 1,200 PTS (Dưới ngưỡng Gold: 2,000)' }
-      ];
-      setReviewList(reviewRes);
+      try {
+        const reviewRes = await adminService.tierReview();
+        setReviewList(reviewRes || []);
+      } catch (e) {
+        console.error('Lỗi khi lấy danh sách dự báo thăng hạng:', e);
+        setReviewList([]);
+      }
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu Admin:', err);
     } finally {
@@ -175,11 +175,20 @@ export const AdminDashboard = () => {
       if (window.showToast) {
         window.showToast('Đang chạy xếp hạng định kỳ cho tất cả khách hàng...', 'info');
       }
-      setTimeout(() => {
-        if (window.showToast) {
-          window.showToast('Đã áp dụng thăng/hạ hạng Loyalty thành công cho 3 khách hàng!', 'success');
+      try {
+        const response = await adminService.runTierReview();
+        if (response.success) {
+          if (window.showToast) {
+            window.showToast(`Đã áp dụng thăng/hạ hạng Loyalty thành công (Thăng hạng: ${response.upgrades}, Hạ hạng: ${response.downgrades})!`, 'success');
+          }
+          fetchDashboardData();
+        } else {
+          if (window.showToast) window.showToast('Lỗi khi chạy xếp hạng định kỳ!', 'error');
         }
-      }, 1000);
+      } catch (err) {
+        console.error(err);
+        if (window.showToast) window.showToast('Lỗi kết nối khi chạy xếp hạng định kỳ!', 'error');
+      }
     };
 
     if (window.showConfirm) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/shared.css';
 import '../styles/admin/customers.css';
+import { adminService } from '../services/adminService';
 
 export const AdminCustomers = () => {
   const [customers, setCustomers] = useState([]);
@@ -16,79 +17,37 @@ export const AdminCustomers = () => {
 
   // Voucher assignment states
   const [showVoucherModal, setShowVoucherModal] = useState(false);
-  const [selectedVoucherCode, setSelectedVoucherCode] = useState('WASH10K');
-
-  const availableVouchers = [
-    { code: 'WASH10K', title: 'Voucher Giảm 10.000đ' },
-    { code: 'SILVER10', title: 'Ưu đãi Silver Giảm 10%' },
-    { code: 'GOLD15', title: 'Ưu đãi Gold Giảm 15%' },
-    { code: 'VIP20', title: 'Ưu đãi Platinum Giảm 20%' }
-  ];
+  const [selectedVoucherCode, setSelectedVoucherCode] = useState('');
+  const [vouchersCatalog, setVouchersCatalog] = useState([]);
 
   useEffect(() => {
     loadCustomers();
-    const handleStorage = () => loadCustomers();
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+    loadVouchersCatalog();
+  }, [searchTerm]);
 
-  const loadCustomers = () => {
-    // Loyalty ranking logic Silver: 500-1999, Gold: 2000-4999, Platinum: 5000+
-    const list = [
-      {
-        id: 'cus_01',
-        name: 'Lê Tuấn Kiệt',
-        phone: '0901234567',
-        tier: 'Silver Loyalty',
-        points: 217,
-        joined: '19/05/2026',
-        spend: 2170000,
-        totalWashes: 12,
-        activeVouchersCount: 1,
-        lastActive: 'Hôm nay',
-        vehicles: [{ plate: '51G - 123.45', type: 'Honda Vision' }],
-        history: [
-          { date: '28/05/2026', service: 'Combo Rửa xe cao cấp', price: 85000, status: 'Completed' },
-          { date: '15/05/2026', service: 'Rửa xe phổ thông', price: 35000, status: 'Completed' }
-        ],
-        vouchers: [{ code: 'WASH10K', title: 'Voucher Giảm 10%', status: 'Active' }]
-      },
-      {
-        id: 'cus_02',
-        name: 'Nguyễn Văn A',
-        phone: '0902345678',
-        tier: 'Silver Loyalty',
-        points: 650,
-        joined: '10/05/2026',
-        spend: 6500000,
-        totalWashes: 8,
-        activeVouchersCount: 2,
-        lastActive: '3 ngày trước',
-        vehicles: [{ plate: '51A - 999.99', type: 'SH Mode' }],
-        history: [
-          { date: '22/05/2026', service: 'Combo Rửa xe cao cấp', price: 85000, status: 'Completed' }
-        ],
-        vouchers: []
-      },
-      {
-        id: 'cus_03',
-        name: 'Lê Văn C',
-        phone: '0988888888',
-        tier: 'Gold Loyalty',
-        points: 2150,
-        joined: '01/01/2026',
-        spend: 21500000,
-        totalWashes: 24,
-        activeVouchersCount: 3,
-        lastActive: 'Hôm qua',
-        vehicles: [{ plate: '59 - K1 47278', type: 'Yamaha Exciter' }],
-        history: [
-          { date: '29/05/2026', service: 'Combo Rửa xe cao cấp + Wax nano', price: 110000, status: 'Completed' }
-        ],
-        vouchers: []
+  const loadCustomers = async () => {
+    try {
+      const res = await adminService.getCustomers(searchTerm);
+      if (res && res.success) {
+        setCustomers(res.customers);
       }
-    ];
-    setCustomers(list);
+    } catch (e) {
+      console.error('Failed to load customers', e);
+    }
+  };
+
+  const loadVouchersCatalog = async () => {
+    try {
+      const res = await adminService.getAvailableVouchers();
+      if (res && res.success) {
+        setVouchersCatalog(res.vouchers);
+        if (res.vouchers.length > 0 && !selectedVoucherCode) {
+          setSelectedVoucherCode(res.vouchers[0].code);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load vouchers', e);
+    }
   };
 
   const getTierBadgeClass = (tier) => {
@@ -109,42 +68,61 @@ export const AdminCustomers = () => {
 
   const openVoucherModal = (customer) => {
     setSelectedCustomer(customer);
-    setSelectedVoucherCode('WASH10K');
+    if (vouchersCatalog.length > 0) {
+      setSelectedVoucherCode(vouchersCatalog[0].code);
+    }
     setShowVoucherModal(true);
   };
 
-  const applyPointAdjustment = () => {
+  const applyPointAdjustment = async () => {
     if (!selectedCustomer) return;
 
     const change = adjustPoints * (adjustAction === 'add' ? 1 : -1);
-    const newPts = Math.max(0, selectedCustomer.points + change);
+    try {
+      const res = await adminService.adjustCustomerPoints(
+        Number(selectedCustomer.id),
+        change,
+        adjustReason || 'Điều chỉnh điểm bởi admin'
+      );
 
-    // Dynamic Tier calculation Silver: 500-1999, Gold: 2000-4999, Platinum: 5000+
-    let newTier = 'Standard Loyalty';
-    if (newPts >= 5000) newTier = 'Platinum Loyalty';
-    else if (newPts >= 2000) newTier = 'Gold Loyalty';
-    else if (newPts >= 500) newTier = 'Silver Loyalty';
-
-    const updated = customers.map(c => {
-      if (c.id !== selectedCustomer.id) return c;
-      return { ...c, points: newPts, tier: newTier };
-    });
-
-    setCustomers(updated);
-    if (window.showToast) {
-      window.showToast(`Đã cập nhật thành công ${change > 0 ? '+' : ''}${change} điểm cho ${selectedCustomer.name}!`, 'success');
+      if (res && res.success) {
+        if (window.showToast) {
+          window.showToast(`Đã cập nhật thành công ${change > 0 ? '+' : ''}${change} điểm cho ${selectedCustomer.name}!`, 'success');
+        }
+        loadCustomers();
+        setShowPointsModal(false);
+      } else {
+        if (window.showToast) window.showToast(res.message || 'Không thể cập nhật điểm', 'error');
+      }
+    } catch (e) {
+      console.error('Failed to adjust points', e);
+      if (window.showToast) window.showToast('Lỗi cập nhật điểm', 'error');
     }
-    setShowPointsModal(false);
   };
 
-  const applyVoucherAssign = () => {
+  const applyVoucherAssign = async () => {
     if (!selectedCustomer) return;
-    const vInfo = availableVouchers.find(v => v.code === selectedVoucherCode);
+    const vInfo = vouchersCatalog.find(v => v.code === selectedVoucherCode);
 
-    if (window.showToast) {
-      window.showToast(`Đã gán thành công voucher "${vInfo.title}" cho ${selectedCustomer.name}!`, 'success');
+    try {
+      const res = await adminService.assignVoucher(
+        Number(selectedCustomer.id),
+        Number(selectedVoucherCode)
+      );
+
+      if (res && res.success) {
+        if (window.showToast) {
+          window.showToast(`Đã gán thành công voucher "${vInfo ? vInfo.title : selectedVoucherCode}" cho ${selectedCustomer.name}!`, 'success');
+        }
+        loadCustomers();
+        setShowVoucherModal(false);
+      } else {
+        if (window.showToast) window.showToast(res.message || 'Không thể gán voucher', 'error');
+      }
+    } catch (e) {
+      console.error('Failed to assign voucher', e);
+      if (window.showToast) window.showToast('Lỗi gán voucher', 'error');
     }
-    setShowVoucherModal(false);
   };
 
   const handleExportCustomers = () => {
@@ -153,10 +131,21 @@ export const AdminCustomers = () => {
     }
   };
 
-  const filteredCustomers = customers.filter(c =>
-    (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.phone || '').includes(searchTerm)
-  );
+  const viewCustomerDetail = async (c) => {
+    try {
+      const res = await adminService.getCustomerDetail(Number(c.id));
+      if (res && res.success) {
+        setDetailCustomer(res.customer);
+      } else {
+        if (window.showToast) window.showToast('Không thể tải chi tiết khách hàng', 'error');
+      }
+    } catch (e) {
+      console.error('Failed to load detail', e);
+      if (window.showToast) window.showToast('Lỗi tải chi tiết khách hàng', 'error');
+    }
+  };
+
+  const filteredCustomers = customers; // Already filtered on the backend!
 
   return (
     <div className="container-fluid py-4 text-start">
@@ -238,7 +227,7 @@ export const AdminCustomers = () => {
                       <button
                         className="btn btn-sm bg-light text-muted border-0 p-2 rounded-circle"
                         style={{ width: '32px', height: '32px' }}
-                        onClick={() => setDetailCustomer(c)}
+                        onClick={() => viewCustomerDetail(c)}
                       >
                         <i className="fas fa-user-cog"></i>
                       </button>
@@ -327,7 +316,7 @@ export const AdminCustomers = () => {
               <div className="mb-0 text-start">
                 <label className="form-label small fw-bold text-muted mb-1 font-bold">CHỌN VOUCHER ƯU ĐÃI</label>
                 <select className="form-select bg-light border-0 py-2.5 text-dark fw-bold" value={selectedVoucherCode} onChange={e => setSelectedVoucherCode(e.target.value)}>
-                  {availableVouchers.map(v => <option key={v.code} value={v.code}>{v.title} ({v.code})</option>)}
+                  {vouchersCatalog.map(v => <option key={v.code} value={v.code}>{v.title} ({v.code})</option>)}
                 </select>
               </div>
             </div>

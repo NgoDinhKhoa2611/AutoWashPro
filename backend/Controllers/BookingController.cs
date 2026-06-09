@@ -33,7 +33,7 @@ namespace Auto_Wash.Controllers
                         id = s.ServiceId.ToString(),
                         name = s.ServiceName,
                         desc = s.Description ?? "",
-                        category = s.Category == 1 ? "Rửa xe cơ bản" : s.Category == 2 ? "Rửa xe cao cấp" : s.Category == 3 ? "Rửa xe cao cấp" : "Dịch vụ đi kèm",
+                        category = s.Category == ServiceCategory.Basic ? "Rửa xe cơ bản" : s.Category == ServiceCategory.Premium ? "Rửa xe cao cấp" : s.Category == ServiceCategory.Deluxe ? "Rửa xe cao cấp" : "Dịch vụ đi kèm",
                         price = s.BasePrice,
                         estimatedMinutes = s.EstimatedMinutes,
                         isActive = s.IsActive,
@@ -110,10 +110,10 @@ namespace Auto_Wash.Controllers
                         vehicle = b.Vehicle.LicensePlate,
                         mainService = b.BookingServices.Where(bs => !bs.Service.IsAddOn).Select(bs => bs.Service.ServiceName).FirstOrDefault() ?? "Rửa xe",
                         addons = b.BookingServices.Where(bs => bs.Service.IsAddOn).Select(bs => bs.Service.ServiceName).ToList(),
-                        status = b.Status == (int)BookingStatus.Completed ? "Completed" 
-                               : b.Status == (int)BookingStatus.Pending ? "Booked" 
-                               : b.Status == (int)BookingStatus.Confirmed ? "Confirmed" 
-                               : b.Status == (int)BookingStatus.Cancelled ? "Cancelled" 
+                        status = b.Status == BookingStatus.Completed ? "Completed"
+                               : b.Status == BookingStatus.Pending ? "Booked"
+                               : b.Status == BookingStatus.Confirmed ? "Confirmed"
+                               : b.Status == BookingStatus.Cancelled ? "Cancelled"
                                : "In Progress",
                         bookingDate = b.ScheduledAt.ToString("yyyy-MM-dd"),
                         bookingTime = b.ScheduledAt.ToString("HH:mm"),
@@ -160,18 +160,19 @@ namespace Auto_Wash.Controllers
 
                 var queue = activeBooking.Queues.FirstOrDefault();
                 bool hasQueue = queue != null;
-                string queueStatus = queue?.Status ?? "Waiting";
+                var queueStatusEnum = queue?.Status ?? QueueStatus.Waiting;
+                string queueStatus = queueStatusEnum.ToString();
 
                 int washStep = hasQueue ? 0 : -1;
                 int addonsCount = addons.Count;
                 if (hasQueue)
                 {
-                    if (queueStatus == "Waiting") washStep = 0;
-                    else if (queueStatus == "LPR_Scan") washStep = 1;
-                    else if (queueStatus == "Washing") washStep = 2;
-                    else if (queueStatus == "Addon_Processing") washStep = 2 + (addonsCount > 0 ? 1 : 0);
-                    else if (queueStatus == "Drying") washStep = 2 + addonsCount;
-                    else if (queueStatus == "Completed") washStep = 3 + addonsCount;
+                    if (queueStatusEnum == QueueStatus.Waiting) washStep = 0;
+                    else if (queueStatusEnum == QueueStatus.LPR_Scan) washStep = 1;
+                    else if (queueStatusEnum == QueueStatus.Washing) washStep = 2;
+                    else if (queueStatusEnum == QueueStatus.Addon_Processing) washStep = 2 + (addonsCount > 0 ? 1 : 0);
+                    else if (queueStatusEnum == QueueStatus.Drying) washStep = 2 + addonsCount;
+                    else if (queueStatusEnum == QueueStatus.Completed) washStep = 3 + addonsCount;
                 }
 
                 var bookingData = new

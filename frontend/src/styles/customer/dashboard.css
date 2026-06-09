@@ -23,7 +23,7 @@
 }
 
 .app-card:hover {
-  transform: translateY(-4px) !important;
+  /* transform: translateY(-4px) !important; */
   box-shadow: var(--app-shadow-hover) !important;
   border-color: rgba(14, 165, 233, 0.2) !important;
 }

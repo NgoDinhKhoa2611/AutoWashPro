@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Auto_Wash.Services;
 using Auto_Wash.DTOs.Account;
 using Auto_Wash.Helpers;
+using Auto_Wash.Data.Entities;
 
 namespace Auto_Wash.Controllers
 {
@@ -19,6 +20,46 @@ namespace Auto_Wash.Controllers
             _otpService = otpService;
         }
 
+        private async Task<object> SetupSessionAndBuildResponseAsync(Account account, bool isNewUser = false)
+        {
+            var roleStr = account.Role == AccountRole.Admin ? "admin" : account.Role == AccountRole.Staff ? "staff" : "customer";
+            HttpContext.Session.SetString("UserRole", roleStr);
+            HttpContext.Session.SetString("UserName", account.FullName);
+            HttpContext.Session.SetString("UserEmail", account.Email ?? "");
+            HttpContext.Session.SetInt32("AccountId", account.AccountId);
+
+            string? tier = null;
+            int? points = null;
+            int? customerId = null;
+
+            if (account.Role == AccountRole.Customer)
+            {
+                var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
+                if (customer != null)
+                {
+                    customerId = customer.CustomerId;
+                    tier = customer.Tier?.TierName;
+                    points = customer.PointBalance;
+                    HttpContext.Session.SetInt32("CustomerId", customer.CustomerId);
+                }
+            }
+
+            return new
+            {
+                success = true,
+                isNewUser = isNewUser,
+                role = roleStr,
+                accountId = account.AccountId,
+                customerId = customerId,
+                fullName = account.FullName,
+                name = account.FullName, // backward compatibility
+                email = account.Email,
+                phone = account.Phone,
+                tier = tier ?? "Member",
+                points = points ?? 0
+            };
+        }
+
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
@@ -31,50 +72,8 @@ namespace Auto_Wash.Controllers
                 if (account == null)
                     return Ok(new { success = false, message = "Tài khoản hoặc mật khẩu không đúng!" });
 
-                var roleStr = account.Role == 1 ? "admin" : account.Role == 2 ? "staff" : "customer";
-                HttpContext.Session.SetString("UserRole", roleStr);
-                HttpContext.Session.SetString("UserName", account.FullName);
-                HttpContext.Session.SetString("UserEmail", account.Email ?? "");
-                HttpContext.Session.SetInt32("AccountId", account.AccountId);
-
-                string? tier = null;
-                int? points = null;
-                if (account.Role == 3)
-                {
-                    var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
-                    if (customer != null)
-                    {
-                        tier = customer.Tier?.TierName;
-                        points = customer.PointBalance;
-                    }
-                }
-
-                // Ghi cookies cho an toàn
-                if (!string.IsNullOrEmpty(account.Email))
-                {
-                    Response.Cookies.Append("UserEmail", account.Email, new CookieOptions {
-                        Expires = DateTime.Now.AddDays(7),
-                        SameSite = SameSiteMode.Lax
-                    });
-                }
-                if (!string.IsNullOrEmpty(account.Phone))
-                {
-                    Response.Cookies.Append("UserPhone", account.Phone, new CookieOptions {
-                        Expires = DateTime.Now.AddDays(7),
-                        SameSite = SameSiteMode.Lax
-                    });
-                }
-
-                return Ok(new
-                {
-                    success = true,
-                    role = roleStr,
-                    name = account.FullName,
-                    email = account.Email,
-                    phone = account.Phone,
-                    tier,
-                    points
-                });
+                var responseObj = await SetupSessionAndBuildResponseAsync(account);
+                return Ok(responseObj);
             }
             catch (Exception ex)
             {
@@ -82,12 +81,66 @@ namespace Auto_Wash.Controllers
             }
         }
 
+        [HttpGet]
+        [HttpPost]
+        [Route("Account/Logout")]
+        [Route("api/account/logout")]
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
             Response.Cookies.Delete("UserEmail");
             Response.Cookies.Delete("UserPhone");
-            return Redirect("/login");
+            Response.Cookies.Delete("UserAvatar");
+            return Ok(new { success = true });
+        }
+
+        [HttpGet]
+        [Route("Account/Me")]
+        [Route("api/account/me")]
+        public async Task<IActionResult> Me()
+        {
+            var accountId = HttpContext.Session.GetInt32("AccountId");
+            if (accountId == null)
+            {
+                return Ok(new { isAuthenticated = false });
+            }
+
+            var account = await _accountService.GetAccountByIdAsync(accountId.Value);
+            if (account == null || !account.IsActive)
+            {
+                HttpContext.Session.Clear();
+                return Ok(new { isAuthenticated = false });
+            }
+
+            var roleStr = account.Role == AccountRole.Admin ? "admin" : account.Role == AccountRole.Staff ? "staff" : "customer";
+
+            string? tier = null;
+            int? points = null;
+            int? customerId = null;
+
+            if (account.Role == AccountRole.Customer)
+            {
+                var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
+                if (customer != null)
+                {
+                    customerId = customer.CustomerId;
+                    tier = customer.Tier?.TierName;
+                    points = customer.PointBalance;
+                }
+            }
+
+            return Ok(new
+            {
+                isAuthenticated = true,
+                accountId = account.AccountId,
+                email = account.Email,
+                role = roleStr,
+                customerId = customerId,
+                fullName = account.FullName,
+                phone = account.Phone,
+                tier = tier ?? "Member",
+                points = points ?? 0
+            });
         }
 
         [HttpPost]
@@ -137,45 +190,8 @@ namespace Auto_Wash.Controllers
                     return Ok(new { success = true, isNewUser = true });
                 }
 
-                // Get customer details if customer
-                string? tier = "Member";
-                int points = 0;
-                if (account.Role == 3)
-                {
-                    var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
-                    if (customer != null)
-                    {
-                        tier = customer.Tier?.TierName ?? "Member";
-                        points = customer.PointBalance;
-                    }
-                }
-
-                // Dynamic role assignment
-                var roleStr = account.Role == 1 ? "admin" : account.Role == 2 ? "staff" : "customer";
-                HttpContext.Session.SetString("UserRole", roleStr);
-                HttpContext.Session.SetString("UserName", account.FullName);
-                HttpContext.Session.SetString("UserEmail", account.Email ?? "");
-                HttpContext.Session.SetInt32("AccountId", account.AccountId);
-
-                Response.Cookies.Append("UserEmail", account.Email ?? "", new CookieOptions {
-                    Expires = DateTime.Now.AddDays(7),
-                    SameSite = SameSiteMode.Lax
-                });
-                Response.Cookies.Append("UserPhone", account.Phone, new CookieOptions {
-                    Expires = DateTime.Now.AddDays(7),
-                    SameSite = SameSiteMode.Lax
-                });
-
-                return Ok(new {
-                    success = true,
-                    isNewUser = false,
-                    role = roleStr,
-                    name = account.FullName,
-                    email = account.Email,
-                    phone = account.Phone,
-                    tier = tier,
-                    points = points
-                });
+                var responseObj = await SetupSessionAndBuildResponseAsync(account);
+                return Ok(responseObj);
             }
             catch (Exception ex)
             {
@@ -189,6 +205,11 @@ namespace Auto_Wash.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.GoogleId))
             {
                 return BadRequest(new { success = false, message = "Dữ liệu hoàn thành đăng ký không hợp lệ!" });
+            }
+
+            if (!PhoneHelper.IsValidVietnamesePhone(request.Phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không đúng định dạng Việt Nam (ví dụ: 0912345678)!" });
             }
 
             try
@@ -208,17 +229,8 @@ namespace Auto_Wash.Controllers
                 }
 
                 var account = await _accountService.CompleteGoogleSignupAsync(request);
-
-                Response.Cookies.Append("UserEmail", account.Email ?? "", new CookieOptions {
-                    Expires = DateTime.Now.AddDays(7),
-                    SameSite = SameSiteMode.Lax
-                });
-                Response.Cookies.Append("UserPhone", account.Phone, new CookieOptions {
-                    Expires = DateTime.Now.AddDays(7),
-                    SameSite = SameSiteMode.Lax
-                });
-
-                return Ok(new { success = true });
+                var responseObj = await SetupSessionAndBuildResponseAsync(account);
+                return Ok(responseObj);
             }
             catch (Exception ex)
             {
@@ -242,7 +254,7 @@ namespace Auto_Wash.Controllers
                     return BadRequest(new { success = false, message = "Email này đã được sử dụng bởi một tài khoản khác!" });
                 }
 
-                string code = await _otpService.GenerateAndSaveOtpAsync(request.Email, "");
+                string code = await _otpService.GenerateAndSaveOtpAsync(request.Email, "Register");
 
                 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
                 {
@@ -289,9 +301,14 @@ namespace Auto_Wash.Controllers
                 return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ tất cả các trường và mã OTP!" });
             }
 
+            if (!PhoneHelper.IsValidVietnamesePhone(request.Phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không đúng định dạng Việt Nam (ví dụ: 0912345678)!" });
+            }
+
             try
             {
-                bool otpValid = await _otpService.VerifyOtpAsync(request.Email, request.OtpCode);
+                bool otpValid = await _otpService.VerifyOtpAsync(request.Email, request.OtpCode, "Register");
                 if (!otpValid)
                 {
                     return BadRequest(new { success = false, message = "Mã OTP không hợp lệ hoặc đã hết hạn!" });
@@ -310,26 +327,8 @@ namespace Auto_Wash.Controllers
                 }
 
                 var account = await _accountService.RegisterAccountAsync(request);
-
-                Response.Cookies.Append("UserEmail", account.Email ?? "", new CookieOptions {
-                    Expires = DateTime.Now.AddDays(7),
-                    SameSite = SameSiteMode.Lax
-                });
-                Response.Cookies.Append("UserPhone", account.Phone, new CookieOptions {
-                    Expires = DateTime.Now.AddDays(7),
-                    SameSite = SameSiteMode.Lax
-                });
-
-                return Ok(new
-                {
-                    success = true,
-                    role = "customer",
-                    name = account.FullName,
-                    email = account.Email,
-                    phone = account.Phone,
-                    tier = "Member",
-                    points = 0
-                });
+                var responseObj = await SetupSessionAndBuildResponseAsync(account);
+                return Ok(responseObj);
             }
             catch (Exception ex)
             {

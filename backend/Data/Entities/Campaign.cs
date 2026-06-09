@@ -23,9 +23,9 @@ namespace Auto_Wash.Data.Entities
         [Column(TypeName = "decimal(4,2)")]
         public decimal? BonusPointMultiplier { get; set; }
 
-        public DateTime StartDate { get; set; }
+        public DateOnly StartDate { get; set; }
 
-        public DateTime EndDate { get; set; }
+        public DateOnly EndDate { get; set; }
 
         public int Status { get; set; } = 0;
 

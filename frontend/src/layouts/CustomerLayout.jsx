@@ -25,8 +25,7 @@ export const CustomerLayout = () => {
   const activeNav = location.pathname.startsWith('/customer/dashboard') ? 'dashboard' :
                     location.pathname.startsWith('/customer/booking') ? 'booking' :
                     location.pathname.startsWith('/customer/vehicles') ? 'vehicles' :
-                    location.pathname.startsWith('/customer/loyalty') ? 
-                      (location.search.includes('tab=vouchers') ? 'vouchers' : 'loyalty') :
+                    location.pathname.startsWith('/customer/loyalty') ? 'loyalty' :
                     location.pathname.startsWith('/customer/history') ? 'history' :
                     location.pathname.startsWith('/customer/profile') ? 'profile' : 'dashboard';
 
@@ -109,10 +108,6 @@ export const CustomerLayout = () => {
   const handleLogout = () => {
     if (window.showConfirm) {
       window.showConfirm('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất khỏi AutoWash Pro?', async () => {
-        // Xoá cookie bằng js
-        document.cookie = "UserEmail=; path=/; max-age=0";
-        document.cookie = "UserPhone=; path=/; max-age=0";
-        document.cookie = "UserAvatar=; path=/; max-age=0";
         await logout();
         if (window.showToast) window.showToast('Đăng xuất thành công!', 'success');
         navigate('/login');
@@ -178,10 +173,7 @@ export const CustomerLayout = () => {
             <i className="fas fa-motorcycle"></i><span>Phương tiện của tôi</span>
           </Link>
           <Link to="/customer/loyalty" className={`customer-sidebar-link ${activeNav === 'loyalty' ? 'active' : ''}`}>
-            <i className="fas fa-crown"></i><span>AutoWash Loyalty</span>
-          </Link>
-          <Link to="/customer/loyalty?tab=vouchers" className={`customer-sidebar-link ${activeNav === 'vouchers' ? 'active' : ''}`}>
-            <i className="fas fa-ticket-alt"></i><span>Ví Voucher</span>
+            <i className="fas fa-crown"></i><span>Loyalty & Voucher</span>
           </Link>
           <Link to="/customer/history" className={`customer-sidebar-link ${activeNav === 'history' ? 'active' : ''}`}>
             <i className="fas fa-history"></i><span>Lịch sử & Đánh giá</span>
@@ -213,7 +205,7 @@ export const CustomerLayout = () => {
               {activeNav === 'dashboard' ? 'Dashboard' :
                activeNav === 'booking' ? 'Đặt lịch rửa xe' :
                activeNav === 'vehicles' ? 'Phương tiện của tôi' :
-               activeNav === 'loyalty' ? 'Tích điểm & Ưu đãi' :
+               activeNav === 'loyalty' ? 'AutoWash Loyalty & Voucher' :
                activeNav === 'history' ? 'Lịch sử rửa xe' : 'Hồ sơ của tôi'}
             </h5>
           </div>
