@@ -43,6 +43,11 @@ export const CustomerProfile = () => {
       return;
     }
 
+    if (profilePhone && !/^0(3[2-9]|5[2569]|7[06-9]|8[1-9]|9[0-9])\d{7}$/.test(profilePhone.trim())) {
+      if (window.showToast) window.showToast('Số điện thoại không hợp lệ! Vui lòng nhập đúng số di động Việt Nam (ví dụ: 0912345678).', 'warning');
+      return;
+    }
+
     setProfileLoading(true);
     try {
       const response = await customerService.updateProfile(profileName, profilePhone);

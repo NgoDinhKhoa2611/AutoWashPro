@@ -187,8 +187,8 @@ export const Login = () => {
       return;
     }
     const cleanPhone = regPhone.trim();
-    if (!/^0\d{9}$/.test(cleanPhone)) {
-      if (window.showToast) window.showToast('Số điện thoại không hợp lệ! Vui lòng nhập 10 chữ số bắt đầu bằng số 0.', 'warning');
+    if (!/^0(3[2-9]|5[2569]|7[06-9]|8[1-9]|9[0-9])\d{7}$/.test(cleanPhone)) {
+      if (window.showToast) window.showToast('Số điện thoại không hợp lệ! Vui lòng nhập đúng số di động Việt Nam (ví dụ: 0912345678).', 'warning');
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -326,8 +326,8 @@ export const Login = () => {
     }
 
     const cleanPhone = completePhone.replace(/[-\s]/g, '');
-    if (!/^0\d{9}$/.test(cleanPhone)) {
-      if (window.showToast) window.showToast('Số điện thoại không hợp lệ! Định dạng 10 chữ số.', 'warning');
+    if (!/^0(3[2-9]|5[2569]|7[06-9]|8[1-9]|9[0-9])\d{7}$/.test(cleanPhone)) {
+      if (window.showToast) window.showToast('Số điện thoại không hợp lệ! Vui lòng nhập đúng số di động Việt Nam (ví dụ: 0912345678).', 'warning');
       return;
     }
     if (completePassword !== completeConfirm) {
