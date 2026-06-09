@@ -17,7 +17,7 @@ namespace Auto_Wash.Data.Entities
         [MaxLength(500)]
         public string? Description { get; set; }
 
-        public int Category { get; set; } // 1=Basic | 2=Premium | 3=Deluxe | 4=AddOn
+        public ServiceCategory Category { get; set; }
 
         public int BasePrice { get; set; }
 

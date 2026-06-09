@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Auto_Wash.Data;
-using Supabase;
 using Auto_Wash.Data.Entities;
 using Auto_Wash.Services;
 using Auto_Wash.Helpers;
@@ -30,20 +29,31 @@ namespace Auto_Wash
             {
                 options.AddPolicy("ReactPolicy", policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173")
+                    policy.WithOrigins(
+                              "http://localhost:5173",
+                              "http://127.0.0.1:5173",
+                              "http://localhost:3000"
+                          )
                           .AllowAnyMethod()
                           .AllowAnyHeader()
                           .AllowCredentials();
                 });
             });
 
-            // Register database context
             builder.Services.AddDbContext<AutoWashDbContext>(options =>
-            {                
-                var connectionString = $"Host=aws-1-ap-northeast-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.chsdplwgdyfwavepibwo;Password=eUTvJp#-WFvpdu5;SSL Mode=Require;Trust Server Certificate=true";
-                options.UseNpgsql(connectionString)
-                       .UseLowerCaseNamingConvention(); // Map tất cả sang lowercase
-            });           
+            {
+                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+                options.UseNpgsql(connectionString, npgsqlOpts =>
+                {
+                    npgsqlOpts.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorCodesToAdd: null);
+                })
+                .UseLowerCaseNamingConvention();
+            });
 
             // Register HttpContextAccessor and Services
             builder.Services.AddHttpContextAccessor();
@@ -54,6 +64,8 @@ namespace Auto_Wash
             builder.Services.AddScoped<WelcomeRewardService>();
             builder.Services.AddScoped<Auto_Wash.Services.BookingService>();
             builder.Services.AddScoped<AdminQueueService>();
+            builder.Services.AddScoped<CustomerService>();
+            builder.Services.AddScoped<AdminService>();
 
             // Session support
             builder.Services.AddDistributedMemoryCache();
@@ -62,11 +74,11 @@ namespace Auto_Wash
                 options.IdleTimeout = TimeSpan.FromHours(8);
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
             });
 
             var app = builder.Build();
-
-
 
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
@@ -74,11 +86,16 @@ namespace Auto_Wash
                 app.UseHsts();
                 app.UseHttpsRedirection();
             }
+
             app.UseDefaultFiles(); // Enables serving index.html as default page
             app.UseStaticFiles();
-            app.UseSession();
+
             app.UseRouting();
+
             app.UseCors("ReactPolicy");
+
+            app.UseSession();
+
             app.UseAuthorization();
 
             app.MapControllerRoute(
@@ -87,24 +104,7 @@ namespace Auto_Wash
             
             app.MapFallbackToFile("index.html"); // Fallback for React Router client routes
 
-            if (app.Environment.IsDevelopment())
-            {
-                app.Lifetime.ApplicationStarted.Register(() =>
-                {
-                    try
-                    {
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                        {
-                            FileName = "http://localhost:5023",
-                            UseShellExecute = true
-                        });
-                    }
-                    catch { }
-                });
-            }
-
             await app.RunAsync();
         }
-        }
+    }
 }
-

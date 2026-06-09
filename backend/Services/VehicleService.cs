@@ -47,7 +47,12 @@ namespace Auto_Wash.Services
             {
                 throw new ArgumentException("Biển số xe không được để trống!");
             }
-            return await _otpService.GenerateAndSaveOtpAsync(email, plateNumber: normPlate, purpose: "AddVehicle");
+            if (normPlate.Length > 10)
+            {
+                throw new ArgumentException("Biển số xe quá dài (tối đa 10 ký tự sau khi chuẩn hóa)!");
+            }
+
+            return await _otpService.GenerateAndSaveOtpAsync(email, "AddVehicle", normPlate);
         }
 
         public async Task<bool> VerifyVehicleOtpAsync(string email, string code, string licensePlate)
@@ -62,18 +67,7 @@ namespace Auto_Wash.Services
                 return false;
             }
 
-            // TODO: Vehicle OTP currently stores normalized license plate in Phone field to avoid schema change in this phase.
-            // Production should add Purpose + LicensePlate columns to OtpVerification.
-            var otp = await _context.OtpVerifications
-                .Where(o => o.Email == email.Trim() && o.Code == code.Trim() && o.PlateNumber == normPlate && o.Purpose == "AddVehicle" && !o.IsUsed && o.ExpiresAt > DateTime.Now)
-                .OrderByDescending(o => o.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            if (otp == null) return false;
-
-            otp.IsUsed = true;
-            await _context.SaveChangesAsync();
-            return true;
+            return await _otpService.VerifyOtpAsync(email, code, "AddVehicle", normPlate);
         }
 
         public async Task SaveVehicleAsync(int customerId, string licensePlate, string? type)

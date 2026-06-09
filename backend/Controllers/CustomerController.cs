@@ -1,34 +1,23 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Auto_Wash.Data;
-using Auto_Wash.Data.Entities;
 using Auto_Wash.Services;
-using Auto_Wash.DTOs.Booking;
-using Auto_Wash.Helpers;
 
 namespace Auto_Wash.Controllers
 {
     public class CustomerController : Controller
     {
-        private readonly AutoWashDbContext _context;
+        private readonly CustomerService _customerService;
         private readonly AuthContextService _authContextService;
         private readonly OtpService _otpService;
-        private readonly Auto_Wash.Services.BookingService _bookingService;
 
-        // TODO: Refactor direct DbContext querying in CustomerController actions into a service class.
-        public CustomerController(AutoWashDbContext context, 
+        public CustomerController(CustomerService customerService, 
                                   AuthContextService authContextService, 
-                                  OtpService otpService,
-                                  Auto_Wash.Services.BookingService bookingService)
+                                  OtpService otpService)
         {
-            _context = context;
+            _customerService = customerService;
             _authContextService = authContextService;
             _otpService = otpService;
-            _bookingService = bookingService;
         }
 
         [HttpPost]
@@ -47,12 +36,13 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                account.FullName = request.FullName.Trim();
-                account.Phone = request.Phone?.Trim() ?? string.Empty;
+                bool success = await _customerService.UpdateProfileAsync(account.AccountId, request.FullName, request.Phone);
+                if (!success)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy tài khoản!" });
+                }
 
-                await _context.SaveChangesAsync();
-
-                return Ok(new { success = true, message = "Cập nhật hồ sơ thành công vào cơ sở dữ liệu!" });
+                return Ok(new { success = true, message = "Cập nhật hồ sơ thành công!" });
             }
             catch (Exception ex)
             {
@@ -70,15 +60,37 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                string code = await _otpService.GenerateAndSaveOtpAsync(request.Email);
+                string code = await _otpService.GenerateAndSaveOtpAsync(request.Email, "ForgotPassword");
 
-                if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-                {
-                    Console.WriteLine("\n==============================================");
-                    Console.WriteLine($"[EMAIL OTP SIMULATION] To: {request.Email}");
-                    Console.WriteLine($"Code: {code} (Valid for 5 minutes)");
-                    Console.WriteLine("==============================================\n");
-                }
+                string subject = "AutoWash Pro - Xác thực đổi mật khẩu";
+                string body = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #cbd5e1; border-radius: 12px; background-color: #f8fafc;'>
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h2 style='color: #0f172a; margin: 0;'>AutoWash <span style='color: #06b6d4;'>Pro</span></h2>
+                    <p style='color: #64748b; font-size: 0.85rem; margin: 5px 0 0 0;'>Hệ Thống Quản Lý Rửa Xe Thông Minh</p>
+                </div>
+
+                <hr style='border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;' />
+
+                <p style='color: #334155;'>Xin chào,</p>
+                <p style='color: #334155;'>Bạn đang thực hiện đổi mật khẩu tại AutoWash Pro.</p>
+                <p style='color: #334155;'>Vui lòng sử dụng mã xác thực OTP 6 chữ số dưới đây để hoàn tất thủ tục:</p>
+
+                <div style='text-align: center; margin: 30px 0;'>
+                    <span style='font-size: 2rem; font-weight: bold; letter-spacing: 5px; color: #06b6d4; background-color: #0f172a; padding: 10px 25px; border-radius: 8px; display: inline-block;'>{code}</span>
+                </div>
+
+                <p style='color: #64748b; font-size: 0.8rem; text-align: center;'>
+                    Mã OTP này có giá trị trong vòng 5 phút và chỉ được sử dụng một lần. Vui lòng không cung cấp mã này cho bất kỳ ai.
+                </p>
+
+                <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;' />
+                <p style='font-size: 0.8rem; color: #64748b; text-align: center;'>
+                    Đây là email tự động từ hệ thống AutoWash Pro. Vui lòng không trả lời email này.
+                </p>
+            </div>";
+
+                await _otpService.SendEmailOtpAsync(request.Email.Trim(), subject, body);
 
                 return Ok(new { success = true, message = $"Mã OTP đã được gửi đến email {request.Email}!" });
             }
@@ -98,66 +110,19 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                bool otpValid = await _otpService.VerifyOtpAsync(request.Email, request.OtpCode);
-                if (!otpValid)
+                var result = await _customerService.VerifyEmailAndChangePasswordAsync(request.Email, request.OtpCode, request.CurrentPassword ?? "", request.NewPassword, _otpService);
+                if (!result.success)
                 {
-                    return BadRequest(new { success = false, message = "Mã OTP không hợp lệ hoặc đã hết hạn!" });
+                    return BadRequest(new { success = false, message = result.message });
                 }
 
-                var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == request.Email.Trim());
-                if (account == null)
-                {
-                    return NotFound(new { success = false, message = "Không tìm thấy tài khoản tương ứng!" });
-                }
-
-                account.PasswordHash = PasswordHelper.HashPassword(request.NewPassword.Trim());
-                await _context.SaveChangesAsync();
-
-                return Ok(new { success = true, message = "Thay đổi mật khẩu thành công!" });
+                return Ok(new { success = true, message = result.message });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
-
-        [HttpPost]
-        public async Task<IActionResult> ChangePasswordWithPhoneOtp([FromBody] ChangePasswordWithPhoneOtpRequest request)
-        {
-            if (request == null || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.NewPassword))
-            {
-                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ!" });
-            }
-
-            try
-            {
-                var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Phone == request.Phone.Trim());
-                if (account == null)
-                {
-                    return NotFound(new { success = false, message = "Không tìm thấy tài khoản tương ứng!" });
-                }
-
-                if (!string.IsNullOrEmpty(request.CurrentPassword))
-                {
-                    string hashedCurr = PasswordHelper.HashPassword(request.CurrentPassword.Trim());
-                    if (account.PasswordHash != hashedCurr)
-                    {
-                        return BadRequest(new { success = false, message = "Mật khẩu hiện tại không chính xác!" });
-                    }
-                }
-
-                account.PasswordHash = PasswordHelper.HashPassword(request.NewPassword.Trim());
-                await _context.SaveChangesAsync();
-
-                return Ok(new { success = true, message = "Thay đổi mật khẩu thành công!" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
-
-
 
         [HttpGet]
         public async Task<IActionResult> GetVouchers()
@@ -170,23 +135,7 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                var vouchers = await _context.RewardRedemptions
-                    .Include(r => r.Reward)
-                    .Where(r => r.CustomerId == customer.CustomerId)
-                    .OrderByDescending(r => r.RedeemedAt)
-                    .Select(r => new
-                    {
-                        redemptionId = r.RedemptionId,
-                        title = r.Reward.RewardName,
-                        code = r.Reward.PointCost == 0 ? $"WELCOME10-{customer.CustomerId}" : $"AW-RED-{r.RedemptionId}",
-                        rewardType = r.Reward.RewardType,
-                        rewardValue = r.Reward.DiscountValue,
-                        status = r.Status == "Active" ? 1 : 2, // 1 = Available, 2 = Used
-                        redeemedAt = r.RedeemedAt.ToString("dd/MM/yyyy"),
-                        expiredAt = r.ExpiresAt.ToString("dd/MM/yyyy")
-                    })
-                    .ToListAsync();
-
+                var vouchers = await _customerService.GetVouchersAsync(customer.CustomerId);
                 return Ok(new { success = true, vouchers });
             }
             catch (Exception ex)
@@ -206,20 +155,7 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                var list = await _context.Notifications
-                    .Where(n => n.CustomerId == customer.CustomerId)
-                    .OrderByDescending(n => n.CreatedAt)
-                    .Select(n => new
-                    {
-                        id = n.NotificationId.ToString(),
-                        title = n.Title,
-                        body = n.Message,
-                        time = "Vừa xong", // Can map dynamically or use formatted date
-                        type = n.Type,
-                        read = n.IsRead
-                    })
-                    .ToListAsync();
-
+                var list = await _customerService.GetNotificationsAsync(customer.CustomerId);
                 return Ok(new { success = true, notifications = list });
             }
             catch (Exception ex)
@@ -239,14 +175,7 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                var notif = await _context.Notifications
-                    .FirstOrDefaultAsync(n => n.NotificationId == request.Id && n.CustomerId == customer.CustomerId);
-                if (notif != null)
-                {
-                    notif.IsRead = true;
-                    await _context.SaveChangesAsync();
-                }
-
+                await _customerService.MarkNotificationAsReadAsync(customer.CustomerId, request.Id);
                 return Ok(new { success = true });
             }
             catch (Exception ex)
@@ -254,6 +183,55 @@ namespace Auto_Wash.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRewards()
+        {
+            try
+            {
+                var rewards = await _customerService.GetRewardsAsync();
+                return Ok(new { success = true, rewards });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RedeemReward([FromBody] RedeemRewardRequest request)
+        {
+            var customer = await _authContextService.GetCurrentCustomerAsync();
+            if (customer == null)
+            {
+                return Unauthorized(new { success = false, message = "Bạn chưa đăng nhập!" });
+            }
+
+            if (request == null || request.RewardId <= 0)
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ!" });
+            }
+
+            try
+            {
+                var result = await _customerService.RedeemRewardAsync(customer.CustomerId, request.RewardId);
+                if (!result.success)
+                {
+                    return BadRequest(new { success = false, message = result.message });
+                }
+
+                return Ok(new { success = true, message = result.message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+    }
+
+    public class RedeemRewardRequest
+    {
+        public int RewardId { get; set; }
     }
 
     public class MarkNotificationRequest
@@ -276,12 +254,6 @@ namespace Auto_Wash.Controllers
     {
         public string Email { get; set; } = string.Empty;
         public string OtpCode { get; set; } = string.Empty;
-        public string NewPassword { get; set; } = string.Empty;
-    }
-
-    public class ChangePasswordWithPhoneOtpRequest
-    {
-        public string Phone { get; set; } = string.Empty;
         public string? CurrentPassword { get; set; }
         public string NewPassword { get; set; } = string.Empty;
     }

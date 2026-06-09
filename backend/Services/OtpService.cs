@@ -22,20 +22,22 @@ namespace Auto_Wash.Services
             _configuration = configuration;
         }
 
-        public async Task<string> GenerateAndSaveOtpAsync(string email, string? plateNumber = null, string? purpose = null)
+        public async Task<string> GenerateAndSaveOtpAsync(string email, string purpose, string? plateNumber = null)
         {
             var rnd = new Random();
             string code = rnd.Next(100000, 999999).ToString();
 
+            var now = DateTime.UtcNow;
+
             var otp = new OtpVerification
             {
                 Email = email.Trim(),
+                Purpose = purpose.Trim(),
                 PlateNumber = plateNumber?.Trim(),
-                Purpose = purpose?.Trim(),
                 Code = code,
-                ExpiresAt = DateTime.Now.AddMinutes(5),
+                ExpiresAt = now.AddMinutes(5),
                 IsUsed = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = now
             };
 
             _context.OtpVerifications.Add(otp);
@@ -44,10 +46,29 @@ namespace Auto_Wash.Services
             return code;
         }
 
-        public async Task<bool> VerifyOtpAsync(string email, string code)
+        public async Task<bool> VerifyOtpAsync(string email, string code, string purpose, string? plateNumber = null)
         {
-            var otp = await _context.OtpVerifications
-                .Where(o => o.Email == email.Trim() && o.Code == code.Trim() && !o.IsUsed && o.ExpiresAt > DateTime.Now)
+            var now = DateTime.UtcNow;
+
+            var query = _context.OtpVerifications
+                .Where(o =>
+                    o.Email == email.Trim() &&
+                    o.Code == code.Trim() &&
+                    !o.IsUsed &&
+                    o.ExpiresAt > now
+                );
+
+            if (!string.IsNullOrEmpty(purpose))
+            {
+                query = query.Where(o => o.Purpose == purpose.Trim());
+            }
+
+            if (!string.IsNullOrEmpty(plateNumber))
+            {
+                query = query.Where(o => o.PlateNumber == plateNumber.Trim());
+            }
+
+            var otp = await query
                 .OrderByDescending(o => o.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -66,8 +87,6 @@ namespace Auto_Wash.Services
                 var smtpPortStr = _configuration["Smtp:Port"] ?? "587";
                 int smtpPort = int.TryParse(smtpPortStr, out var port) ? port : 587;
                 var smtpUser = _configuration["Smtp:Username"] ?? "";
-                
-                // Read password from configuration (supports User Secrets, Environment Variables, appsettings)
                 var smtpPass = _configuration["Smtp:Password"] ?? "";
                 var fromEmail = _configuration["Smtp:FromEmail"] ?? "autowashpro.service@gmail.com";
 
@@ -90,8 +109,8 @@ namespace Auto_Wash.Services
 
                 using (var client = new SmtpClient())
                 {
-                    var socketOption = smtpPort == 465 
-                        ? SecureSocketOptions.SslOnConnect 
+                    var socketOption = smtpPort == 465
+                        ? SecureSocketOptions.SslOnConnect
                         : SecureSocketOptions.StartTls;
 
                     await client.ConnectAsync(smtpHost, smtpPort, socketOption);

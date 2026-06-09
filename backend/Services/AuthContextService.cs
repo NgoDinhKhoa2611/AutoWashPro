@@ -27,39 +27,13 @@ namespace Auto_Wash.Services
                     .FirstOrDefaultAsync(a => a.AccountId == accountId.Value && a.IsActive);
             }
 
-            // TODO: In production, use JWT or Secure Auth Token instead of UserEmail/UserPhone plaintext cookies.
-            // Cookie fallback to restore session
-            string? email = httpContext.Request.Cookies["UserEmail"];
-            if (!string.IsNullOrEmpty(email))
-            {
-                var acc = await _context.Accounts
-                    .FirstOrDefaultAsync(a => a.Email == email.Trim() && a.IsActive);
-                if (acc != null)
-                {
-                    httpContext.Session.SetInt32("AccountId", acc.AccountId);
-                    return acc;
-                }
-            }
-
-            string? phone = httpContext.Request.Cookies["UserPhone"];
-            if (!string.IsNullOrEmpty(phone))
-            {
-                var acc = await _context.Accounts
-                    .FirstOrDefaultAsync(a => a.Phone == phone.Trim() && a.IsActive);
-                if (acc != null)
-                {
-                    httpContext.Session.SetInt32("AccountId", acc.AccountId);
-                    return acc;
-                }
-            }
-
             return null;
         }
 
         public async Task<Customer?> GetCurrentCustomerAsync()
         {
             var account = await GetCurrentAccountAsync();
-            if (account == null || account.Role != 3 || !account.IsActive) return null;
+            if (account == null || account.Role != AccountRole.Customer || !account.IsActive) return null;
 
             return await _context.Customers
                 .Include(c => c.Tier)

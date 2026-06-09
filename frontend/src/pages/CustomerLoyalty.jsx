@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/shared.css';
 import '../styles/customer/loyalty.css';
+import { customerService } from '../services/customerService';
 
 const TIER_DATA = {
   'Standard Member': {
@@ -42,20 +43,11 @@ const TIER_DATA = {
   }
 };
 
-const ALL_REWARDS = [
-  { rewardId: 1, rewardName: 'Voucher giảm 10%', description: 'Áp dụng cho mọi hóa đơn rửa xe.', pointsRequired: 100, rewardType: 'DiscountPercent', rewardValue: 10, isActive: 1, icon: 'fa-percent' },
-  { rewardId: 2, rewardName: 'Miễn phí rửa vỏ bọt tuyết', description: 'Tặng 1 lần rửa vỏ ngoài bọt tuyết.', pointsRequired: 200, rewardType: 'FreeWash', rewardValue: 100000, isActive: 1, icon: 'fa-soap' },
-  { rewardId: 3, rewardName: 'Voucher giảm 20%', description: 'Áp dụng cho khách hàng Gold & Platinum.', pointsRequired: 500, rewardType: 'DiscountPercent', rewardValue: 20, isActive: 1, icon: 'fa-percent' },
-  { rewardId: 4, rewardName: 'Vệ sinh sên chuyên sâu', description: 'Gói chăm sóc sên và nhông xích xe máy.', pointsRequired: 150, rewardType: 'AddOnService', rewardValue: 50000, isActive: 1, icon: 'fa-link' },
-  { rewardId: 5, rewardName: 'Phủ Wax bóng Nano', description: 'Bảo vệ bề mặt sơn xe sáng bóng.', pointsRequired: 300, rewardType: 'AddOnService', rewardValue: 120000, isActive: 1, icon: 'fa-shield-alt' },
-  { rewardId: 6, rewardName: 'Hút bụi & Vệ sinh nội thất', description: 'Vệ sinh cabin, dọn dẹp sạch sẽ nội thất.', pointsRequired: 400, rewardType: 'AddOnService', rewardValue: 150000, isActive: 1, icon: 'fa-couch' },
-  { rewardId: 7, rewardName: 'Combo chăm sóc VIP', description: 'Dịch vụ dọn xe chuyên sâu cho Platinum.', pointsRequired: 800, rewardType: 'FreeWash', rewardValue: 350000, isActive: 1, icon: 'fa-crown' }
-];
-
 export const CustomerLoyalty = () => {
   const { user, updateUser } = useAuth();
   const [activeFilter, setActiveFilter] = useState('Tất cả');
   const [claimedVouchers, setClaimedVouchers] = useState([]);
+  const [rewards, setRewards] = useState([]);
   
   const [pendingRedeem, setPendingRedeem] = useState(null);
   const [redeemModalOpen, setRedeemModalOpen] = useState(false);
@@ -71,8 +63,20 @@ export const CustomerLoyalty = () => {
     }
   };
 
+  const loadRewards = async () => {
+    try {
+      const res = await customerService.getRewards();
+      if (res && res.success) {
+        setRewards(res.rewards);
+      }
+    } catch (e) {
+      console.error('Failed to load rewards from DB', e);
+    }
+  };
+
   useEffect(() => {
     fetchClaimedVouchers();
+    loadRewards();
 
     const query = new URLSearchParams(window.location.search);
     const tab = query.get('tab');
@@ -92,12 +96,12 @@ export const CustomerLoyalty = () => {
   };
 
   const getFilteredRewards = () => {
-    if (activeFilter === 'Tất cả') return ALL_REWARDS;
-    if (activeFilter === 'Giảm giá') return ALL_REWARDS.filter(r => r.rewardType === 'DiscountPercent');
-    if (activeFilter === 'Dịch vụ') return ALL_REWARDS.filter(r => r.rewardType === 'FreeWash' || r.rewardType === 'AddOnService');
-    if (activeFilter === 'Quà tặng' || activeFilter === 'Combo đặc biệt') return ALL_REWARDS.filter(r => r.rewardType === 'FreeWash' || r.rewardType === 'AddOnService');
-    if (activeFilter === 'Ưu đãi sinh nhật') return ALL_REWARDS.filter(r => r.pointsRequired === 0);
-    return ALL_REWARDS;
+    if (activeFilter === 'Tất cả') return rewards;
+    if (activeFilter === 'Giảm giá') return rewards.filter(r => r.rewardType === 'DiscountPercent' || r.rewardType === 'Discount_Fixed');
+    if (activeFilter === 'Dịch vụ') return rewards.filter(r => r.rewardType === 'Free_Wash' || r.rewardType === 'Free_AddOn');
+    if (activeFilter === 'Quà tặng' || activeFilter === 'Combo đặc biệt') return rewards.filter(r => r.rewardType === 'Free_Wash' || r.rewardType === 'Free_AddOn');
+    if (activeFilter === 'Ưu đãi sinh nhật') return rewards.filter(r => r.pointsRequired === 0);
+    return rewards;
   };
 
   const handleOpenRedeemModal = (reward) => {
@@ -105,22 +109,29 @@ export const CustomerLoyalty = () => {
     setRedeemModalOpen(true);
   };
 
-  const handleConfirmRedeem = () => {
-    // TODO Phase 2: RewardService API, Voucher API, Point API
-    setRedeemModalOpen(false);
-    if (window.showToast) {
-      window.showToast('Tính năng đổi phần thưởng sẽ được đồng bộ qua API ở Phase 2.', 'info');
-    } else {
-      alert('Tính năng đổi phần thưởng sẽ được đồng bộ qua API ở Phase 2.');
+  const handleConfirmRedeem = async () => {
+    if (!pendingRedeem) return;
+    try {
+      const res = await customerService.redeemReward(pendingRedeem.rewardId);
+      if (res && res.success) {
+        if (window.showToast) window.showToast(res.message || 'Đổi điểm nhận quà thành công!', 'success');
+        setRedeemModalOpen(false);
+        updateUser({ points: user.points - pendingRedeem.pointsRequired });
+        fetchClaimedVouchers();
+        loadRewards();
+      } else {
+        if (window.showToast) window.showToast(res.message || 'Đổi điểm thất bại', 'error');
+      }
+    } catch (e) {
+      console.error('Failed to redeem reward', e);
+      const errMsg = e.response?.data?.message || 'Lỗi kết nối máy chủ';
+      if (window.showToast) window.showToast(errMsg, 'error');
     }
   };
 
   const handleUseVoucher = (redemptionId) => {
-    // TODO Phase 2: Voucher API
     if (window.showToast) {
-      window.showToast('Tính năng áp dụng voucher sẽ được đồng bộ qua API ở Phase 2.', 'info');
-    } else {
-      alert('Tính năng áp dụng voucher sẽ được đồng bộ qua API ở Phase 2.');
+      window.showToast('Voucher này sẽ tự động có sẵn để bạn chọn khi đặt lịch tại tab ĐẶT LỊCH (Booking)!', 'success');
     }
   };
 

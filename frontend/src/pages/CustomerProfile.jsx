@@ -16,9 +16,9 @@ export const CustomerProfile = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [emailOtpMode, setEmailOtpMode] = useState(false);
   const [emailOtp, setEmailOtp] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -26,6 +26,14 @@ export const CustomerProfile = () => {
       setProfilePhone(user.phone);
     }
   }, [user]);
+
+  useEffect(() => {
+    let timer;
+    if (otpCooldown > 0) {
+      timer = setTimeout(() => setOtpCooldown(otpCooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [otpCooldown]);
 
   // Profile Update
   const handleUpdateProfileSubmit = async (e) => {
@@ -40,8 +48,6 @@ export const CustomerProfile = () => {
       const response = await customerService.updateProfile(profileName, profilePhone);
       if (response.success) {
         updateUser({ name: profileName, phone: profilePhone });
-        // Update cookies
-        document.cookie = "UserPhone=" + profilePhone + "; path=/; max-age=" + (30*24*60*60);
         if (window.showToast) window.showToast('Cập nhật hồ sơ thành công vào cơ sở dữ liệu!', 'success');
       } else {
         if (window.showToast) window.showToast(response.message || 'Lỗi cập nhật hồ sơ!', 'error');
@@ -56,6 +62,14 @@ export const CustomerProfile = () => {
   // Change Password
   const handleChangePasswordSubmit = async (e) => {
     e.preventDefault();
+    if (!currentPassword.trim()) {
+      if (window.showToast) window.showToast('Vui lòng nhập mật khẩu hiện tại!', 'warning');
+      return;
+    }
+    if (!emailOtp.trim()) {
+      if (window.showToast) window.showToast('Vui lòng nhập mã OTP Gmail!', 'warning');
+      return;
+    }
     if (!newPassword || !confirmPassword) {
       if (window.showToast) window.showToast('Vui lòng điền mật khẩu mới!', 'warning');
       return;
@@ -70,34 +84,11 @@ export const CustomerProfile = () => {
     }
 
     setPwLoading(true);
-
-    // Method 1: Email OTP (if verified email OTP before)
-    if (emailOtpMode) {
-      try {
-        const response = await customerService.verifyEmailAndChangePassword(user.email, emailOtp, newPassword);
-        if (response.success) {
-          if (window.showToast) window.showToast('Thay đổi mật khẩu thành công!', 'success');
-          setEmailOtpMode(false);
-          setEmailOtp('');
-          setCurrentPassword('');
-          setNewPassword('');
-          setConfirmPassword('');
-        } else {
-          if (window.showToast) window.showToast(response.message || 'Lỗi đổi mật khẩu OTP!', 'error');
-        }
-      } catch (err) {
-        if (window.showToast) window.showToast(err.response?.data?.message || 'Mã OTP không đúng hoặc hết hạn!', 'error');
-      } finally {
-        setPwLoading(false);
-      }
-      return;
-    }
-
-    // Method 2: Phone OTP / Current password directly
     try {
-      const response = await customerService.changePasswordWithPhoneOtp(user.phone, currentPassword, newPassword);
+      const response = await customerService.verifyEmailAndChangePassword(user.email, emailOtp, currentPassword, newPassword);
       if (response.success) {
         if (window.showToast) window.showToast('Thay đổi mật khẩu thành công!', 'success');
+        setEmailOtp('');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
@@ -105,7 +96,7 @@ export const CustomerProfile = () => {
         if (window.showToast) window.showToast(response.message || 'Lỗi đổi mật khẩu!', 'error');
       }
     } catch (err) {
-      if (window.showToast) window.showToast(err.response?.data?.message || 'Mật khẩu hiện tại không chính xác!', 'error');
+      if (window.showToast) window.showToast(err.response?.data?.message || 'Mã OTP không đúng hoặc mật khẩu cũ không chính xác!', 'error');
     } finally {
       setPwLoading(false);
     }
@@ -117,7 +108,7 @@ export const CustomerProfile = () => {
     try {
       const response = await customerService.sendEmailOtp(user.email);
       if (response.success) {
-        setEmailOtpMode(true);
+        setOtpCooldown(60);
         if (window.showToast) window.showToast(response.message || 'Mã OTP đã được gửi đến Email!', 'success');
       } else {
         if (window.showToast) window.showToast(response.message || 'Lỗi gửi Email OTP!', 'error');
@@ -179,54 +170,51 @@ export const CustomerProfile = () => {
 
           {/* Password Form */}
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h5 className="fw-bold mb-0" style={{ color: 'var(--navy-dark)' }}>
-                <i className="fas fa-shield-alt text-cyan me-2"></i>THAY ĐỔI MẬT KHẨU
-              </h5>
-              {!emailOtpMode && (
-                <button
-                  type="button"
-                  className="btn btn-link p-0 text-cyan small fw-bold text-decoration-none"
-                  style={{ fontSize: '0.75rem' }}
-                  onClick={handleSendEmailOtp}
-                >
-                  Đổi qua Email OTP
-                </button>
-              )}
-            </div>
+            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
+              <i className="fas fa-shield-alt text-cyan me-2"></i>THAY ĐỔI MẬT KHẨU
+            </h5>
 
             <form onSubmit={handleChangePasswordSubmit}>
-              {emailOtpMode ? (
-                <div className="mb-3">
-                  <label className="form-label small fw-bold text-muted">MÃ EMAIL OTP</label>
-                  <div className="input-group glass-input-group">
+              <div className="mb-3">
+                <label className="form-label small fw-bold text-muted">MẬT KHẨU HIỆN TẠI</label>
+                <div className="input-group glass-input-group">
+                  <span className="input-group-text"><i className="fas fa-lock"></i></span>
+                  <input
+                    type="password"
+                    className="form-control"
+                    placeholder="Nhập mật khẩu hiện tại"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label small fw-bold text-muted">MÃ EMAIL OTP</label>
+                <div className="d-flex gap-2">
+                  <div className="input-group glass-input-group flex-grow-1">
                     <span className="input-group-text"><i className="fas fa-key"></i></span>
                     <input
                       type="text"
                       className="form-control font-monospace"
-                      placeholder="Nhập mã 6 chữ số gửi qua email"
+                      placeholder="Nhập mã 6 chữ số"
                       value={emailOtp}
                       onChange={(e) => setEmailOtp(e.target.value)}
                       required
                     />
                   </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-info"
+                    style={{ borderRadius: '12px', minWidth: '110px', fontSize: '0.85rem' }}
+                    onClick={handleSendEmailOtp}
+                    disabled={pwLoading || otpCooldown > 0}
+                  >
+                    {otpCooldown > 0 ? `${otpCooldown}s` : 'Gửi OTP'}
+                  </button>
                 </div>
-              ) : (
-                <div className="mb-3">
-                  <label className="form-label small fw-bold text-muted">MẬT KHẨU HIỆN TẠI</label>
-                  <div className="input-group glass-input-group">
-                    <span className="input-group-text"><i className="fas fa-lock"></i></span>
-                    <input
-                      type="password"
-                      className="form-control"
-                      placeholder="Nhập mật khẩu hiện tại"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              )}
+              </div>
 
               <div className="mb-3">
                 <label className="form-label small fw-bold text-muted">MẬT KHẨU MỚI</label>
@@ -258,29 +246,14 @@ export const CustomerProfile = () => {
                 </div>
               </div>
 
-              <div className="d-flex gap-2">
-                {emailOtpMode && (
-                  <button
-                    type="button"
-                    className="app-btn-secondary py-2.5 w-50"
-                    style={{ borderRadius: '12px' }}
-                    onClick={() => {
-                      setEmailOtpMode(false);
-                      setEmailOtp('');
-                    }}
-                  >
-                    HỦY OTP
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={pwLoading}
-                  className={`app-btn-primary py-2.5 shadow-none ${emailOtpMode ? 'w-50' : 'w-100'}`}
-                  style={{ borderRadius: '12px' }}
-                >
-                  {pwLoading ? 'ĐANG LƯU...' : 'ĐỔI MẬT KHẨU'}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={pwLoading}
+                className="app-btn-primary py-2.5 shadow-none w-100"
+                style={{ borderRadius: '12px' }}
+              >
+                {pwLoading ? 'ĐANG LƯU...' : 'ĐỔI MẬT KHẨU'}
+              </button>
             </form>
           </div>
         </div>

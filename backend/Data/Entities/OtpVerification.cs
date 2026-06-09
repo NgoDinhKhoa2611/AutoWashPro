@@ -8,10 +8,11 @@ namespace Auto_Wash.Data.Entities
     public class OtpVerification
     {
         [Key]
-        public int OtpId { get; set; }        
+        public int OtpId { get; set; }
 
+        [Required]
         [MaxLength(150)]
-        public string? Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [MaxLength(20)]
         public string? PlateNumber { get; set; }
@@ -27,6 +28,6 @@ namespace Auto_Wash.Data.Entities
 
         public bool IsUsed { get; set; } = false;
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

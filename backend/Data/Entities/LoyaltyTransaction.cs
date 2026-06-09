@@ -22,7 +22,7 @@ namespace Auto_Wash.Data.Entities
 
         public int? RedemptionId { get; set; }
 
-        public DateTime? ExpiryDate { get; set; }
+        public DateOnly? ExpiryDate { get; set; }
 
         public bool IsExpired { get; set; } = false;
 

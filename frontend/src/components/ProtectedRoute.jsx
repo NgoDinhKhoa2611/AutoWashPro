@@ -21,10 +21,12 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     if (user.role === 'admin' || user.role === 'staff') {
-      return <Navigate to="/admin/dashboard" replace />;
-    } else {
-      return <Navigate to="/customer/dashboard" replace />;
+      return <Navigate to="/admin" replace />;
     }
+    if (user.role === 'customer') {
+      return <Navigate to="/customer" replace />;
+    }
+    return <Navigate to="/login" replace />;
   }
 
   return children;

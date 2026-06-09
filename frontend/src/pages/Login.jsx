@@ -6,10 +6,26 @@ import '../styles/shared.css';
 import '../styles/login.css';
 
 export const Login = () => {
-  const { login, register } = useAuth();
+  const { user, loading, login, register, googleLogin, completeGoogleSignup } = useAuth();
   const navigate = useNavigate();
 
-  // Panels: 'login' (controls both signin/signup sliders) | 'otp' | 'google-complete' | 'firebase-otp'
+  const navigateByRole = (role) => {
+    if (role === 'admin') {
+      navigate('/admin');
+    } else if (role === 'staff') {
+      navigate('/admin/queue');
+    } else {
+      navigate('/customer');
+    }
+  };
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigateByRole(user.role);
+    }
+  }, [user, loading, navigate]);
+
+  // Panels: 'login' (controls both signin/signup sliders) | 'otp' | 'google-complete'
   const [panel, setPanel] = useState('login');
   const [isRegisterActive, setIsRegisterActive] = useState(false); // Controls slide panel
   const [successScreen, setSuccessScreen] = useState(false);
@@ -28,6 +44,7 @@ export const Login = () => {
   const [regConfirm, setRegConfirm] = useState('');
   const [regAgree, setRegAgree] = useState(false);
   const [regLoading, setRegLoading] = useState(false);
+  const [tempRegData, setTempRegData] = useState({ name: '', phone: '', email: '' });
 
   // Otp States (Normal Register)
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
@@ -35,56 +52,57 @@ export const Login = () => {
   const [showResendOtp, setShowResendOtp] = useState(false);
   const otpTimerRef = useRef(null);
 
-  // Google completion & Firebase OTP
+  // Google completion
   const [googleUser, setGoogleUser] = useState(null);
   const [completePhone, setCompletePhone] = useState('');
   const [completePassword, setCompletePassword] = useState('');
   const [completeConfirm, setCompleteConfirm] = useState('');
   const [completeAgree, setCompleteAgree] = useState(false);
-  
-  const [fbOtpDigits, setFbOtpDigits] = useState(['', '', '', '', '', '']);
-  const [fbOtpTimerSec, setFbOtpTimerSec] = useState(300);
-  const [showFbResendOtp, setShowFbResendOtp] = useState(false);
-  const fbOtpTimerRef = useRef(null);
-
-  const googleInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (panel === 'login' && !googleInitializedRef.current) {
-      const initGoogle = () => {
-        if (window.google) {
-          googleInitializedRef.current = true;
-          window.google.accounts.id.initialize({
-            client_id: "40329422268-s3m1sqlniabg1f8o7roo5pmfckb4j3te.apps.googleusercontent.com",
-            callback: handleGoogleCredential
-          });
-          const renderBtn = () => {
-            const container = document.getElementById("google-login-btn-login");
-            if (container) {
-              window.google.accounts.id.renderButton(container, {
-                theme: "outline",
-                size: "large",
-                width: 320,
-                text: "signin_with",
-                shape: "pill",
-                logo_alignment: "left"
-              });
-            }
-          };
-          renderBtn();
-          setTimeout(renderBtn, 300);
-        } else {
-          setTimeout(initGoogle, 100);
-        }
-      };
+    // Google Sign-In button rendering inside the login panel
+    const initGoogle = () => {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        console.warn("[Google Sign-In Warning] VITE_GOOGLE_CLIENT_ID is not configured in the environment variables. Google login is disabled.");
+        return;
+      }
+      if (window.google && panel === 'login') {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredential
+        });
+
+        const renderBtns = () => {
+          const containerLogin = document.getElementById("google-login-btn-login");
+          if (containerLogin) {
+            window.google.accounts.id.renderButton(containerLogin, {
+              theme: "outline",
+              size: "large",
+              width: 320,
+              text: "signin_with",
+              shape: "pill",
+              logo_alignment: "left"
+            });
+          }
+        };
+
+        renderBtns();
+        // Fallback timeout in case element rendering is delayed by slide animation transition
+        setTimeout(renderBtns, 300);
+      } else {
+        setTimeout(initGoogle, 100);
+      }
+    };
+
+    if (panel === 'login') {
       initGoogle();
     }
 
     return () => {
       clearInterval(otpTimerRef.current);
-      clearInterval(fbOtpTimerRef.current);
     };
-  }, [panel]);
+  }, [panel, isRegisterActive]);
 
   // Google callback
   const handleGoogleCredential = async (response) => {
@@ -95,8 +113,8 @@ export const Login = () => {
       const avatar = payload.picture || "";
       const googleId = payload.sub || "";
 
-      // Call backend API
-      const data = await authService.googleLogin(email, name, googleId);
+      // Call useAuth's googleLogin instead of direct authService
+      const data = await googleLogin(email, name, googleId);
       
       if (data && data.success) {
         if (data.isNewUser) {
@@ -106,25 +124,11 @@ export const Login = () => {
           if (window.showToast) window.showToast('Vui lòng hoàn tất số điện thoại và mật khẩu!', 'info');
         } else {
           // Returning user
-          document.cookie = "UserEmail=" + email + "; path=/; max-age=" + (30*24*60*60);
-          if (avatar) {
-            document.cookie = "UserAvatar=" + encodeURIComponent(avatar) + "; path=/; max-age=" + (30*24*60*60);
-          }
-
-          localStorage.setItem('user_role', data.role || 'customer');
-          localStorage.setItem('user_display_name', data.name || name);
-          localStorage.setItem('user_email', data.email || email);
-          localStorage.setItem('user_avatar', avatar);
-          localStorage.setItem('user_phone', data.phone || '');
-          localStorage.setItem('user_points', String(data.points ?? 0));
-          localStorage.setItem('user_tier', data.tier || 'Standard Member');
-          window.dispatchEvent(new Event('storage'));
-
           if (window.showToast) window.showToast(`Đăng nhập Google thành công! Chào mừng ${name}`, 'success');
-          setTimeout(() => { navigate('/customer/dashboard'); }, 1200);
+          setTimeout(() => { navigateByRole(data.role); }, 1200);
         }
       } else {
-        if (window.showToast) window.showToast("Xác thực hệ thống lỗi: " + (data.message || ""), "error");
+        if (window.showToast) window.showToast("Xác thực hệ thống lỗi: " + (data?.message || ""), "error");
       }
     } catch (e) {
       console.error(e);
@@ -162,11 +166,7 @@ export const Login = () => {
       }
       
       setTimeout(() => {
-        if (data.role === 'admin' || data.role === 'staff') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/customer/dashboard');
-        }
+        navigateByRole(data.role);
       }, 700);
     } catch (err) {
       if (window.showToast) window.showToast(err.message || 'Tài khoản hoặc mật khẩu không đúng!', 'error');
@@ -209,9 +209,7 @@ export const Login = () => {
     try {
       const res = await authService.sendRegisterOtp(regEmail.trim());
       if (res.success) {
-        localStorage.setItem('reg_name_temp', regName);
-        localStorage.setItem('reg_phone_temp', regPhone);
-        localStorage.setItem('reg_email_temp', regEmail);
+        setTempRegData({ name: regName, phone: regPhone, email: regEmail });
         setPanel('otp');
         startOtpTimer();
         if (window.showToast) window.showToast('Mã OTP đã được gửi về Gmail của bạn!', 'success');
@@ -243,21 +241,6 @@ export const Login = () => {
     }, 1000);
   };
 
-  const startFbOtpTimer = () => {
-    setFbOtpTimerSec(300);
-    setShowFbResendOtp(false);
-    clearInterval(fbOtpTimerRef.current);
-    fbOtpTimerRef.current = setInterval(() => {
-      setFbOtpTimerSec((prev) => {
-        if (prev <= 1) {
-          clearInterval(fbOtpTimerRef.current);
-          setShowFbResendOtp(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
 
   // Normal OTP inputs
   const handleOtpInput = (idx, val) => {
@@ -293,28 +276,22 @@ export const Login = () => {
 
     clearInterval(otpTimerRef.current);
 
-    const name = localStorage.getItem('reg_name_temp') || 'Người dùng mới';
-    const phone = localStorage.getItem('reg_phone_temp') || regPhone;
-    const email = localStorage.getItem('reg_email_temp') || regEmail;
+    const name = tempRegData.name || regName || 'Người dùng mới';
+    const phone = tempRegData.phone || regPhone;
+    const email = tempRegData.email || regEmail;
 
     try {
       // Gọi API đăng ký thực tế
       await register(email, name, phone, regPassword, code);
 
-      localStorage.removeItem('reg_name_temp');
-      localStorage.removeItem('reg_phone_temp');
-      localStorage.removeItem('reg_email_temp');
+      setTempRegData({ name: '', phone: '', email: '' });
 
       setSuccessMsg(`Chào mừng ${name} gia nhập AutoWash Pro`);
       setSuccessScreen(true);
       setPanel('none');
-      
-      // Ghi cookie phiên bản
-      document.cookie = "UserPhone=" + phone + "; path=/; max-age=" + (30*24*60*60);
-      document.cookie = "UserEmail=" + email + "; path=/; max-age=" + (30*24*60*60);
 
       setTimeout(() => {
-        navigate('/customer/dashboard');
+        navigateByRole('customer');
       }, 2000);
     } catch (err) {
       console.error(err);
@@ -325,7 +302,7 @@ export const Login = () => {
   };
 
   const handleResendOtp = async () => {
-    const email = localStorage.getItem('reg_email_temp') || regEmail;
+    const email = tempRegData.email || regEmail;
     try {
       await authService.sendRegisterOtp(email.trim());
       startOtpTimer();
@@ -365,7 +342,7 @@ export const Login = () => {
     if (window.showToast) window.showToast('Đang hoàn tất hồ sơ...', 'info');
 
     try {
-      const response = await authService.completeGoogleSignup(
+      const response = await completeGoogleSignup(
         googleUser.email,
         googleUser.name,
         googleUser.googleId,
@@ -374,28 +351,12 @@ export const Login = () => {
       );
 
       if (response.success) {
-        localStorage.setItem('user_role', 'customer');
-        localStorage.setItem('user_display_name', googleUser.name);
-        localStorage.setItem('user_phone', cleanPhone);
-        localStorage.setItem('user_email', googleUser.email);
-        localStorage.setItem('user_avatar', googleUser.avatar || '');
-        localStorage.setItem('user_points', '0');
-        localStorage.setItem('user_tier', 'Standard Member');
-        window.dispatchEvent(new Event('storage'));
-
-        // Write cookies
-        document.cookie = "UserEmail=" + googleUser.email + "; path=/; max-age=" + (30*24*60*60);
-        document.cookie = "UserPhone=" + cleanPhone + "; path=/; max-age=" + (30*24*60*60);
-        if (googleUser.avatar) {
-          document.cookie = "UserAvatar=" + encodeURIComponent(googleUser.avatar) + "; path=/; max-age=" + (30*24*60*60);
-        }
-
         setSuccessMsg(`Chào mừng ${googleUser.name} gia nhập AutoWash Pro`);
         setSuccessScreen(true);
         setPanel('none');
 
         setTimeout(() => {
-          navigate('/customer/dashboard');
+          navigateByRole('customer');
         }, 2000);
       } else {
         if (window.showToast) window.showToast(response.message || 'Có lỗi xảy ra!', 'error');
@@ -406,92 +367,7 @@ export const Login = () => {
     }
   };
 
-  // Firebase OTP inputs
-  const handleFbOtpInput = (idx, val) => {
-    const clean = val.replace(/\D/g, '');
-    const newDigits = [...fbOtpDigits];
-    newDigits[idx] = clean.substring(0, 1);
-    setFbOtpDigits(newDigits);
 
-    if (clean && idx < 5) {
-      const nextInput = document.getElementById(`fb-otp-${idx + 1}`);
-      if (nextInput) nextInput.focus();
-    }
-  };
-
-  const handleFbOtpKeyDown = (idx, e) => {
-    if (e.key === 'Backspace' && !fbOtpDigits[idx] && idx > 0) {
-      const prevInput = document.getElementById(`fb-otp-${idx - 1}`);
-      if (prevInput) {
-        const newDigits = [...fbOtpDigits];
-        newDigits[idx - 1] = '';
-        setFbOtpDigits(newDigits);
-        prevInput.focus();
-      }
-    }
-  };
-
-  const handleVerifyFbOtp = async () => {
-    const code = fbOtpDigits.join('');
-    if (code.length < 6) {
-      if (window.showToast) window.showToast('Vui lòng nhập mã xác thực OTP 6 chữ số!', 'warning');
-      return;
-    }
-
-    if (code !== '123456') {
-      if (window.showToast) window.showToast('Mã OTP không hợp lệ! Vui lòng dùng mã sandbox: 123456', 'error');
-      return;
-    }
-
-    clearInterval(fbOtpTimerRef.current);
-    if (window.showToast) window.showToast('Xác thực OTP thành công! Đang hoàn tất hồ sơ...', 'info');
-
-    try {
-      const response = await authService.completeGoogleSignup(
-        googleUser.email,
-        googleUser.name,
-        googleUser.googleId,
-        googleUser.phone,
-        googleUser.password
-      );
-
-      if (response.success) {
-        localStorage.setItem('user_role', 'customer');
-        localStorage.setItem('user_display_name', googleUser.name);
-        localStorage.setItem('user_phone', googleUser.phone);
-        localStorage.setItem('user_email', googleUser.email);
-        localStorage.setItem('user_avatar', googleUser.avatar || '');
-        localStorage.setItem('user_points', '0');
-        localStorage.setItem('user_tier', 'Standard Member');
-        window.dispatchEvent(new Event('storage'));
-
-        // Write cookies
-        document.cookie = "UserEmail=" + googleUser.email + "; path=/; max-age=" + (30*24*60*60);
-        document.cookie = "UserPhone=" + googleUser.phone + "; path=/; max-age=" + (30*24*60*60);
-        if (googleUser.avatar) {
-          document.cookie = "UserAvatar=" + encodeURIComponent(googleUser.avatar) + "; path=/; max-age=" + (30*24*60*60);
-        }
-
-        setSuccessMsg(`Chào mừng ${googleUser.name} gia nhập AutoWash Pro`);
-        setSuccessScreen(true);
-        setPanel('none');
-
-        setTimeout(() => {
-          navigate('/customer/dashboard');
-        }, 2000);
-      } else {
-        if (window.showToast) window.showToast(response.message || 'Có lỗi xảy ra!', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      if (window.showToast) window.showToast('Lỗi đồng bộ dữ liệu với máy chủ!', 'error');
-    }
-  };
-
-  const handleResendFbOtp = () => {
-    startFbOtpTimer();
-    if (window.showToast) window.showToast('Đã gửi lại mã xác thực SMS mới!', 'info');
-  };
 
   return (
     <div className="login-page-wrapper" id="login-page">
@@ -663,13 +539,17 @@ export const Login = () => {
                 {loginLoading ? 'Đang xử lý...' : 'ĐĂNG NHẬP'}
               </button>
 
-              <div className="auth-separator">
-                <span>Hoặc đăng nhập bằng</span>
-              </div>
+              {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+                <>
+                  <div className="auth-separator">
+                    <span>Hoặc đăng nhập bằng</span>
+                  </div>
 
-              <div className="google-btn-container">
-                <div id="google-login-btn-login"></div>
-              </div>
+                  <div className="google-btn-container">
+                    <div id="google-login-btn-login"></div>
+                  </div>
+                </>
+              )}
 
               {/* Mobile text for switching */}
               <p className="auth-switch-text d-md-none">
@@ -863,61 +743,12 @@ export const Login = () => {
             </div>
 
             <button type="submit" className="auth-btn border-0 py-3 mt-2 w-100">
-              GỬI MÃ XÁC THỰC OTP <i className="fas fa-paper-plane ms-1"></i>
+              HOÀN TẤT HỒ SƠ <i className="fas fa-check-circle ms-1"></i>
             </button>
           </form>
         </div>
       )}
 
-      {/* PANEL: FIREBASE OTP (FOR GOOGLE SIGNUP FLOW) */}
-      {panel === 'firebase-otp' && googleUser && (
-        <div className="glass-card text-center animate-up" style={{ width: '100%', maxWidth: '420px', zIndex: 10 }}>
-          <div className="success-checkmark-wrapper mb-3" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7' }}>
-            <i className="fas fa-shield-alt"></i>
-          </div>
-          <h4 className="fw-bold mt-2">Xác thực OTP</h4>
-          <p className="text-secondary small px-2 mt-2">
-            Hệ thống đã gửi mã OTP xác nhận về số điện thoại: <span className="text-cyan fw-bold">{googleUser.phone}</span>
-          </p>
-
-          <div className="d-flex justify-content-center gap-2 mb-4 mt-4">
-            {fbOtpDigits.map((val, idx) => (
-              <input
-                key={idx}
-                type="text"
-                id={`fb-otp-${idx}`}
-                maxLength="1"
-                className="otp-input"
-                value={val}
-                onChange={(e) => handleFbOtpInput(idx, e.target.value)}
-                onKeyDown={(e) => handleFbOtpKeyDown(idx, e)}
-              />
-            ))}
-          </div>
-
-          <button onClick={handleVerifyFbOtp} className="app-btn-primary mb-3 py-3 w-100 border-0" style={{ borderRadius: '12px', fontSize: '0.85rem' }}>
-            XÁC NHẬN MÃ <i className="fas fa-check-circle ms-1"></i>
-          </button>
-
-          <div className="text-center mt-3">
-            {!showFbResendOtp ? (
-              <p className="text-secondary small">
-                Gửi lại mã sau <span className="text-cyan fw-bold">
-                  {Math.floor(fbOtpTimerSec / 60)}:{(fbOtpTimerSec % 60) < 10 ? '0' : ''}{fbOtpTimerSec % 60}
-                </span>s
-              </p>
-            ) : (
-              <button className="btn btn-link text-cyan text-decoration-none small fw-bold p-0" onClick={handleResendFbOtp}>
-                Gửi lại mã OTP qua SMS
-              </button>
-            )}
-            <br />
-            <button onClick={() => setPanel('google-complete')} className="btn btn-link text-secondary text-decoration-none small mt-2 p-0">
-              Thay đổi thông tin liên hệ
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

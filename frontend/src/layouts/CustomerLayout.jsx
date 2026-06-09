@@ -109,10 +109,6 @@ export const CustomerLayout = () => {
   const handleLogout = () => {
     if (window.showConfirm) {
       window.showConfirm('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất khỏi AutoWash Pro?', async () => {
-        // Xoá cookie bằng js
-        document.cookie = "UserEmail=; path=/; max-age=0";
-        document.cookie = "UserPhone=; path=/; max-age=0";
-        document.cookie = "UserAvatar=; path=/; max-age=0";
         await logout();
         if (window.showToast) window.showToast('Đăng xuất thành công!', 'success');
         navigate('/login');

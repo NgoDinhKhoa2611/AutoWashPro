@@ -20,7 +20,8 @@ namespace Auto_Wash.Controllers
         private bool IsAdminOrStaff()
         {
             var role = HttpContext.Session.GetString("UserRole");
-            return role == "admin" || role == "staff";
+            return string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(role, "staff", StringComparison.OrdinalIgnoreCase);
         }
 
         [HttpGet]
