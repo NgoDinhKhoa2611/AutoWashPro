@@ -38,14 +38,13 @@ namespace Auto_Wash.Services
             var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == email.Trim());
             if (account == null) return (false, "Không tìm thấy tài khoản tương ứng!");
 
-            if (string.IsNullOrEmpty(currentPassword))
+            // currentPassword is only required when changing password from profile (not forgot password flow)
+            if (!string.IsNullOrEmpty(currentPassword))
             {
-                return (false, "Mật khẩu hiện tại không được để trống!");
-            }
-
-            if (!PasswordHelper.VerifyPassword(currentPassword.Trim(), account.PasswordHash ?? ""))
-            {
-                return (false, "Mật khẩu hiện tại không chính xác!");
+                if (!PasswordHelper.VerifyPassword(currentPassword.Trim(), account.PasswordHash ?? ""))
+                {
+                    return (false, "Mật khẩu hiện tại không chính xác!");
+                }
             }
 
             account.PasswordHash = PasswordHelper.HashPassword(newPassword.Trim());

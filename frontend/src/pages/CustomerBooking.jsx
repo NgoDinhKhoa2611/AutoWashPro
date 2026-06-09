@@ -376,7 +376,7 @@ export const CustomerBooking = () => {
           {/* Step 3: Chọn dịch vụ đi kèm (Add-ons Cards Grid) */}
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
             <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">3</span> Chọn dịch vụ đi kèm (Add-ons)
+              <span className="step-num-badge">3</span> Chọn dịch vụ đi kèm
             </h5>
             <div className="addons-grid-layout" id="addon-services-list">
               {addonServices.map((a) => {
@@ -461,7 +461,7 @@ export const CustomerBooking = () => {
 
         {/* Right Column: Order Summary (Realtime updates) */}
         <div className="col-lg-4">
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 sticky-lg-top" style={{ top: '90px' }}>
+          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 booking-summary-fixed">
             <h5 className="fw-bold mb-3 border-bottom pb-2.5" style={{ color: 'var(--navy-dark)', fontSize: '0.95rem' }}>
               <i className="fas fa-receipt text-cyan me-2"></i> TÓM TẮT ĐƠN HÀNG
             </h5>
@@ -555,17 +555,21 @@ export const CustomerBooking = () => {
                   <i className="fas fa-ticket-alt me-1"></i>Ví Voucher
                 </button>
               </div>
-              <div className="input-group">
+              <div className="input-group promo-input-group">
                 <input
                   type="text"
                   id="promo-code-input"
-                  className="form-control bg-light border-0 py-2 font-monospace"
+                  className="form-control font-monospace promo-code-input"
                   placeholder="VÍ DỤ: WASH10K"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
                 />
-                <button className="btn btn-dark fw-bold px-3" style={{ fontSize: '0.8rem' }} onClick={() => applyPromo()}>
-                  ÁP DỤNG
+                <button
+                  type="button"
+                  className="promo-apply-btn"
+                  onClick={() => applyPromo()}
+                >
+                  ÁP DỤNG <i className="fas fa-check ms-1"></i>
                 </button>
               </div>
             </div>
@@ -586,10 +590,18 @@ export const CustomerBooking = () => {
             <button
               onClick={handleConfirmBooking}
               disabled={vehicles.length === 0}
-              className="app-btn-primary w-100 py-3 shadow-lg fs-6 border-0 text-dark fw-bold"
-              style={{ borderRadius: '14px', opacity: vehicles.length === 0 ? 0.5 : 1, cursor: vehicles.length === 0 ? 'not-allowed' : 'pointer' }}
+              className="app-btn-primary w-100 border-0 fw-bold"
+              style={{
+                borderRadius: '12px',
+                padding: '14px',
+                fontSize: '0.88rem',
+                letterSpacing: '0.5px',
+                opacity: vehicles.length === 0 ? 0.45 : 1,
+                cursor: vehicles.length === 0 ? 'not-allowed' : 'pointer',
+                boxShadow: '0 6px 20px rgba(14,165,233,0.28)'
+              }}
             >
-              XÁC NHẬN ĐẶT LỊCH <i className="fas fa-chevron-right ms-1"></i>
+              XÁC NHẬN ĐẶT LỊCH <i className="fas fa-arrow-right ms-2"></i>
             </button>
           </div>
         </div>

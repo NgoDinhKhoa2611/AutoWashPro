@@ -770,7 +770,7 @@ body {
 .reward-card-item:hover {
     border-color: rgba(14, 165, 233, 0.3) !important;
     box-shadow: 0 10px 35px rgba(14, 165, 233, 0.08) !important;
-    transform: translateY(-2px) !important;
+    /* transform: translateY(-2px) !important; */
 }
 
 .selectable-card.selected {

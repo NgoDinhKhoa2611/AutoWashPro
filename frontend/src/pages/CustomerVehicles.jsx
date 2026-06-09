@@ -188,7 +188,7 @@ export const CustomerVehicles = () => {
                       <input
                         type="text"
                         className="form-control py-2.5 font-monospace uppercase fw-bold"
-                        placeholder="Ví dụ: 59A-12345"
+                        placeholder="Ví dụ: 59A12345"
                         value={newPlate}
                         onChange={(e) => setNewPlate(e.target.value)}
                         required
