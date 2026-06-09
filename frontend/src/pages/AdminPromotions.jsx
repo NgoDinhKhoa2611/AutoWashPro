@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { adminService } from '../services/adminService';
 
 const AdminPromotions = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Form states
   const [promoName, setPromoName] = useState('');
@@ -14,101 +17,95 @@ const AdminPromotions = () => {
     loadCampaigns();
   }, []);
 
-  const loadCampaigns = () => {
-    const saved = localStorage.getItem('app_promotions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setCampaigns(parsed);
-        return;
-      } catch (e) {
-        console.error('Failed to parse app_promotions', e);
-      }
+  const loadCampaigns = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await adminService.getPromotions();
+      setCampaigns(data);
+    } catch (err) {
+      console.error('Failed to load campaigns:', err);
+      setError('Không thể tải danh sách chiến dịch khuyến mãi.');
+      if (window.showToast) window.showToast('Không thể tải danh sách chiến dịch!', 'error');
+    } finally {
+      setLoading(false);
     }
-    const defaultCampaigns = [
-      {
-        id: 'promo_01',
-        name: 'Chào hè rực rỡ 2026',
-        description: 'Giảm 20% cho tất cả khách hàng hạng Platinum khi đặt lịch vào khung giờ vàng (11:00 - 14:00).',
-        status: 'Active',
-        target: 'Platinum',
-        redemptions: 145,
-        maxRedemptions: 500
-      },
-      {
-        id: 'promo_02',
-        name: 'Tết Nguyên Đán 2026',
-        description: 'Tặng 100 điểm thưởng cho mọi lượt rửa xe từ 25 Tết đến mùng 5 Tết.',
-        status: 'Expired',
-        target: 'All Customers',
-        redemptions: 320,
-        maxRedemptions: 320
-      }
-    ];
-    localStorage.setItem('app_promotions', JSON.stringify(defaultCampaigns));
-    setCampaigns(defaultCampaigns);
   };
 
-  const launchCampaign = (e) => {
+  const launchCampaign = async (e) => {
     e.preventDefault();
     if (!promoName.trim()) {
       if (window.showToast) window.showToast('Vui lòng nhập tên chiến dịch!', 'warning');
       return;
     }
 
-    const newPromo = {
-      id: 'promo_' + Date.now(),
-      name: promoName.trim(),
-      description: promoDesc.trim() || 'Ưu đãi đặc biệt từ hệ thống AutoWash Pro.',
-      status: 'Active',
-      target: promoTarget,
-      redemptions: 0,
-      maxRedemptions: Number(promoMax) || 500
-    };
+    try {
+      const newPromo = {
+        name: promoName.trim(),
+        description: promoDesc.trim() || 'Ưu đãi đặc biệt từ hệ thống AutoWash Pro.',
+        target: promoTarget,
+        maxRedemptions: Number(promoMax) || 500
+      };
 
-    const updated = [newPromo, ...campaigns];
-    setCampaigns(updated);
-    localStorage.setItem('app_promotions', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
+      const response = await adminService.createPromotion(newPromo);
+      if (response.success) {
+        if (window.showToast) window.showToast('Phát hành chiến dịch khuyến mãi mới thành công!', 'success');
+        
+        // Reset Form & Close Modal
+        setPromoName('');
+        setPromoTarget('All Customers');
+        setPromoMax(500);
+        setPromoDesc('');
+        setShowModal(false);
 
-    // Reset Form & Close Modal
-    setPromoName('');
-    setPromoTarget('All Customers');
-    setPromoMax(500);
-    setPromoDesc('');
-    setShowModal(false);
-
-    if (window.showToast) {
-      window.showToast('Phát hành chiến dịch khuyến mãi mới thành công!', 'success');
+        // Reload promotions
+        loadCampaigns();
+      } else {
+        if (window.showToast) window.showToast(response.message || 'Lỗi khi tạo chiến dịch!', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to launch campaign:', err);
+      if (window.showToast) window.showToast('Lỗi kết nối khi phát hành chiến dịch!', 'error');
     }
   };
 
-  const toggleCampaignStatus = (id) => {
-    const updated = campaigns.map(c => {
-      if (c.id !== id) return c;
-      const nextStatus = c.status === 'Active' ? 'Stopped' : 'Active';
-      return { ...c, status: nextStatus };
-    });
-    setCampaigns(updated);
-    localStorage.setItem('app_promotions', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
+  const toggleCampaignStatus = async (id) => {
+    try {
+      const response = await adminService.togglePromotionStatus(id);
+      if (response.success) {
+        if (window.showToast) window.showToast('Thay đổi trạng thái chiến dịch thành công!', 'success');
+        loadCampaigns();
+      } else {
+        if (window.showToast) window.showToast(response.message || 'Lỗi khi đổi trạng thái!', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to toggle campaign status:', err);
+      if (window.showToast) window.showToast('Lỗi kết nối khi đổi trạng thái!', 'error');
+    }
   };
 
   const deleteCampaign = (id) => {
+    const performDelete = async () => {
+      try {
+        const response = await adminService.deletePromotion(id);
+        if (response.success) {
+          if (window.showToast) window.showToast('Đã xoá chiến dịch thành công!', 'success');
+          loadCampaigns();
+        } else {
+          if (window.showToast) window.showToast(response.message || 'Lỗi khi xoá chiến dịch!', 'error');
+        }
+      } catch (err) {
+        console.error('Failed to delete campaign:', err);
+        const errMsg = err.response?.data?.message || 'Lỗi kết nối khi xoá chiến dịch!';
+        if (window.showToast) window.showToast(errMsg, 'error');
+      }
+    };
+
     if (window.showConfirm) {
-      window.showConfirm('Xác nhận xóa', 'Bạn có chắc chắn muốn xoá chiến dịch này?', () => {
-        const updated = campaigns.filter(c => c.id !== id);
-        setCampaigns(updated);
-        localStorage.setItem('app_promotions', JSON.stringify(updated));
-        window.dispatchEvent(new Event('storage'));
-        if (window.showToast) window.showToast('Đã xoá chiến dịch thành công!', 'success');
-      });
+      window.showConfirm('Xác nhận xóa', 'Bạn có chắc chắn muốn xoá chiến dịch này?', performDelete);
     } else {
       if (window.confirm('Bạn có chắc chắn muốn xoá chiến dịch này?')) {
-        const updated = campaigns.filter(c => c.id !== id);
-        setCampaigns(updated);
-        localStorage.setItem('app_promotions', JSON.stringify(updated));
-        window.dispatchEvent(new Event('storage'));
+        performDelete();
       }
     }
   };
@@ -131,7 +128,17 @@ const AdminPromotions = () => {
 
       {/* Campaign Cards Grid */}
       <div className="row g-4">
-        {campaigns.length === 0 ? (
+        {loading ? (
+          <div className="col-12 text-center py-5">
+            <div className="spinner-border text-info" role="status">
+              <span className="visually-hidden">Đang tải...</span>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="col-12 text-center py-5 text-danger fw-bold">
+            {error}
+          </div>
+        ) : campaigns.length === 0 ? (
           <div className="col-12 animate-up">
             <div className="app-card border-0 shadow-sm p-5 text-center text-muted" style={{ borderRadius: '24px' }}>
               <i className="fas fa-bullhorn fa-3x mb-3 opacity-25"></i>

@@ -21,13 +21,13 @@ namespace Auto_Wash.Data.Entities
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
-        [MaxLength(10)]
+        [MaxLength(15)]
         public string? Phone { get; set; }
 
         [MaxLength(256)]
         public string? PasswordHash { get; set; }
 
-        public int Role { get; set; } = 3; // 1=Admin | 2=Staff | 3=Customer
+        public AccountRole Role { get; set; } = AccountRole.Customer;
 
         public bool IsActive { get; set; } = true;
 

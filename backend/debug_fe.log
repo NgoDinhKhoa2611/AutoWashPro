@@ -428,3 +428,42 @@ Stack Trace: ReferenceError: customerService is not defined
 Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
     at <anonymous>:1:7
 [6/8/2026, 7:08:22 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 7:22:52 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 7:23:00 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 7:27:33 PM] [ERROR] {}
+Stack Trace: ReferenceError: customerService is not defined
+    at fetchClaimedVouchers (http://localhost:5173/src/pages/CustomerLoyalty.jsx:127:21)
+    at http://localhost:5173/src/pages/CustomerLoyalty.jsx:136:3
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=ecaa3c7d:12904:13)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=ecaa3c7d:851:66)
+    at commitHookEffectListMount (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=ecaa3c7d:6617:153)
+    at commitHookPassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=ecaa3c7d:6652:55)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=ecaa3c7d:7618:22)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=ecaa3c7d:7606:5)
+    at commitPassiveMountOnFiber (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=ecaa3c7d:7672:14)
+    at recursivelyTraversePassiveMountEffects (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=ecaa3c7d:7606:5)
+[6/8/2026, 7:32:48 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 7:32:49 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 7:32:55 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 7:44:42 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 7:44:54 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 7:51:35 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 7:51:37 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 8:03:07 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 8:03:12 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 8:08:52 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 8:08:57 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 8:13:04 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 8:13:06 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 8:13:08 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 8:14:18 PM] [CRITICAL] Unhandled Error: Uncaught Error: React has blocked a javascript: URL as a security precaution.
+Stack Trace: Error: React has blocked a javascript: URL as a security precaution.
+    at <anonymous>:1:7
+[6/8/2026, 8:14:19 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 8:18:34 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 8:20:56 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 8:21:35 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 8:21:35 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/8/2026, 8:25:52 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 8:40:18 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth
+[6/8/2026, 8:42:19 PM] [ERROR] Invalid DOM property `%s`. Did you mean `%s`? stroke-width strokeWidth

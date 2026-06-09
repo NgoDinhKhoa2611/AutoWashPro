@@ -32,10 +32,38 @@ namespace Auto_Wash.Data
 
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
+            // Enum conversions: int-backed enums map directly; string-backed enums need explicit converters
+            builder.Entity<Account>()
+                .Property(a => a.Role)
+                .HasConversion<int>();
+
+            builder.Entity<Booking>()
+                .Property(b => b.Status)
+                .HasConversion<int>();
+
+            builder.Entity<Service>()
+                .Property(s => s.Category)
+                .HasConversion<int>();
+
+            builder.Entity<Queue>()
+                .Property(q => q.Status)
+                .HasConversion<string>()
+                .HasMaxLength(30);
+
+            builder.Entity<RewardRedemption>()
+                .Property(r => r.Status)
+                .HasConversion<string>()
+                .HasMaxLength(20);
+
             // 1. OtpVerifications
+
             builder.Entity<OtpVerification>()
-                .HasIndex(o => o.Phone)
+                .HasIndex(o => o.Email)
                 .HasDatabaseName("idx_otp_email");
+
+            builder.Entity<OtpVerification>()
+                .HasIndex(o => o.PlateNumber)
+                .HasDatabaseName("idx_otp_platenumber");
 
             // 2. Tiers (No special index or unique keys other than PK)
 

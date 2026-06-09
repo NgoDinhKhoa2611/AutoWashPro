@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/shared.css';
 import '../styles/admin/services.css';
+import { adminService } from '../services/adminService';
 
 const DEFAULT_CATALOG = [
   { id: 'service_01', name: 'Rửa xe phổ thông', description: 'Rửa vỏ bọt tuyết cơ bản và sấy khô nhanh chóng.', category: 'Dịch vụ chính', price: 35000, estimatedMinutes: 20, isActive: true, isFeatured: false, status: 'Active' },
@@ -35,32 +36,18 @@ export const AdminServices = () => {
     loadServices();
   }, []);
 
-  const loadServices = () => {
-    const saved = localStorage.getItem('app_services');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setServices(parsed);
-          return;
-        }
-      } catch (e) {
-        console.error('Failed to parse app_services', e);
+  const loadServices = async () => {
+    try {
+      const res = await adminService.getServices();
+      if (res && res.success) {
+        setServices(res.services);
+      } else {
+        if (window.showToast) window.showToast('Không thể tải danh sách dịch vụ', 'error');
       }
+    } catch (e) {
+      console.error('Failed to parse app_services', e);
+      if (window.showToast) window.showToast('Lỗi tải danh sách dịch vụ', 'error');
     }
-    const initialList = DEFAULT_CATALOG.map(s => ({
-      ...s,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }));
-    localStorage.setItem('app_services', JSON.stringify(initialList));
-    setServices(initialList);
-  };
-
-  const saveCatalog = (list) => {
-    setServices(list);
-    localStorage.setItem('app_services', JSON.stringify(list));
-    window.dispatchEvent(new Event('storage'));
   };
 
   const openAddServiceModal = () => {
@@ -93,66 +80,85 @@ export const AdminServices = () => {
     setShowModal(false);
   };
 
-  const saveService = (e) => {
+  const saveService = async (e) => {
     e.preventDefault();
     if (!svcName.trim()) {
       if (window.showToast) window.showToast('Vui lòng điền tên dịch vụ', 'error');
       return;
     }
 
-    const data = {
+    const payload = {
+      id: modalMode === 'edit' ? editingId : null,
       name: svcName.trim(),
       description: svcDesc.trim(),
       category: svcCategory,
       price: Number(svcPrice),
       estimatedMinutes: Number(svcMinutes),
       isActive: svcActive,
-      isFeatured: svcFeatured,
-      status: svcActive ? 'Active' : 'Inactive',
-      updatedAt: new Date().toISOString()
+      isFeatured: svcFeatured
     };
 
-    let updated;
-    if (modalMode === 'add') {
-      updated = [{ ...data, id: 'service_' + Date.now(), createdAt: new Date().toISOString() }, ...services];
-      if (window.showToast) window.showToast(`Đã thêm dịch vụ "${data.name}" thành công!`, 'success');
-    } else {
-      updated = services.map(s => s.id === editingId ? { ...s, ...data } : s);
-      if (window.showToast) window.showToast('Cập nhật thông tin dịch vụ thành công!', 'success');
-    }
-
-    saveCatalog(updated);
-    closeServiceModal();
-  };
-
-  const toggleServiceActive = (id) => {
-    const s = services.find(sv => sv.id === id);
-    if (!s) return;
-    const current = s.isActive !== undefined ? s.isActive : s.status === 'Active';
-    const next = !current;
-    const updated = services.map(sv => sv.id === id ? {
-      ...sv,
-      isActive: next,
-      status: next ? 'Active' : 'Inactive',
-      updatedAt: new Date().toISOString()
-    } : sv);
-    saveCatalog(updated);
-    if (window.showToast) {
-      window.showToast(`Đã ${next ? 'KÍCH HOẠT' : 'ẨN'} dịch vụ "${s.name}"`, next ? 'success' : 'warning');
+    try {
+      const res = await adminService.saveService(payload);
+      if (res && res.success) {
+        if (window.showToast) window.showToast(modalMode === 'add' ? `Đã thêm dịch vụ "${payload.name}" thành công!` : 'Cập nhật thông tin dịch vụ thành công!', 'success');
+        loadServices();
+        closeServiceModal();
+      } else {
+        if (window.showToast) window.showToast(res.message || 'Lỗi lưu dịch vụ', 'error');
+      }
+    } catch (e) {
+      console.error('Failed to save service', e);
+      if (window.showToast) window.showToast('Lỗi lưu dịch vụ', 'error');
     }
   };
 
-  const deleteService = (id) => {
+  const toggleServiceActive = async (id) => {
     const s = services.find(sv => sv.id === id);
     if (!s) return;
+    try {
+      const res = await adminService.toggleService(id);
+      if (res && res.success) {
+        const current = s.isActive !== undefined ? s.isActive : s.status === 'Active';
+        const next = !current;
+        if (window.showToast) {
+          window.showToast(`Đã ${next ? 'KÍCH HOẠT' : 'ẨN'} dịch vụ "${s.name}"`, next ? 'success' : 'warning');
+        }
+        loadServices();
+      } else {
+        if (window.showToast) window.showToast(res.message || 'Không thể thay đổi trạng thái', 'error');
+      }
+    } catch (e) {
+      console.error('Failed to toggle status', e);
+      if (window.showToast) window.showToast('Lỗi thay đổi trạng thái', 'error');
+    }
+  };
+
+  const deleteService = async (id) => {
+    const s = services.find(sv => sv.id === id);
+    if (!s) return;
+    
+    const performDelete = async () => {
+      try {
+        const res = await adminService.deleteService(id);
+        if (res && res.success) {
+          if (window.showToast) window.showToast(`Đã xóa dịch vụ "${s.name}" khỏi hệ thống.`, 'success');
+          loadServices();
+        } else {
+          if (window.showToast) window.showToast(res.message || 'Không thể xóa dịch vụ', 'error');
+        }
+      } catch (e) {
+        console.error('Failed to delete service', e);
+        const errMsg = e.response?.data?.message || 'Lỗi xóa dịch vụ';
+        if (window.showToast) window.showToast(errMsg, 'error');
+      }
+    };
+
     if (window.showConfirm) {
-      window.showConfirm('Xóa dịch vụ', `Bạn có chắc chắn muốn xóa vĩnh viễn dịch vụ "${s.name}"? Thao tác này không thể hoàn tác.`, () => {
-        saveCatalog(services.filter(sv => sv.id !== id));
-        if (window.showToast) window.showToast(`Đã xóa dịch vụ "${s.name}" khỏi hệ thống.`, 'success');
-      });
+      window.showConfirm('Xóa dịch vụ', `Bạn có chắc chắn muốn xóa vĩnh viễn dịch vụ "${s.name}"? Thao tác này không thể hoàn tác.`, performDelete);
     } else {
       if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn dịch vụ "${s.name}"?`)) {
-        saveCatalog(services.filter(sv => sv.id !== id));
+        performDelete();
       }
     }
   };

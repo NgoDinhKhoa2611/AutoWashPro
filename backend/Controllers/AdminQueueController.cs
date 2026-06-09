@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Auto_Wash.Services;
 using Auto_Wash.DTOs.AdminQueue;
+using Auto_Wash.Helpers;
 
 namespace Auto_Wash.Controllers
 {
@@ -19,7 +20,8 @@ namespace Auto_Wash.Controllers
         private bool IsAdminOrStaff()
         {
             var role = HttpContext.Session.GetString("UserRole");
-            return role == "admin" || role == "staff";
+            return string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(role, "staff", StringComparison.OrdinalIgnoreCase);
         }
 
         [HttpGet]
@@ -137,6 +139,11 @@ namespace Auto_Wash.Controllers
             if (request == null)
             {
                 return BadRequest(new { success = false, message = "Dữ liệu yêu cầu không hợp lệ!" });
+            }
+
+            if (!LicensePlateHelper.IsValidVietnameseLicensePlate(request.LicensePlate))
+            {
+                return BadRequest(new { success = false, message = "Biển số xe không hợp lệ hoặc đầu số tỉnh thành không tồn tại!" });
             }
 
             try
