@@ -234,21 +234,21 @@ export const CustomerLoyalty = () => {
               </span>
             </div>
 
-            {/* Filter buttons */}
-            <div className="d-flex flex-wrap gap-1.5 mb-4">
-              {['Tất cả', 'Giảm giá', 'Dịch vụ', 'Quà tặng'].map(f => (
-                <button
-                  key={f}
-                  className={`btn btn-sm px-3.5 py-2 border-0 rounded-pill ${
-                    activeFilter === f ? 'app-btn-primary text-dark' : 'bg-light text-muted'
-                  }`}
-                  style={{ fontSize: '0.75rem' }}
-                  onClick={() => setActiveFilter(f)}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
+{/* Filter buttons */}
+<div className="d-flex gap-1.5 mb-4 overflow-auto" style={{ whiteSpace: 'nowrap' }}>
+  {['Tất cả', 'Giảm giá', 'Dịch vụ', 'Quà tặng'].map(f => (
+    <button
+      key={f}
+      className={`btn btn-sm px-3.5 py-2 border-0 rounded-pill ${
+        activeFilter === f ? 'app-btn-primary text-dark' : 'bg-light text-muted'
+      } loyalty-filter-btn`}
+      style={{ fontSize: '0.75rem' }}
+      onClick={() => setActiveFilter(f)}
+    >
+      {f}
+    </button>
+  ))}
+</div>
 
             {/* Rewards tickets grid */}
             <div className="row g-3" id="rewards-grid">

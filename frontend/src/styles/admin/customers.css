@@ -33,25 +33,4 @@
     vertical-align: middle;
     background-color: #f1f5f9; /* Giúp giao diện không bị méo/vỡ khi ảnh load chậm */
 }
-{ /* Dán thay thế vào vị trí hiển thị avatar trong file component React */
-}
-
-<img
-src= {
-    customer .avatar_url || '/assets/images/default-avatar.png'
-}
-
-className="customer-avatar"
-alt= {
-    customer .name
-}
-
-onError= {
-    (e) = > {
-        e .target.onerror = null;
-        e .target.src = '/assets/images/default-avatar.png';
-        // Đường dẫn đến ảnh mặc định của bạn
-    }
-}
-
-/ >
+/* Dán thay thế vào vị trí hiển thị avatar trong file component React */
