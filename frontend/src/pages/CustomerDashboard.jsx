@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { customerService } from '../services/customerService';
@@ -6,7 +6,7 @@ import '../styles/shared.css';
 import '../styles/customer/dashboard.css';
 
 export const CustomerDashboard = () => {
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
   const [greeting, setGreeting] = useState('Xin chào');
   const [weatherStatus, setWeatherStatus] = useState('');
   const [activeBooking, setActiveBooking] = useState(null);
@@ -21,10 +21,11 @@ export const CustomerDashboard = () => {
   useEffect(() => {
     // 1. Greeting header based on hour
     const hour = new Date().getHours();
-    let prefix = 'Xin chào';
-    if (hour >= 5 && hour < 12) prefix = 'Chào buổi sáng ☀️';
-    else if (hour >= 12 && hour < 18) prefix = 'Chào buổi chiều 🌤️';
-    else prefix = 'Chào buổi tối 🌙';
+    const prefix = hour >= 5 && hour < 12
+      ? 'Chào buổi sáng ☀️'
+      : hour >= 12 && hour < 18
+        ? 'Chào buổi chiều 🌤️'
+        : 'Chào buổi tối 🌙';
     setGreeting(prefix);
 
     // 2. Weather status chip
@@ -265,19 +266,6 @@ export const CustomerDashboard = () => {
   const remainingSteps = activeBooking ? Math.max(0, totalSteps - 1 - washStep) : 0;
   const minutesLeft = remainingSteps * 5;
   const etaText = washStep === totalSteps - 1 ? 'Đã xong' : `${minutesLeft} phút`;
-
-  const getStepIcon = (name) => {
-    const n = name.toUpperCase();
-    if (n.includes('LPR')) return 'fa-fingerprint';
-    if (n.includes('BỌT TUYẾT') || n.includes('RỬA')) return 'fa-spray-can';
-    if (n.includes('SẤY')) return 'fa-wind';
-    if (n.includes('NỘI THẤT')) return 'fa-couch';
-    if (n.includes('NANO') || n.includes('WAX')) return 'fa-shield-alt';
-    if (n.includes('NHỰA')) return 'fa-magic';
-    if (n.includes('SÊN')) return 'fa-link';
-    if (n.includes('HOÀN TẤT')) return 'fa-check-double';
-    return 'fa-plus-circle';
-  };
 
   const points = user?.points ?? 0;
   const rawTier = user?.tier || 'Standard Member';
@@ -532,7 +520,11 @@ export const CustomerDashboard = () => {
                   const isCompleted = i < washStep;
                   const isActive = i === washStep;
                   
-                  let iconElement = null;
+                  const iconElement = isCompleted
+                    ? <i className="fas fa-check-circle text-success me-2 fs-6"></i>
+                    : isActive
+                      ? <i className="fas fa-spinner fa-spin text-primary me-2 fs-6"></i>
+                      : <i className="far fa-circle text-muted me-2 fs-6"></i>;
                   let itemBg = 'rgba(15, 23, 42, 0.01)';
                   let itemBorder = 'rgba(15, 23, 42, 0.03)';
                   let labelClass = 'text-muted';
@@ -540,19 +532,15 @@ export const CustomerDashboard = () => {
                   let badgeClass = 'bg-secondary bg-opacity-10 text-muted';
 
                   if (isCompleted) {
-                    iconElement = <i className="fas fa-check-circle text-success me-2 fs-6"></i>;
                     labelClass = 'text-secondary text-decoration-line-through';
                     badgeText = 'Xong';
                     badgeClass = 'bg-success bg-opacity-10 text-success';
                   } else if (isActive) {
-                    iconElement = <i className="fas fa-spinner fa-spin text-primary me-2 fs-6"></i>;
                     itemBg = 'rgba(14, 165, 233, 0.03)';
                     itemBorder = 'rgba(14, 165, 233, 0.2)';
                     labelClass = 'text-dark fw-bold';
                     badgeText = 'Đang chạy';
                     badgeClass = 'bg-info bg-opacity-10 text-cyan';
-                  } else {
-                    iconElement = <i className="far fa-circle text-muted me-2 fs-6"></i>;
                   }
 
                   return (

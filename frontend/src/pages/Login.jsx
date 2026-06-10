@@ -1,16 +1,29 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { authService } from "../services/authService";
 import "../styles/shared.css";
 import "../styles/login.css";
 
+const decodeJwt = (token) => {
+  const base64Url = token.split(".")[1];
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  const jsonPayload = decodeURIComponent(
+    window
+      .atob(base64)
+      .split("")
+      .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+      .join(""),
+  );
+  return JSON.parse(jsonPayload);
+};
+
 export const Login = () => {
   const { user, loading, login, register, googleLogin, completeGoogleSignup } =
     useAuth();
   const navigate = useNavigate();
 
-  const navigateByRole = (role) => {
+  const navigateByRole = useCallback((role) => {
     if (role === "admin") {
       navigate("/admin/dashboard");
     } else if (role === "staff") {
@@ -18,13 +31,13 @@ export const Login = () => {
     } else {
       navigate("/customer/dashboard");
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     if (!loading && user) {
       navigateByRole(user.role);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigateByRole]);
 
   // Panels: 'login' (controls both signin/signup sliders) | 'otp' | 'google-complete'
   const [panel, setPanel] = useState("login");
@@ -82,57 +95,8 @@ export const Login = () => {
     };
   }, [loginLoading, regLoading]);
 
-  useEffect(() => {
-    // Google Sign-In button rendering inside the login panel
-    const initGoogle = () => {
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (!clientId) {
-        console.warn(
-          "[Google Sign-In Warning] VITE_GOOGLE_CLIENT_ID is not configured in the environment variables. Google login is disabled.",
-        );
-        return;
-      }
-      if (window.google && panel === "login") {
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: handleGoogleCredential,
-        });
-
-        const renderBtns = () => {
-          const containerLogin = document.getElementById(
-            "google-login-btn-login",
-          );
-          if (containerLogin) {
-            window.google.accounts.id.renderButton(containerLogin, {
-              theme: "outline",
-              size: "large",
-              width: 320,
-              text: "signin_with",
-              shape: "pill",
-              logo_alignment: "left",
-            });
-          }
-        };
-
-        renderBtns();
-        // Fallback timeout in case element rendering is delayed by slide animation transition
-        setTimeout(renderBtns, 300);
-      } else {
-        setTimeout(initGoogle, 100);
-      }
-    };
-
-    if (panel === "login") {
-      initGoogle();
-    }
-
-    return () => {
-      clearInterval(otpTimerRef.current);
-    };
-  }, [panel, isRegisterActive]);
-
   // Google callback
-  const handleGoogleCredential = async (response) => {
+  const handleGoogleCredential = useCallback(async (response) => {
     try {
       const payload = decodeJwt(response.credential);
       const email = payload.email;
@@ -176,22 +140,59 @@ export const Login = () => {
       if (window.showToast)
         window.showToast("Có lỗi xảy ra khi đăng nhập bằng Google!", "error");
     }
-  };
+  }, [googleLogin, navigateByRole]);
 
-  const decodeJwt = (token) => {
-    let base64Url = token.split(".")[1];
-    let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    let jsonPayload = decodeURIComponent(
-      window
-        .atob(base64)
-        .split("")
-        .map(function (c) {
-          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join(""),
-    );
-    return JSON.parse(jsonPayload);
-  };
+  useEffect(() => {
+    let retryTimer;
+    let renderTimer;
+
+    const initGoogle = () => {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        console.warn(
+          "[Google Sign-In Warning] VITE_GOOGLE_CLIENT_ID is not configured in the environment variables. Google login is disabled.",
+        );
+        return;
+      }
+      if (window.google && panel === "login") {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredential,
+        });
+
+        const renderBtns = () => {
+          const containerLogin = document.getElementById(
+            "google-login-btn-login",
+          );
+          if (containerLogin) {
+            window.google.accounts.id.renderButton(containerLogin, {
+              theme: "outline",
+              size: "large",
+              width: 320,
+              text: "signin_with",
+              shape: "pill",
+              logo_alignment: "left",
+            });
+          }
+        };
+
+        renderBtns();
+        renderTimer = setTimeout(renderBtns, 300);
+      } else {
+        retryTimer = setTimeout(initGoogle, 100);
+      }
+    };
+
+    if (panel === "login") {
+      initGoogle();
+    }
+
+    return () => {
+      clearTimeout(retryTimer);
+      clearTimeout(renderTimer);
+      clearInterval(otpTimerRef.current);
+    };
+  }, [panel, isRegisterActive, handleGoogleCredential]);
 
   // Login submission
   const handleLoginSubmit = async (e) => {

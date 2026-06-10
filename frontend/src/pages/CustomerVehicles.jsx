@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useState, useEffect } from 'react';
 import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/profile.css';
 
 export const CustomerVehicles = () => {
-  const { user } = useAuth();
   const [vehicles, setVehicles] = useState([]);
   const [newPlate, setNewPlate] = useState('');
   const [newType, setNewType] = useState('');

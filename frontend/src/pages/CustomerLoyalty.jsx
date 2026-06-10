@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import "../styles/shared.css";
 import "../styles/customer/loyalty.css";
@@ -46,9 +47,12 @@ const TIER_DATA = {
 
 export const CustomerLoyalty = () => {
   const { user, updateUser } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("Tất cả");
   const [claimedVouchers, setClaimedVouchers] = useState([]);
   const [rewards, setRewards] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [pendingRedeem, setPendingRedeem] = useState(null);
   const [redeemModalOpen, setRedeemModalOpen] = useState(false);
@@ -76,10 +80,11 @@ export const CustomerLoyalty = () => {
   };
 
   useEffect(() => {
-    fetchClaimedVouchers();
-    loadRewards();
+    Promise.all([fetchClaimedVouchers(), loadRewards()]).finally(() => {
+      setLoading(false);
+    });
 
-    const query = new URLSearchParams(window.location.search);
+    const query = new URLSearchParams(location.search);
     const tab = query.get("tab");
     if (tab === "vouchers") {
       const el = document.getElementById("my-vouchers-section");
@@ -89,12 +94,7 @@ export const CustomerLoyalty = () => {
         }, 350);
       }
     }
-  }, [window.location.search]);
-
-  const handleChangeTier = (tierName) => {
-    localStorage.setItem("user_tier", tierName);
-    updateUser({ tier: tierName });
-  };
+  }, [location.search]);
 
   const getFilteredRewards = () => {
     if (activeFilter === "Tất cả") return rewards;
@@ -147,13 +147,9 @@ export const CustomerLoyalty = () => {
     }
   };
 
-  const handleUseVoucher = (redemptionId) => {
-    if (window.showToast) {
-      window.showToast(
-        "Voucher này sẽ tự động có sẵn để bạn chọn khi đặt lịch tại tab ĐẶT LỊCH (Booking)!",
-        "success",
-      );
-    }
+  const handleUseVoucher = (voucher) => {
+    sessionStorage.setItem("selected_voucher_code", voucher.code);
+    navigate("/customer/booking");
   };
 
   const rawTier = user?.tier || "Standard Member";
@@ -180,26 +176,6 @@ export const CustomerLoyalty = () => {
 
   return (
     <div className="container-fluid py-4">
-      {/* Interactive Tier Simulator controls */}
-      <div className="row mb-4">
-        <div className="col-12 text-start">
-          <small className="text-cyan fw-bold" style={{ letterSpacing: "1px" }}>
-            SIMULATOR PHÂN HẠNG THÀNH VIÊN
-          </small>
-          <div className="d-flex flex-wrap gap-2 mt-2">
-            {Object.keys(TIER_DATA).map((key) => (
-              <button
-                key={key}
-                className={`btn btn-sm px-3 rounded-pill fw-bold ${currentTier === key ? "bg-navy text-cyan" : "btn-outline-secondary"}`}
-                onClick={() => handleChangeTier(key)}
-              >
-                {key.replace(" Member", "")}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       <div className="row g-4">
         {/* Left Column: Loyalty Card and Rules */}
         <div className="col-lg-5">
@@ -333,15 +309,17 @@ export const CustomerLoyalty = () => {
             </div>
 
             {/* Filter buttons */}
-            <div className="d-flex flex-wrap gap-1.5 mb-4">
+            <div className="loyalty-filter-grid mb-4" role="group" aria-label="Lọc ưu đãi">
               {["Tất cả", "Giảm giá", "Dịch vụ", "Quà tặng"].map((f) => (
                 <button
+                  type="button"
                   key={f}
                   className={`btn btn-sm loyalty-filter-btn border-0 rounded-pill ${
                     activeFilter === f
                       ? "app-btn-primary text-dark"
                       : "bg-light text-muted"
                   }`}
+                  aria-pressed={activeFilter === f}
                   onClick={() => setActiveFilter(f)}
                 >
                   {f}
@@ -350,19 +328,33 @@ export const CustomerLoyalty = () => {
             </div>
 
             {/* Rewards tickets grid */}
+            {loading && (
+              <div className="text-center py-5">
+                <div className="spinner-border text-info" role="status">
+                  <span className="visually-hidden">Đang tải...</span>
+                </div>
+              </div>
+            )}
+            {!loading && getFilteredRewards().length === 0 && (
+              <div className="text-center text-muted py-5">
+                <i className="fas fa-gift fa-2x mb-3 opacity-25"></i>
+                <p className="mb-0">Chưa có phần thưởng phù hợp với bộ lọc này.</p>
+              </div>
+            )}
             <div className="row g-3" id="rewards-grid">
               {getFilteredRewards().map((r) => {
                 const canRedeem = pts >= r.pointsRequired;
+                const isFreeWash = r.rewardType === "Free_Wash" || r.rewardType === "FreeWash";
                 let leftVal =
                   r.rewardType === "DiscountPercent"
                     ? `${r.rewardValue}%`
-                    : r.rewardType === "FreeWash"
+                    : isFreeWash
                       ? "FREE"
                       : "PLUS";
                 let leftLabel =
                   r.rewardType === "DiscountPercent"
                     ? "GIẢM GIÁ"
-                    : r.rewardType === "FreeWash"
+                    : isFreeWash
                       ? "RỬA XE"
                       : "TẶNG KÈM";
 
@@ -431,16 +423,17 @@ export const CustomerLoyalty = () => {
               <div className="row g-3" id="my-vouchers-grid">
                 {claimedVouchers.map((v, i) => {
                   const isUsed = v.status === 2;
+                  const isFreeWash = v.rewardType === "Free_Wash" || v.rewardType === "FreeWash";
                   let leftVal =
                     v.rewardType === "DiscountPercent"
                       ? `${v.rewardValue}%`
-                      : v.rewardType === "FreeWash"
+                      : isFreeWash
                         ? "FREE"
                         : "PLUS";
                   let leftLabel =
                     v.rewardType === "DiscountPercent"
                       ? "GIẢM GIÁ"
-                      : v.rewardType === "FreeWash"
+                      : isFreeWash
                         ? "RỬA XE"
                         : "TẶNG KÈM";
 
@@ -482,7 +475,7 @@ export const CustomerLoyalty = () => {
                                   padding: "4px 12px",
                                   borderRadius: "8px",
                                 }}
-                                onClick={() => handleUseVoucher(v.redemptionId)}
+                                onClick={() => handleUseVoucher(v)}
                               >
                                 SỬ DỤNG
                               </button>

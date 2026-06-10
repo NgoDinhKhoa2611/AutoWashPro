@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export const GlobalToastAndConfirm = () => {
   const [confirm, setConfirm] = useState(null);
@@ -22,19 +22,32 @@ export const GlobalToastAndConfirm = () => {
       const el = document.createElement('div');
       el.className = `toast-item toast-${type} animate-toast-in`;
       el.id = id;
-      el.innerHTML = `
-          <div class="toast-icon"><i class="fas ${icon}"></i></div>
-          <div class="toast-content">${message}</div>
-          <button class="toast-close-btn" id="btn_close_${id}"><i class="fas fa-times"></i></button>
-          <div class="toast-progress"></div>
-      `;
+
+      const iconBox = document.createElement('div');
+      iconBox.className = 'toast-icon';
+      const iconElement = document.createElement('i');
+      iconElement.className = `fas ${icon}`;
+      iconBox.appendChild(iconElement);
+
+      const content = document.createElement('div');
+      content.className = 'toast-content';
+      content.textContent = String(message);
+
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'toast-close-btn';
+      closeBtn.setAttribute('aria-label', 'Đóng thông báo');
+      const closeIcon = document.createElement('i');
+      closeIcon.className = 'fas fa-times';
+      closeBtn.appendChild(closeIcon);
+
+      const progress = document.createElement('div');
+      progress.className = 'toast-progress';
+
+      el.append(iconBox, content, closeBtn, progress);
 
       container.appendChild(el);
-      
-      const closeBtn = el.querySelector(`#btn_close_${id}`);
-      if (closeBtn) {
-        closeBtn.onclick = () => window.dismissToast(id);
-      }
+      closeBtn.onclick = () => window.dismissToast(id);
 
       setTimeout(() => window.dismissToast(id), 3500);
     };

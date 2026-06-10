@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import '../styles/shared.css';
 import '../styles/admin/customers.css';
 import { adminService } from '../services/adminService';
@@ -20,12 +20,7 @@ export const AdminCustomers = () => {
   const [selectedVoucherCode, setSelectedVoucherCode] = useState('');
   const [vouchersCatalog, setVouchersCatalog] = useState([]);
 
-  useEffect(() => {
-    loadCustomers();
-    loadVouchersCatalog();
-  }, [searchTerm]);
-
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     try {
       const res = await adminService.getCustomers(searchTerm);
       if (res && res.success) {
@@ -34,21 +29,29 @@ export const AdminCustomers = () => {
     } catch (e) {
       console.error('Failed to load customers', e);
     }
-  };
+  }, [searchTerm]);
 
-  const loadVouchersCatalog = async () => {
+  const loadVouchersCatalog = useCallback(async () => {
     try {
       const res = await adminService.getAvailableVouchers();
       if (res && res.success) {
         setVouchersCatalog(res.vouchers);
-        if (res.vouchers.length > 0 && !selectedVoucherCode) {
-          setSelectedVoucherCode(res.vouchers[0].code);
+        if (res.vouchers.length > 0) {
+          setSelectedVoucherCode(current => current || res.vouchers[0].code);
         }
       }
     } catch (e) {
       console.error('Failed to load vouchers', e);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadCustomers();
+  }, [loadCustomers]);
+
+  useEffect(() => {
+    loadVouchersCatalog();
+  }, [loadVouchersCatalog]);
 
   const getTierBadgeClass = (tier) => {
     const t = (tier || '').toUpperCase();

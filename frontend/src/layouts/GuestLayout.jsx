@@ -1,4 +1,3 @@
-import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { GlobalToastAndConfirm } from '../components/GlobalToastAndConfirm';
 import '../styles/shared.css';

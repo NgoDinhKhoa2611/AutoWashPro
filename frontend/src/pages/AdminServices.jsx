@@ -1,17 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import '../styles/shared.css';
 import '../styles/admin/services.css';
 import { adminService } from '../services/adminService';
-
-const DEFAULT_CATALOG = [
-  { id: 'service_01', name: 'Rửa xe phổ thông', description: 'Rửa vỏ bọt tuyết cơ bản và sấy khô nhanh chóng.', category: 'Dịch vụ chính', price: 35000, estimatedMinutes: 20, isActive: true, isFeatured: false, status: 'Active' },
-  { id: 'service_02', name: 'Combo Rửa xe cao cấp', description: 'Rửa vỏ chi tiết bọt tuyết, sáp phủ bóng nano, vệ sinh nội thất và sấy khô.', category: 'Dịch vụ chính', price: 85000, estimatedMinutes: 45, isActive: true, isFeatured: true, status: 'Active' },
-  { id: 'service_06', name: 'Rửa xe siêu nhanh', description: 'Rửa vỏ cơ bản nhanh chóng dành cho giờ cao điểm.', category: 'Dịch vụ chính', price: 25000, estimatedMinutes: 10, isActive: true, isFeatured: false, status: 'Active' },
-  { id: 'service_03', name: 'Vệ sinh sên xích', description: 'Tẩy rửa cặn dầu mỡ trên xích sên, dưỡng sên cao cấp giúp vận hành êm ái.', category: 'Dịch vụ đi kèm', price: 20000, estimatedMinutes: 10, isActive: true, isFeatured: false, status: 'Active' },
-  { id: 'service_04', name: 'Wax nano', description: 'Phủ lớp sáp wax bóng chuyên dụng giúp bảo vệ lớp sơn bóng bẩy và kháng nước.', category: 'Dịch vụ đi kèm', price: 25000, estimatedMinutes: 15, isActive: true, isFeatured: false, status: 'Active' },
-  { id: 'service_05', name: 'Chăm sóc dưỡng nhựa', description: 'Dưỡng phục hồi các phần nhựa đen nhám bị bạc màu trên xe máy.', category: 'Dịch vụ đi kèm', price: 30000, estimatedMinutes: 15, isActive: true, isFeatured: false, status: 'Active' },
-  { id: 'service_07', name: 'Vệ sinh nội thất', description: 'Lau dọn cabin, hút bụi và vệ sinh ghế chi tiết.', category: 'Dịch vụ đi kèm', price: 30000, estimatedMinutes: 15, isActive: true, isFeatured: false, status: 'Active' }
-];
 
 export const AdminServices = () => {
   const [services, setServices] = useState([]);
