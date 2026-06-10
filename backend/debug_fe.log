@@ -459,6 +459,7 @@ Stack Trace: AxiosError: Request failed with status code 400
     at async register (http://localhost:5023/assets/index-wdZL5p42.js:19:30431)
     at async onClick (http://localhost:5023/assets/index-wdZL5p42.js:24:65816)
 [6/9/2026, 7:45:03 AM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+<<<<<<< HEAD
 [6/9/2026, 8:10:00 AM] [ERROR] {"message":"Request failed with status code 500","name":"AxiosError","stack":"AxiosError: Request failed with status code 500\n    at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)\n    at XMLHttpRequest.g (https://localhost:7069/assets/index-Cd9KuUCv.js:3:15060)\n    at An.request (https://localhost:7069/assets/index-Cd9KuUCv.js:5:2128)\n    at async Object.googleLogin (https://localhost:7069/assets/index-Cd9KuUCv.js:19:27104)\n    at async Ps.xe [as callback] (https://localhost:7069/assets/index-Cd9KuUCv.js:24:53524)","config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false,"legacyInterceptorReqResOrdering":true},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":0,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json"},"baseURL":"","withCredentials":true,"method":"post","url":"/Account/GoogleLogin","data":"{\"Email\":\"trankhoa1333@gmail.com\",\"FullName\":\"dangkhoa tran\",\"GoogleId\":\"101756588597744585909\"}","allowAbsoluteUrls":true},"code":"ERR_BAD_RESPONSE","status":500}
 Stack Trace: AxiosError: Request failed with status code 500
     at zt (https://localhost:7069/assets/index-Cd9KuUCv.js:3:9823)
@@ -776,3 +777,8 @@ Stack Trace: ReferenceError: customerService is not defined
     at Tl (https://localhost:7069/assets/index-Cd9KuUCv.js:16:106826)
     at El (https://localhost:7069/assets/index-Cd9KuUCv.js:16:107706)
 [6/9/2026, 4:27:07 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+=======
+>>>>>>> c1faed906fbb28ff796efd101007caf2ee5dc0eb
+[6/9/2026, 10:01:46 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 10:01:48 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
+[6/9/2026, 10:01:51 PM] [WARN] [GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.
