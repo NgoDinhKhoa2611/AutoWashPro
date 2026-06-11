@@ -25,9 +25,7 @@ namespace Auto_Wash.Data.Entities
 
         public int? TierId { get; set; }
 
-        [Required]
-        [MaxLength(30)]
-        public string Status { get; set; } = "Waiting";
+        public QueueStatus Status { get; set; } = QueueStatus.Waiting;
 
         public int Position { get; set; }
 

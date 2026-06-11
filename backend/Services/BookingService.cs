@@ -45,9 +45,9 @@ namespace Auto_Wash.Services
                     .ThenInclude(bs => bs.Service)
                 .Include(b => b.Queues)
                 .Where(b => b.CustomerId == customerId 
-                    && (b.Status == (int)BookingStatus.Pending 
-                        || b.Status == (int)BookingStatus.Confirmed 
-                        || b.Status == (int)BookingStatus.CheckedIn))
+                    && (b.Status == BookingStatus.Pending 
+                        || b.Status == BookingStatus.Confirmed 
+                        || b.Status == BookingStatus.CheckedIn))
                 .OrderByDescending(b => b.ScheduledAt)
                 .FirstOrDefaultAsync();
         }
@@ -118,7 +118,7 @@ namespace Auto_Wash.Services
                 // 5. Prevent duplicate bookings for the same vehicle in the same hour
                 var hasDuplicate = await _context.Bookings
                     .AnyAsync(b => b.VehicleId == vehicle.VehicleId
-                                && b.Status != (int)BookingStatus.Completed && b.Status != (int)BookingStatus.Cancelled
+                                && b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled
                                 && b.ScheduledAt.Date == scheduledAt.Date
                                 && b.ScheduledAt.Hour == scheduledAt.Hour);
                 if (hasDuplicate)
@@ -128,7 +128,7 @@ namespace Auto_Wash.Services
 
                 // 6. Capacity constraints: max 3 bookings per hour slot
                 var slotCount = await _context.Bookings
-                    .CountAsync(b => b.Status != (int)BookingStatus.Completed && b.Status != (int)BookingStatus.Cancelled
+                    .CountAsync(b => b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled
                                   && b.ScheduledAt.Date == scheduledAt.Date
                                   && b.ScheduledAt.Hour == scheduledAt.Hour);
                 if (slotCount >= 3)
@@ -171,7 +171,7 @@ namespace Auto_Wash.Services
                         .Include(r => r.Reward)
                         .FirstOrDefaultAsync(r => r.RedemptionId == request.AppliedRedemptionId.Value 
                                                && r.CustomerId == customer.CustomerId 
-                                               && r.Status == "Active");
+                                               && r.Status == RedemptionStatus.Active);
                     if (redemption != null)
                     {
                         if (redemption.Reward.RewardType == "DiscountPercent")
@@ -209,7 +209,7 @@ namespace Auto_Wash.Services
                     CustomerId = customer.CustomerId,
                     VehicleId = vehicle.VehicleId,
                     ScheduledAt = scheduledAt,
-                    Status = (int)BookingStatus.Pending,
+                    Status = BookingStatus.Pending,
                     BasePrice = calculatedBasePrice,
                     PromoDiscount = promoDiscount,
                     FinalPrice = finalPrice,
@@ -224,7 +224,7 @@ namespace Auto_Wash.Services
 
                 if (redemption != null)
                 {
-                    redemption.Status = "Used";
+                    redemption.Status = RedemptionStatus.Used;
                     redemption.UsedAt = DateTime.Now;
                     redemption.BookingId = booking.BookingId;
                 }

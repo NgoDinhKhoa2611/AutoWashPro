@@ -7,22 +7,6 @@
 .customer-table-row { transition: background 0.15s ease; }
 .customer-table-row:hover { background: rgba(14, 165, 233, 0.02); }
 
-/*.customer-avatar {
-    width: 40px; height: 40px;
-    border-radius: 50%; object-fit: cover;
-    border: 2px solid var(--cyan-electric);
-}
-
-<img 
-  src={customer.avatar_url || '/assets/images/default-avatar.png'} 
-  className="customer-avatar" 
-  alt={customer.name}
-  onError={(e) => {
-    e.target.onerror = null; 
-    e.target.src = '/assets/images/default-avatar.png'; // Link ảnh sơ cua khi lỗi
-  }}
-/ >*/
-/* Tìm và thay thế đoạn .customer-avatar cũ bằng đoạn này: */
 .customer-avatar {
     width: 40px;
     height: 40px;

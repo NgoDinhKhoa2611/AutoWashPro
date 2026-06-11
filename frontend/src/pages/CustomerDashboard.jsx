@@ -293,7 +293,7 @@ export const CustomerDashboard = () => {
   };
 
   return (
-    <div className="container-fluid py-3 px-2 px-lg-3">
+    <div className="container-fluid pt-2 pb-3 px-2 px-lg-3">
       {/* Concierge Greeting */}
       <div className="row mb-3">
         <div className="col-12 text-start">
@@ -323,7 +323,7 @@ export const CustomerDashboard = () => {
 
         {/* Card 2: Voucher khả dụng */}
         <div className="col-6 col-md-3">
-          <Link to="/customer/loyalty?tab=vouchers" className="app-card summary-widget-card">
+          <Link to="/customer/loyalty" className="app-card summary-widget-card">
             <div className="summary-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }}>
               <i className="fas fa-ticket-alt"></i>
             </div>
@@ -460,7 +460,7 @@ export const CustomerDashboard = () => {
                         <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.78rem', maxWidth: '140px' }}>{v.title}</div>
                         <small className="text-muted font-monospace d-block" style={{ fontSize: '0.65rem' }}>{v.code}</small>
                       </div>
-                      <Link to="/customer/loyalty?tab=vouchers" className="badge bg-success bg-opacity-10 text-success text-decoration-none fw-bold" style={{ fontSize: '0.62rem', padding: '6px 10px', borderRadius: '6px' }}>
+                      <Link to="/customer/loyalty" className="badge bg-success bg-opacity-10 text-success text-decoration-none fw-bold" style={{ fontSize: '0.62rem', padding: '6px 10px', borderRadius: '6px' }}>
                         DÙNG
                       </Link>
                     </div>
@@ -470,7 +470,69 @@ export const CustomerDashboard = () => {
             )}
           </div>
 
-          {/* 3. Live Wash Tracking (Tesla Car Care Premium design - 100% dynamic timeline) */}
+          {/* 3. Thống Kê & Voucher (merged — moved from right column) */}
+          <div className="app-card border-0 p-3 mb-4 text-start">
+            <h5 className="fw-bold mb-2 text-dark" style={{ fontSize: '0.88rem' }}>
+              <i className="fas fa-chart-bar text-cyan me-2"></i>THỐNG KÊ CÁ NHÂN
+            </h5>
+            <div className="personal-stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+              <div className="personal-stat-box">
+                <div className="personal-stat-icon" style={{ background: 'rgba(2, 132, 199, 0.08)', color: '#0284c7' }}>
+                  <i className="fas fa-hands-wash"></i>
+                </div>
+                <span className="personal-stat-num">{washHistoryCount}</span>
+                <span className="personal-stat-text">Lượt rửa xe</span>
+              </div>
+              <div className="personal-stat-box">
+                <div className="personal-stat-icon" style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }}>
+                  <i className="fas fa-ticket-alt"></i>
+                </div>
+                <span className="personal-stat-num">{vouchersUsedCount}</span>
+                <span className="personal-stat-text">Voucher đã dùng</span>
+              </div>
+              <div className="personal-stat-box">
+                <div className="personal-stat-icon" style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981' }}>
+                  <i className="fas fa-award"></i>
+                </div>
+                <span className="personal-stat-num">{points}</span>
+                <span className="personal-stat-text">Điểm tích luỹ</span>
+              </div>
+              <div className="personal-stat-box">
+                <div className="personal-stat-icon" style={{ background: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' }}>
+                  <i className="fas fa-motorcycle"></i>
+                </div>
+                <span className="personal-stat-num">{vehicles.length}</span>
+                <span className="personal-stat-text">Xe quản lý</span>
+              </div>
+            </div>
+
+            <hr className="my-3 opacity-50" />
+
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <h5 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.88rem' }}>
+                <i className="fas fa-hourglass-end text-danger me-2"></i>VOUCHER GẦN HẾT HẠN
+              </h5>
+            </div>
+            {activeVouchers.length === 0 ? (
+              <div className="text-center py-2 text-muted small" style={{ background: '#f8fafc', borderRadius: '10px', border: '1px dashed #e2e8f0', fontSize: '0.75rem' }}>
+                Không có voucher nào sắp hết hạn
+              </div>
+            ) : (
+              <div className="ticket-dashed-box" style={{ borderLeft: '4px solid #dc2626' }}>
+                <div className="d-flex justify-content-between align-items-center w-100">
+                  <div className="overflow-hidden">
+                    <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.8rem' }}>{activeVouchers[0].title}</div>
+                    <small className="text-secondary d-block" style={{ fontSize: '0.68rem' }}>Mã: {activeVouchers[0].code}</small>
+                  </div>
+                  <span className="badge bg-danger text-white fw-bold px-2 py-1" style={{ fontSize: '0.62rem' }}>
+                    Còn {activeVouchers[0].code === 'WELCOME10' ? '30' : '29'} ngày
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 4. Live Wash Tracking (Tesla Car Care Premium design - 100% dynamic timeline) */}
           {activeBooking && activeBooking.hasQueue && (
             <div className="app-card border-0 p-4 mb-4 text-start" style={{ borderLeft: '4px solid #0ea5e9' }}>
               <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
@@ -709,76 +771,18 @@ export const CustomerDashboard = () => {
                 <p className="text-secondary small mb-3 px-3" style={{ fontSize: '0.7rem' }}>Lên lịch rửa ngay để trải nghiệm quy trình nhận diện LPR cực nhanh.</p>
                 <Link
                   to="/customer/booking"
-                  className="app-btn-primary px-3 py-1.5 text-dark fw-bold text-decoration-none d-inline-block"
-                  style={{ fontSize: '0.72rem', borderRadius: '8px' }}
+                  className="app-btn-primary text-dark fw-bold text-decoration-none d-inline-block"
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '8px 22px',
+                    borderRadius: '10px',
+                    width: 'auto',
+                    minWidth: '160px',
+                    letterSpacing: '0.4px'
+                  }}
                 >
-                  ĐẶT LỊCH NGAY
+                  ĐẶT LỊCH NGAY <i className="fas fa-arrow-right ms-1"></i>
                 </Link>
-              </div>
-            )}
-          </div>
-
-          {/* 3. Thống Kê Cá Nhân */}
-          <div className="app-card border-0 p-4 mb-4 text-start">
-            <h5 className="fw-bold mb-3 text-dark" style={{ fontSize: '0.9rem' }}>
-              <i className="fas fa-chart-bar text-cyan me-2"></i>THỐNG KÊ CÁ NHÂN
-            </h5>
-            <div className="d-flex flex-column gap-3">
-              <div className="personal-stat-box">
-                <div className="personal-stat-icon" style={{ background: 'rgba(2, 132, 199, 0.08)', color: '#0284c7' }}>
-                  <i className="fas fa-hands-wash"></i>
-                </div>
-                <span className="personal-stat-num">{washHistoryCount}</span>
-                <span className="personal-stat-text">Lượt rửa xe</span>
-              </div>
-
-              <div className="personal-stat-box">
-                <div className="personal-stat-icon" style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }}>
-                  <i className="fas fa-ticket-alt"></i>
-                </div>
-                <span className="personal-stat-num">{vouchersUsedCount}</span>
-                <span className="personal-stat-text">Voucher đã dùng</span>
-              </div>
-
-              <div className="personal-stat-box">
-                <div className="personal-stat-icon" style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981' }}>
-                  <i className="fas fa-award"></i>
-                </div>
-                <span className="personal-stat-num">{points}</span>
-                <span className="personal-stat-text">Điểm tích luỹ</span>
-              </div>
-
-              <div className="personal-stat-box">
-                <div className="personal-stat-icon" style={{ background: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' }}>
-                  <i className="fas fa-motorcycle"></i>
-                </div>
-                <span className="personal-stat-num">{vehicles.length}</span>
-                <span className="personal-stat-text">Xe quản lý</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Voucher Gần Hết Hạn */}
-          <div className="app-card border-0 p-4 mb-2 text-start">
-            <h5 className="fw-bold mb-3 text-dark" style={{ fontSize: '0.9rem' }}>
-              <i className="fas fa-hourglass-end text-danger me-2 animate-pulse"></i>VOUCHER GẦN HẾT HẠN
-            </h5>
-
-            {activeVouchers.length === 0 ? (
-              <div className="text-center py-3 text-muted small" style={{ background: '#f8fafc', borderRadius: '10px', border: '1px dashed #e2e8f0' }}>
-                Không có voucher nào sắp hết hạn
-              </div>
-            ) : (
-              <div className="ticket-dashed-box mb-2" style={{ borderLeft: '4px solid #dc2626' }}>
-                <div className="d-flex justify-content-between align-items-center w-100">
-                  <div className="overflow-hidden">
-                    <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.8rem' }}>{activeVouchers[0].title}</div>
-                    <small className="text-secondary d-block" style={{ fontSize: '0.68rem' }}>Mã: {activeVouchers[0].code}</small>
-                  </div>
-                  <span className="badge bg-danger text-white fw-bold px-2 py-1" style={{ fontSize: '0.62rem' }}>
-                    Còn {activeVouchers[0].code === 'WELCOME10' ? '30' : '29'} ngày
-                  </span>
-                </div>
               </div>
             )}
           </div>

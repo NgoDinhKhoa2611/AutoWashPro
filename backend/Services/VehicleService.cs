@@ -52,8 +52,7 @@ namespace Auto_Wash.Services
                 throw new ArgumentException("Biển số xe quá dài (tối đa 10 ký tự sau khi chuẩn hóa)!");
             }
 
-            // Production should add Purpose + LicensePlate columns to OtpVerification.
-            return await _otpService.GenerateAndSaveOtpAsync(email, "VehicleVerification", normPlate);
+            return await _otpService.GenerateAndSaveOtpAsync(email, "AddVehicle", normPlate);
         }
 
         public async Task<bool> VerifyVehicleOtpAsync(string email, string code, string licensePlate)
@@ -68,7 +67,7 @@ namespace Auto_Wash.Services
                 return false;
             }
 
-            return await _otpService.VerifyOtpAsync(email, code, "VehicleVerification", normPlate);
+            return await _otpService.VerifyOtpAsync(email, code, "AddVehicle", normPlate);
         }
 
         public async Task SaveVehicleAsync(int customerId, string licensePlate, string? type)
@@ -78,9 +77,9 @@ namespace Auto_Wash.Services
             {
                 throw new ArgumentException("Biển số xe không được để trống!");
             }
-            if (normPlate.Length > 20)
+            if (normPlate.Length > 10)
             {
-                throw new ArgumentException("Biển số xe quá dài (tối đa 20 ký tự sau khi chuẩn hóa)!");
+                throw new ArgumentException("Biển số xe quá dài (tối đa 10 ký tự sau khi chuẩn hóa)!");
             }
             
             // Check duplicate after normalization
@@ -97,8 +96,7 @@ namespace Auto_Wash.Services
                 CustomerId = customerId,
                 LicensePlate = normPlate,
                 Brand = brandType,
-                Name = brandType,
-                RegisteredAt = DateTime.Now
+                Name = brandType                
             };
 
             _context.Vehicles.Add(vehicle);

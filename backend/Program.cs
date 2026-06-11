@@ -11,6 +11,10 @@ namespace Auto_Wash
     {
         public static async Task Main(string[] args)
         {
+            // All DB columns are "timestamp without time zone"; this makes Npgsql 6+ treat
+            // DateTime values as local timestamps (no UTC conversion) to match that schema.
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
             var builder = WebApplication.CreateBuilder(args);
 
             // Register Custom File Logger Provider
@@ -38,7 +42,7 @@ namespace Auto_Wash
 
             builder.Services.AddDbContext<AutoWashDbContext>(options =>
             {
-                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
                 options.UseNpgsql(connectionString, npgsqlOpts =>
@@ -48,7 +52,7 @@ namespace Auto_Wash
                         maxRetryDelay: TimeSpan.FromSeconds(30),
                         errorCodesToAdd: null);
                 })
-                .UseLowerCaseNamingConvention(); // Map tất cả sang lowercase
+                .UseLowerCaseNamingConvention();
             });
 
             // Register HttpContextAccessor and Services
