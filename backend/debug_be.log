@@ -32095,3 +32095,803 @@ LEFT JOIN (
 LEFT JOIN queue AS q ON t.bookingid = q.bookingid
 ORDER BY t.scheduledat DESC, t.bookingid, t.vehicleid0, t0.bookingserviceid, t0.serviceid0
 [2026-06-09 21:25:40] [Information] Application is shutting down...
+[2026-06-11 08:24:56] [Information] Now listening on: http://localhost:5023
+[2026-06-11 08:24:56] [Information] Application started. Press Ctrl+C to shut down.
+[2026-06-11 08:24:56] [Information] Hosting environment: Development
+[2026-06-11 08:24:56] [Information] Content root path: D:\Dev\AutoWashPro\backend
+[2026-06-11 08:25:00] [Error] An error occurred using the connection to database '' on server ''.
+[2026-06-11 08:25:00] [Error] An exception occurred while iterating over the results of a query for context type 'Auto_Wash.Data.AutoWashDbContext'.
+System.InvalidOperationException: The ConnectionString property has not been initialized.
+   at Npgsql.ThrowHelper.ThrowInvalidOperationException(String message)
+   at Npgsql.NpgsqlConnection.Open(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.OpenAsync(CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnectionAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenAsync(CancellationToken cancellationToken, Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+System.InvalidOperationException: The ConnectionString property has not been initialized.
+   at Npgsql.ThrowHelper.ThrowInvalidOperationException(String message)
+   at Npgsql.NpgsqlConnection.Open(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.OpenAsync(CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnectionAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenAsync(CancellationToken cancellationToken, Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+[2026-06-11 08:25:02] [Error] An error occurred using the connection to database '' on server ''.
+[2026-06-11 08:25:02] [Error] An exception occurred while iterating over the results of a query for context type 'Auto_Wash.Data.AutoWashDbContext'.
+System.InvalidOperationException: The ConnectionString property has not been initialized.
+   at Npgsql.ThrowHelper.ThrowInvalidOperationException(String message)
+   at Npgsql.NpgsqlConnection.Open(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.OpenAsync(CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnectionAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenAsync(CancellationToken cancellationToken, Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+System.InvalidOperationException: The ConnectionString property has not been initialized.
+   at Npgsql.ThrowHelper.ThrowInvalidOperationException(String message)
+   at Npgsql.NpgsqlConnection.Open(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.OpenAsync(CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnectionAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenAsync(CancellationToken cancellationToken, Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+[2026-06-11 08:31:31] [Information] Application is shutting down...
+[2026-06-11 08:31:55] [Information] Now listening on: http://localhost:5023
+[2026-06-11 08:31:55] [Information] Application started. Press Ctrl+C to shut down.
+[2026-06-11 08:31:55] [Information] Hosting environment: Development
+[2026-06-11 08:31:55] [Information] Content root path: D:\Dev\AutoWashPro\backend
+[2026-06-11 08:32:04] [Information] Executed DbCommand (168ms) [Parameters=[@__Trim_0='?'], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.googleid = @__Trim_0
+LIMIT 1
+[2026-06-11 08:32:04] [Information] Executed DbCommand (124ms) [Parameters=[@__accountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__accountId_0
+LIMIT 1
+[2026-06-11 08:32:04] [Information] Executed DbCommand (123ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:04] [Information] Executed DbCommand (120ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:05] [Information] Executed DbCommand (121ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:05] [Warning] Compiling a query which loads related collections for more than one collection navigation, either via 'Include' or through projection, but no 'QuerySplittingBehavior' has been configured. By default, Entity Framework will use 'QuerySplittingBehavior.SingleQuery', which can potentially result in slow query performance. See https://go.microsoft.com/fwlink/?linkid=2134277 for more information. To identify the query that's triggering this warning call 'ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning))'.
+[2026-06-11 08:32:05] [Information] Executed DbCommand (124ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT t.bookingid, t.baseprice, t.cashamount, t.createdat, t.customerid, t.finalprice, t.notes, t.paidat, t.paymentmethod, t.pointsdiscount, t.pointsearned, t.pointsredeemed, t.pointsused, t.pointsvaluevnd, t.promocodeid, t.promodiscount, t.ratingbonuspoints, t.ratingtags, t.redemptionid, t.reviewtext, t.scheduledat, t.stars, t.status, t.tierdiscount, t.vehicleid, t.vehicleid0, t.brand, t.customerid0, t.licenseplate, t.name, t.registeredat, t0.bookingserviceid, t0.bookingid, t0.pricesnapshot, t0.serviceid, t0.serviceid0, t0.baseprice, t0.category, t0.description, t0.estimatedminutes, t0.isactive, t0.isaddon, t0.isfeatured, t0.servicename, q.queueid, q.bookingid, q.checkinat, q.completedat, q.customerid, q.customername, q.licenseplate, q.position, q.staffnote, q.startedat, q.status, q.tierid, q.vehicleid
+FROM (
+    SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid AS vehicleid0, v.brand, v.customerid AS customerid0, v.licenseplate, v.name, v.registeredat
+    FROM bookings AS b
+    INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+    WHERE b.customerid = @__customerId_0 AND b.status IN (1, 2, 3)
+    ORDER BY b.scheduledat DESC
+    LIMIT 1
+) AS t
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t0 ON t.bookingid = t0.bookingid
+LEFT JOIN queue AS q ON t.bookingid = q.bookingid
+ORDER BY t.scheduledat DESC, t.bookingid, t.vehicleid0, t0.bookingserviceid, t0.serviceid0
+[2026-06-11 08:32:05] [Information] Executed DbCommand (121ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:05] [Information] Executed DbCommand (121ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:05] [Information] Executed DbCommand (122ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT t.bookingid, t.baseprice, t.cashamount, t.createdat, t.customerid, t.finalprice, t.notes, t.paidat, t.paymentmethod, t.pointsdiscount, t.pointsearned, t.pointsredeemed, t.pointsused, t.pointsvaluevnd, t.promocodeid, t.promodiscount, t.ratingbonuspoints, t.ratingtags, t.redemptionid, t.reviewtext, t.scheduledat, t.stars, t.status, t.tierdiscount, t.vehicleid, t.vehicleid0, t.brand, t.customerid0, t.licenseplate, t.name, t.registeredat, t0.bookingserviceid, t0.bookingid, t0.pricesnapshot, t0.serviceid, t0.serviceid0, t0.baseprice, t0.category, t0.description, t0.estimatedminutes, t0.isactive, t0.isaddon, t0.isfeatured, t0.servicename, q.queueid, q.bookingid, q.checkinat, q.completedat, q.customerid, q.customername, q.licenseplate, q.position, q.staffnote, q.startedat, q.status, q.tierid, q.vehicleid
+FROM (
+    SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid AS vehicleid0, v.brand, v.customerid AS customerid0, v.licenseplate, v.name, v.registeredat
+    FROM bookings AS b
+    INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+    WHERE b.customerid = @__customerId_0 AND b.status IN (1, 2, 3)
+    ORDER BY b.scheduledat DESC
+    LIMIT 1
+) AS t
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t0 ON t.bookingid = t0.bookingid
+LEFT JOIN queue AS q ON t.bookingid = q.bookingid
+ORDER BY t.scheduledat DESC, t.bookingid, t.vehicleid0, t0.bookingserviceid, t0.serviceid0
+[2026-06-11 08:32:05] [Information] Executed DbCommand (111ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:05] [Information] Executed DbCommand (124ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:05] [Information] Executed DbCommand (121ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT n.notificationid, n.createdat, n.customerid, n.isread, n.message, n.title, n.type
+FROM notifications AS n
+WHERE n.customerid = @__customerId_0
+ORDER BY n.createdat DESC
+[2026-06-11 08:32:05] [Information] Executed DbCommand (111ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:05] [Information] Executed DbCommand (122ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:05] [Information] Executed DbCommand (121ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:06] [Information] Executed DbCommand (111ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:06] [Information] Executed DbCommand (122ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT v.licenseplate AS "Plate", COALESCE(v.name, v.brand, 'Chưa cập nhật') AS "Type"
+FROM vehicles AS v
+WHERE v.customerid = @__customerId_0
+[2026-06-11 08:32:06] [Information] Executed DbCommand (121ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:06] [Information] Executed DbCommand (115ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT t.bookingid, t.baseprice, t.cashamount, t.createdat, t.customerid, t.finalprice, t.notes, t.paidat, t.paymentmethod, t.pointsdiscount, t.pointsearned, t.pointsredeemed, t.pointsused, t.pointsvaluevnd, t.promocodeid, t.promodiscount, t.ratingbonuspoints, t.ratingtags, t.redemptionid, t.reviewtext, t.scheduledat, t.stars, t.status, t.tierdiscount, t.vehicleid, t.vehicleid0, t.brand, t.customerid0, t.licenseplate, t.name, t.registeredat, t0.bookingserviceid, t0.bookingid, t0.pricesnapshot, t0.serviceid, t0.serviceid0, t0.baseprice, t0.category, t0.description, t0.estimatedminutes, t0.isactive, t0.isaddon, t0.isfeatured, t0.servicename, q.queueid, q.bookingid, q.checkinat, q.completedat, q.customerid, q.customername, q.licenseplate, q.position, q.staffnote, q.startedat, q.status, q.tierid, q.vehicleid
+FROM (
+    SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid AS vehicleid0, v.brand, v.customerid AS customerid0, v.licenseplate, v.name, v.registeredat
+    FROM bookings AS b
+    INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+    WHERE b.customerid = @__customerId_0 AND b.status IN (1, 2, 3)
+    ORDER BY b.scheduledat DESC
+    LIMIT 1
+) AS t
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t0 ON t.bookingid = t0.bookingid
+LEFT JOIN queue AS q ON t.bookingid = q.bookingid
+ORDER BY t.scheduledat DESC, t.bookingid, t.vehicleid0, t0.bookingserviceid, t0.serviceid0
+[2026-06-11 08:32:06] [Information] Executed DbCommand (121ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:06] [Information] Executed DbCommand (120ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT n.notificationid, n.createdat, n.customerid, n.isread, n.message, n.title, n.type
+FROM notifications AS n
+WHERE n.customerid = @__customerId_0
+ORDER BY n.createdat DESC
+[2026-06-11 08:32:06] [Information] Executed DbCommand (111ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:06] [Information] Executed DbCommand (122ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:06] [Information] Executed DbCommand (121ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:06] [Information] Executed DbCommand (110ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT v.licenseplate AS "Plate", COALESCE(v.name, v.brand, 'Chưa cập nhật') AS "Type"
+FROM vehicles AS v
+WHERE v.customerid = @__customerId_0
+[2026-06-11 08:32:06] [Information] Executed DbCommand (125ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT t.bookingid, t.baseprice, t.cashamount, t.createdat, t.customerid, t.finalprice, t.notes, t.paidat, t.paymentmethod, t.pointsdiscount, t.pointsearned, t.pointsredeemed, t.pointsused, t.pointsvaluevnd, t.promocodeid, t.promodiscount, t.ratingbonuspoints, t.ratingtags, t.redemptionid, t.reviewtext, t.scheduledat, t.stars, t.status, t.tierdiscount, t.vehicleid, t.vehicleid0, t.brand, t.customerid0, t.licenseplate, t.name, t.registeredat, t0.bookingserviceid, t0.bookingid, t0.pricesnapshot, t0.serviceid, t0.serviceid0, t0.baseprice, t0.category, t0.description, t0.estimatedminutes, t0.isactive, t0.isaddon, t0.isfeatured, t0.servicename, q.queueid, q.bookingid, q.checkinat, q.completedat, q.customerid, q.customername, q.licenseplate, q.position, q.staffnote, q.startedat, q.status, q.tierid, q.vehicleid
+FROM (
+    SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid AS vehicleid0, v.brand, v.customerid AS customerid0, v.licenseplate, v.name, v.registeredat
+    FROM bookings AS b
+    INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+    WHERE b.customerid = @__customerId_0 AND b.status IN (1, 2, 3)
+    ORDER BY b.scheduledat DESC
+    LIMIT 1
+) AS t
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t0 ON t.bookingid = t0.bookingid
+LEFT JOIN queue AS q ON t.bookingid = q.bookingid
+ORDER BY t.scheduledat DESC, t.bookingid, t.vehicleid0, t0.bookingserviceid, t0.serviceid0
+[2026-06-11 08:32:06] [Information] Executed DbCommand (121ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:06] [Information] Executed DbCommand (109ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:06] [Information] Executed DbCommand (125ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT v.licenseplate AS "Plate", COALESCE(v.name, v.brand, 'Chưa cập nhật') AS "Type"
+FROM vehicles AS v
+WHERE v.customerid = @__customerId_0
+[2026-06-11 08:32:06] [Information] Executed DbCommand (131ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (115ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (125ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (124ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT v.licenseplate AS "Plate", COALESCE(v.name, v.brand, 'Chưa cập nhật') AS "Type"
+FROM vehicles AS v
+WHERE v.customerid = @__customerId_0
+[2026-06-11 08:32:07] [Information] Executed DbCommand (122ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (113ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:07] [Information] Executed DbCommand (121ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (121ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (111ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (121ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (121ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:07] [Information] Executed DbCommand (122ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid, v.brand, v.customerid, v.licenseplate, v.name, v.registeredat, t.bookingserviceid, t.bookingid, t.pricesnapshot, t.serviceid, t.serviceid0, t.baseprice, t.category, t.description, t.estimatedminutes, t.isactive, t.isaddon, t.isfeatured, t.servicename
+FROM bookings AS b
+INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t ON b.bookingid = t.bookingid
+WHERE b.customerid = @__customerId_0
+ORDER BY b.scheduledat DESC, b.bookingid, v.vehicleid, t.bookingserviceid
+[2026-06-11 08:32:07] [Information] Executed DbCommand (112ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (122ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:07] [Information] Executed DbCommand (126ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (122ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (110ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (121ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (123ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:08] [Information] Executed DbCommand (116ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT n.notificationid, n.createdat, n.customerid, n.isread, n.message, n.title, n.type
+FROM notifications AS n
+WHERE n.customerid = @__customerId_0
+ORDER BY n.createdat DESC
+[2026-06-11 08:32:08] [Information] Executed DbCommand (130ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid, v.brand, v.customerid, v.licenseplate, v.name, v.registeredat, t.bookingserviceid, t.bookingid, t.pricesnapshot, t.serviceid, t.serviceid0, t.baseprice, t.category, t.description, t.estimatedminutes, t.isactive, t.isaddon, t.isfeatured, t.servicename
+FROM bookings AS b
+INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t ON b.bookingid = t.bookingid
+WHERE b.customerid = @__customerId_0
+ORDER BY b.scheduledat DESC, b.bookingid, v.vehicleid, t.bookingserviceid
+[2026-06-11 08:32:08] [Information] Executed DbCommand (121ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (109ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (124ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (123ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (109ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (121ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (121ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:08] [Information] Executed DbCommand (111ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT n.notificationid, n.createdat, n.customerid, n.isread, n.message, n.title, n.type
+FROM notifications AS n
+WHERE n.customerid = @__customerId_0
+ORDER BY n.createdat DESC
+[2026-06-11 08:32:08] [Information] Executed DbCommand (124ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid, v.brand, v.customerid, v.licenseplate, v.name, v.registeredat, t.bookingserviceid, t.bookingid, t.pricesnapshot, t.serviceid, t.serviceid0, t.baseprice, t.category, t.description, t.estimatedminutes, t.isactive, t.isaddon, t.isfeatured, t.servicename
+FROM bookings AS b
+INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t ON b.bookingid = t.bookingid
+WHERE b.customerid = @__customerId_0
+ORDER BY b.scheduledat DESC, b.bookingid, v.vehicleid, t.bookingserviceid
+[2026-06-11 08:32:08] [Information] Executed DbCommand (122ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (122ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (111ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (125ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (126ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid, v.brand, v.customerid, v.licenseplate, v.name, v.registeredat, t.bookingserviceid, t.bookingid, t.pricesnapshot, t.serviceid, t.serviceid0, t.baseprice, t.category, t.description, t.estimatedminutes, t.isactive, t.isaddon, t.isfeatured, t.servicename
+FROM bookings AS b
+INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t ON b.bookingid = t.bookingid
+WHERE b.customerid = @__customerId_0
+ORDER BY b.scheduledat DESC, b.bookingid, v.vehicleid, t.bookingserviceid
+[2026-06-11 08:32:08] [Information] Executed DbCommand (110ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:08] [Information] Executed DbCommand (123ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT n.notificationid, n.createdat, n.customerid, n.isread, n.message, n.title, n.type
+FROM notifications AS n
+WHERE n.customerid = @__customerId_0
+ORDER BY n.createdat DESC
+[2026-06-11 08:32:08] [Information] Executed DbCommand (122ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:09] [Information] Executed DbCommand (120ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:09] [Information] Executed DbCommand (114ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:09] [Information] Executed DbCommand (122ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:09] [Information] Executed DbCommand (123ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:09] [Information] Executed DbCommand (110ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:09] [Information] Executed DbCommand (120ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT v.licenseplate AS "Plate", COALESCE(v.name, v.brand, 'Chưa cập nhật') AS "Type"
+FROM vehicles AS v
+WHERE v.customerid = @__customerId_0
+[2026-06-11 08:32:09] [Information] Executed DbCommand (119ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT n.notificationid, n.createdat, n.customerid, n.isread, n.message, n.title, n.type
+FROM notifications AS n
+WHERE n.customerid = @__customerId_0
+ORDER BY n.createdat DESC
+[2026-06-11 08:32:09] [Information] Executed DbCommand (110ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:09] [Information] Executed DbCommand (124ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:09] [Information] Executed DbCommand (123ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:09] [Information] Executed DbCommand (122ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:09] [Information] Executed DbCommand (108ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT v.licenseplate AS "Plate", COALESCE(v.name, v.brand, 'Chưa cập nhật') AS "Type"
+FROM vehicles AS v
+WHERE v.customerid = @__customerId_0
+[2026-06-11 08:32:09] [Information] Executed DbCommand (124ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:09] [Information] Executed DbCommand (126ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT s.serviceid, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+FROM services AS s
+WHERE s.isactive
+[2026-06-11 08:32:10] [Information] Executed DbCommand (121ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT s.serviceid, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+FROM services AS s
+WHERE s.isactive
+[2026-06-11 08:32:10] [Information] Executed DbCommand (122ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:10] [Information] Executed DbCommand (111ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:10] [Information] Executed DbCommand (124ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT v.licenseplate AS "Plate", COALESCE(v.name, v.brand, 'Chưa cập nhật') AS "Type"
+FROM vehicles AS v
+WHERE v.customerid = @__customerId_0
+[2026-06-11 08:32:10] [Information] Executed DbCommand (124ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:10] [Information] Executed DbCommand (122ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:10] [Information] Executed DbCommand (121ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT v.licenseplate AS "Plate", COALESCE(v.name, v.brand, 'Chưa cập nhật') AS "Type"
+FROM vehicles AS v
+WHERE v.customerid = @__customerId_0
+[2026-06-11 08:32:11] [Information] Executed DbCommand (109ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:11] [Information] Executed DbCommand (123ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT r.rewardid, r.description, r.discountvalue, r.isactive, r.mintierid, r.pointcost, r.redeemedcount, r.rewardname, r.rewardtype, r.serviceid, r.stocklimit, r.validdays
+FROM rewards AS r
+WHERE r.isactive
+[2026-06-11 08:32:11] [Information] Executed DbCommand (124ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:11] [Information] Executed DbCommand (122ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT r.rewardid, r.description, r.discountvalue, r.isactive, r.mintierid, r.pointcost, r.redeemedcount, r.rewardname, r.rewardtype, r.serviceid, r.stocklimit, r.validdays
+FROM rewards AS r
+WHERE r.isactive
+[2026-06-11 08:32:11] [Information] Executed DbCommand (122ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:11] [Information] Executed DbCommand (109ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:11] [Information] Executed DbCommand (122ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:11] [Information] Executed DbCommand (125ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:12] [Information] Executed DbCommand (123ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:12] [Information] Executed DbCommand (122ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:12] [Information] Executed DbCommand (111ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:12] [Information] Executed DbCommand (124ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:12] [Information] Executed DbCommand (124ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid, v.brand, v.customerid, v.licenseplate, v.name, v.registeredat, t.bookingserviceid, t.bookingid, t.pricesnapshot, t.serviceid, t.serviceid0, t.baseprice, t.category, t.description, t.estimatedminutes, t.isactive, t.isaddon, t.isfeatured, t.servicename
+FROM bookings AS b
+INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t ON b.bookingid = t.bookingid
+WHERE b.customerid = @__customerId_0
+ORDER BY b.scheduledat DESC, b.bookingid, v.vehicleid, t.bookingserviceid
+[2026-06-11 08:32:12] [Information] Executed DbCommand (124ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT t.bookingid, t.baseprice, t.cashamount, t.createdat, t.customerid, t.finalprice, t.notes, t.paidat, t.paymentmethod, t.pointsdiscount, t.pointsearned, t.pointsredeemed, t.pointsused, t.pointsvaluevnd, t.promocodeid, t.promodiscount, t.ratingbonuspoints, t.ratingtags, t.redemptionid, t.reviewtext, t.scheduledat, t.stars, t.status, t.tierdiscount, t.vehicleid, t.vehicleid0, t.brand, t.customerid0, t.licenseplate, t.name, t.registeredat, t0.bookingserviceid, t0.bookingid, t0.pricesnapshot, t0.serviceid, t0.serviceid0, t0.baseprice, t0.category, t0.description, t0.estimatedminutes, t0.isactive, t0.isaddon, t0.isfeatured, t0.servicename, q.queueid, q.bookingid, q.checkinat, q.completedat, q.customerid, q.customername, q.licenseplate, q.position, q.staffnote, q.startedat, q.status, q.tierid, q.vehicleid
+FROM (
+    SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid AS vehicleid0, v.brand, v.customerid AS customerid0, v.licenseplate, v.name, v.registeredat
+    FROM bookings AS b
+    INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+    WHERE b.customerid = @__customerId_0 AND b.status IN (1, 2, 3)
+    ORDER BY b.scheduledat DESC
+    LIMIT 1
+) AS t
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t0 ON t.bookingid = t0.bookingid
+LEFT JOIN queue AS q ON t.bookingid = q.bookingid
+ORDER BY t.scheduledat DESC, t.bookingid, t.vehicleid0, t0.bookingserviceid, t0.serviceid0
+[2026-06-11 08:32:12] [Information] Executed DbCommand (121ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:12] [Information] Executed DbCommand (110ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:12] [Information] Executed DbCommand (123ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:12] [Information] Executed DbCommand (123ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:12] [Information] Executed DbCommand (121ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid, v.brand, v.customerid, v.licenseplate, v.name, v.registeredat, t.bookingserviceid, t.bookingid, t.pricesnapshot, t.serviceid, t.serviceid0, t.baseprice, t.category, t.description, t.estimatedminutes, t.isactive, t.isaddon, t.isfeatured, t.servicename
+FROM bookings AS b
+INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t ON b.bookingid = t.bookingid
+WHERE b.customerid = @__customerId_0
+ORDER BY b.scheduledat DESC, b.bookingid, v.vehicleid, t.bookingserviceid
+[2026-06-11 08:32:12] [Information] Executed DbCommand (123ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT t.bookingid, t.baseprice, t.cashamount, t.createdat, t.customerid, t.finalprice, t.notes, t.paidat, t.paymentmethod, t.pointsdiscount, t.pointsearned, t.pointsredeemed, t.pointsused, t.pointsvaluevnd, t.promocodeid, t.promodiscount, t.ratingbonuspoints, t.ratingtags, t.redemptionid, t.reviewtext, t.scheduledat, t.stars, t.status, t.tierdiscount, t.vehicleid, t.vehicleid0, t.brand, t.customerid0, t.licenseplate, t.name, t.registeredat, t0.bookingserviceid, t0.bookingid, t0.pricesnapshot, t0.serviceid, t0.serviceid0, t0.baseprice, t0.category, t0.description, t0.estimatedminutes, t0.isactive, t0.isaddon, t0.isfeatured, t0.servicename, q.queueid, q.bookingid, q.checkinat, q.completedat, q.customerid, q.customername, q.licenseplate, q.position, q.staffnote, q.startedat, q.status, q.tierid, q.vehicleid
+FROM (
+    SELECT b.bookingid, b.baseprice, b.cashamount, b.createdat, b.customerid, b.finalprice, b.notes, b.paidat, b.paymentmethod, b.pointsdiscount, b.pointsearned, b.pointsredeemed, b.pointsused, b.pointsvaluevnd, b.promocodeid, b.promodiscount, b.ratingbonuspoints, b.ratingtags, b.redemptionid, b.reviewtext, b.scheduledat, b.stars, b.status, b.tierdiscount, b.vehicleid, v.vehicleid AS vehicleid0, v.brand, v.customerid AS customerid0, v.licenseplate, v.name, v.registeredat
+    FROM bookings AS b
+    INNER JOIN vehicles AS v ON b.vehicleid = v.vehicleid
+    WHERE b.customerid = @__customerId_0 AND b.status IN (1, 2, 3)
+    ORDER BY b.scheduledat DESC
+    LIMIT 1
+) AS t
+LEFT JOIN (
+    SELECT b0.bookingserviceid, b0.bookingid, b0.pricesnapshot, b0.serviceid, s.serviceid AS serviceid0, s.baseprice, s.category, s.description, s.estimatedminutes, s.isactive, s.isaddon, s.isfeatured, s.servicename
+    FROM bookingservices AS b0
+    INNER JOIN services AS s ON b0.serviceid = s.serviceid
+) AS t0 ON t.bookingid = t0.bookingid
+LEFT JOIN queue AS q ON t.bookingid = q.bookingid
+ORDER BY t.scheduledat DESC, t.bookingid, t.vehicleid0, t0.bookingserviceid, t0.serviceid0
+[2026-06-11 08:32:13] [Information] Executed DbCommand (112ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:13] [Information] Executed DbCommand (122ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT r.rewardid, r.description, r.discountvalue, r.isactive, r.mintierid, r.pointcost, r.redeemedcount, r.rewardname, r.rewardtype, r.serviceid, r.stocklimit, r.validdays
+FROM rewards AS r
+WHERE r.isactive
+[2026-06-11 08:32:13] [Information] Executed DbCommand (124ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:13] [Information] Executed DbCommand (121ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT r.rewardid, r.description, r.discountvalue, r.isactive, r.mintierid, r.pointcost, r.redeemedcount, r.rewardname, r.rewardtype, r.serviceid, r.stocklimit, r.validdays
+FROM rewards AS r
+WHERE r.isactive
+[2026-06-11 08:32:14] [Information] Executed DbCommand (123ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:14] [Information] Executed DbCommand (110ms) [Parameters=[@__accountId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT a.accountid, a.createdat, a.email, a.fullname, a.googleid, a.isactive, a.passwordhash, a.phone, a.role
+FROM accounts AS a
+WHERE a.accountid = @__accountId_Value_0 AND a.isactive
+LIMIT 1
+[2026-06-11 08:32:14] [Information] Executed DbCommand (122ms) [Parameters=[@__account_AccountId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT c.customerid, c.accountid, c.joinedat, c.lastvisitat, c.lifetimepoints, c.membershipcode, c.pointbalance, c.rankingbalance, c.tierid, c.totalspend, c.totalvisits, t.tierid, t.badgecolor, t.bookingwindowdays, t.discountpercent, t.minrankingbalance, t.pointmultiplier, t.queuepriority, t.sortorder, t.tiername
+FROM customers AS c
+INNER JOIN tiers AS t ON c.tierid = t.tierid
+WHERE c.accountid = @__account_AccountId_0
+LIMIT 1
+[2026-06-11 08:32:14] [Information] Executed DbCommand (124ms) [Parameters=[@__customerId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT r.redemptionid, r.bookingid, r.customerid, r.expiresat, r.redeemedat, r.rewardid, r.status, r.usedat, r0.rewardid, r0.description, r0.discountvalue, r0.isactive, r0.mintierid, r0.pointcost, r0.redeemedcount, r0.rewardname, r0.rewardtype, r0.serviceid, r0.stocklimit, r0.validdays
+FROM rewardredemptions AS r
+INNER JOIN rewards AS r0 ON r.rewardid = r0.rewardid
+WHERE r.customerid = @__customerId_0
+ORDER BY r.redeemedat DESC
+[2026-06-11 08:32:27] [Information] Application is shutting down...
