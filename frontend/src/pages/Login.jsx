@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { authService } from "../services/authService";
+import { customerService } from "../services/customerService";
 import "../styles/shared.css";
 import "../styles/login.css";
 
@@ -17,13 +18,6 @@ const decodeJwt = (token) => {
   );
   return JSON.parse(jsonPayload);
 };
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { authService } from '../services/authService';
-import { customerService } from '../services/customerService';
-import '../styles/shared.css';
-import '../styles/login.css';
 
 export const Login = () => {
   const { user, loading, login, register, googleLogin, completeGoogleSignup } =
@@ -107,6 +101,8 @@ export const Login = () => {
     }
 
     return () => {
+      clearInterval(otpTimerRef.current);
+      clearInterval(forgotTimerRef.current);
       document.body.style.cursor = "";
       document.documentElement.style.cursor = "";
     };
@@ -208,7 +204,6 @@ export const Login = () => {
       clearTimeout(retryTimer);
       clearTimeout(renderTimer);
       clearInterval(otpTimerRef.current);
-      clearInterval(forgotTimerRef.current);
     };
   }, [panel, isRegisterActive, handleGoogleCredential]);
 

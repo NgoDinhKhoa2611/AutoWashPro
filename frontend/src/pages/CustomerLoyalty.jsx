@@ -409,21 +409,17 @@ export const CustomerLoyalty = () => {
         </div>
       </div>
 
-      {/* Claimed Vouchers section — always visible */}
-      <div className="row g-4 mt-2" id="my-vouchers-section">
-        <div className="col-12 text-start">
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <i className="fas fa-ticket-alt text-cyan me-2"></i>
-              VÍ VOUCHER CỦA TÔI {claimedVouchers.length > 0 && `(${claimedVouchers.length})`}
-            </h5>
-            {claimedVouchers.length === 0 ? (
-              <div className="text-center py-5 text-muted">
-                <i className="fas fa-ticket-alt fa-3x mb-3" style={{ opacity: 0.18 }}></i>
-                <p className="small mb-0 fw-bold">Bạn chưa có voucher nào.</p>
-                <p className="small">Hãy đổi điểm ở mục phía trên để nhận ưu đãi!</p>
-              </div>
-            ) : (
+      {/* Claimed Vouchers lists */}
+      {claimedVouchers.length > 0 && (
+        <div className="row g-4 mt-2" id="my-vouchers-section">
+          <div className="col-12 text-start">
+            <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4">
+              <h5
+                className="fw-bold mb-4"
+                style={{ color: "var(--navy-dark)" }}
+              >
+                VÍ VOUCHER ĐÃ ĐỔI CỦA TÔI ({claimedVouchers.length})
+              </h5>
               <div className="row g-3" id="my-vouchers-grid">
                 {claimedVouchers.map((v, i) => {
                   const isUsed = v.status === 2;
@@ -491,10 +487,10 @@ export const CustomerLoyalty = () => {
                   );
                 })}
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Redeem Confirmation Modal */}
       {redeemModalOpen && pendingRedeem && (
