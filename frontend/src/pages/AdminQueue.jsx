@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
 import '../styles/shared.css';
 import '../styles/admin/queue.css';
@@ -332,6 +332,13 @@ export const AdminQueue = () => {
       </div>
 
       {/* KANBAN BOARD LAYOUT */}
+      {loading ? (
+        <div className="d-flex justify-content-center align-items-center py-5">
+          <div className="spinner-border text-info" role="status">
+            <span className="visually-hidden">Đang tải...</span>
+          </div>
+        </div>
+      ) : (
       <div className="kanban-board-container d-flex gap-3">
         {KANBAN_COLUMNS.map(col => {
           const colItems = queue.filter(item => item.status === col.id);
@@ -415,6 +422,7 @@ export const AdminQueue = () => {
           );
         })}
       </div>
+      )}
 
       {/* DETAIL SERVICE WORKFLOW MODAL */}
       {selectedVehicle && (
