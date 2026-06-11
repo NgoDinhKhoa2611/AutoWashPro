@@ -1,30 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { authService } from "../services/authService";
-import { customerService } from "../services/customerService";
 import "../styles/shared.css";
 import "../styles/login.css";
-
-const decodeJwt = (token) => {
-  const base64Url = token.split(".")[1];
-  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-  const jsonPayload = decodeURIComponent(
-    window
-      .atob(base64)
-      .split("")
-      .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-      .join(""),
-  );
-  return JSON.parse(jsonPayload);
-};
 
 export const Login = () => {
   const { user, loading, login, register, googleLogin, completeGoogleSignup } =
     useAuth();
   const navigate = useNavigate();
 
-  const navigateByRole = useCallback((role) => {
+  const navigateByRole = (role) => {
     if (role === "admin") {
       navigate("/admin/dashboard");
     } else if (role === "staff") {
@@ -32,13 +18,13 @@ export const Login = () => {
     } else {
       navigate("/customer/dashboard");
     }
-  }, [navigate]);
+  };
 
   useEffect(() => {
     if (!loading && user) {
       navigateByRole(user.role);
     }
-  }, [user, loading, navigateByRole]);
+  }, [user, loading, navigate]);
 
   // Panels: 'login' (controls both signin/signup sliders) | 'otp' | 'google-complete'
   const [panel, setPanel] = useState("login");
@@ -73,16 +59,6 @@ export const Login = () => {
   const [showResendOtp, setShowResendOtp] = useState(false);
   const otpTimerRef = useRef(null);
 
-  // Forgot password
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotOtpDigits, setForgotOtpDigits] = useState(['', '', '', '', '', '']);
-  const [forgotNewPassword, setForgotNewPassword] = useState('');
-  const [forgotConfirm, setForgotConfirm] = useState('');
-  const [forgotTimerSec, setForgotTimerSec] = useState(59);
-  const [showForgotResend, setShowForgotResend] = useState(false);
-  const forgotTimerRef = useRef(null);
-
   // Google completion
   const [googleUser, setGoogleUser] = useState(null);
   const [completePhone, setCompletePhone] = useState("");
@@ -101,15 +77,62 @@ export const Login = () => {
     }
 
     return () => {
-      clearInterval(otpTimerRef.current);
-      clearInterval(forgotTimerRef.current);
       document.body.style.cursor = "";
       document.documentElement.style.cursor = "";
     };
   }, [loginLoading, regLoading]);
 
+  useEffect(() => {
+    // Google Sign-In button rendering inside the login panel
+    const initGoogle = () => {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        console.warn(
+          "[Google Sign-In Warning] VITE_GOOGLE_CLIENT_ID is not configured in the environment variables. Google login is disabled.",
+        );
+        return;
+      }
+      if (window.google && panel === "login") {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredential,
+        });
+
+        const renderBtns = () => {
+          const containerLogin = document.getElementById(
+            "google-login-btn-login",
+          );
+          if (containerLogin) {
+            window.google.accounts.id.renderButton(containerLogin, {
+              theme: "outline",
+              size: "large",
+              width: 320,
+              text: "signin_with",
+              shape: "pill",
+              logo_alignment: "left",
+            });
+          }
+        };
+
+        renderBtns();
+        // Fallback timeout in case element rendering is delayed by slide animation transition
+        setTimeout(renderBtns, 300);
+      } else {
+        setTimeout(initGoogle, 100);
+      }
+    };
+
+    if (panel === "login") {
+      initGoogle();
+    }
+
+    return () => {
+      clearInterval(otpTimerRef.current);
+    };
+  }, [panel, isRegisterActive]);
+
   // Google callback
-  const handleGoogleCredential = useCallback(async (response) => {
+  const handleGoogleCredential = async (response) => {
     try {
       const payload = decodeJwt(response.credential);
       const email = payload.email;
@@ -153,59 +176,22 @@ export const Login = () => {
       if (window.showToast)
         window.showToast("Có lỗi xảy ra khi đăng nhập bằng Google!", "error");
     }
-  }, [googleLogin, navigateByRole]);
+  };
 
-  useEffect(() => {
-    let retryTimer;
-    let renderTimer;
-
-    const initGoogle = () => {
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (!clientId) {
-        console.warn(
-          "[Google Sign-In Warning] VITE_GOOGLE_CLIENT_ID is not configured in the environment variables. Google login is disabled.",
-        );
-        return;
-      }
-      if (window.google && panel === "login") {
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: handleGoogleCredential,
-        });
-
-        const renderBtns = () => {
-          const containerLogin = document.getElementById(
-            "google-login-btn-login",
-          );
-          if (containerLogin) {
-            window.google.accounts.id.renderButton(containerLogin, {
-              theme: "outline",
-              size: "large",
-              width: 320,
-              text: "signin_with",
-              shape: "pill",
-              logo_alignment: "left",
-            });
-          }
-        };
-
-        renderBtns();
-        renderTimer = setTimeout(renderBtns, 300);
-      } else {
-        retryTimer = setTimeout(initGoogle, 100);
-      }
-    };
-
-    if (panel === "login") {
-      initGoogle();
-    }
-
-    return () => {
-      clearTimeout(retryTimer);
-      clearTimeout(renderTimer);
-      clearInterval(otpTimerRef.current);
-    };
-  }, [panel, isRegisterActive, handleGoogleCredential]);
+  const decodeJwt = (token) => {
+    let base64Url = token.split(".")[1];
+    let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    let jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join(""),
+    );
+    return JSON.parse(jsonPayload);
+  };
 
   // Login submission
   const handleLoginSubmit = async (e) => {
@@ -262,8 +248,12 @@ export const Login = () => {
       return;
     }
     const cleanPhone = regPhone.trim();
-    if (!/^0(3[2-9]|5[2569]|7[06-9]|8[1-9]|9[0-9])\d{7}$/.test(cleanPhone)) {
-      if (window.showToast) window.showToast('Số điện thoại không hợp lệ! Vui lòng nhập đúng số di động Việt Nam (ví dụ: 0912345678).', 'warning');
+    if (!/^0\d{9}$/.test(cleanPhone)) {
+      if (window.showToast)
+        window.showToast(
+          "Số điện thoại không hợp lệ! Vui lòng nhập 10 chữ số bắt đầu bằng số 0.",
+          "warning",
+        );
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -332,7 +322,7 @@ export const Login = () => {
     newDigits[idx] = clean.substring(0, 1);
     setOtpDigits(newDigits);
 
-    if (clean && idx < 6) {
+    if (clean && idx < 5) {
       const nextInput = document.getElementById(`otp-${idx + 1}`);
       if (nextInput) nextInput.focus();
     }
@@ -415,9 +405,13 @@ export const Login = () => {
       return;
     }
 
-    const cleanPhone = completePhone.replace(/[-\s]/g, '');
-    if (!/^0(3[2-9]|5[2569]|7[06-9]|8[1-9]|9[0-9])\d{7}$/.test(cleanPhone)) {
-      if (window.showToast) window.showToast('Số điện thoại không hợp lệ! Vui lòng nhập đúng số di động Việt Nam (ví dụ: 0912345678).', 'warning');
+    const cleanPhone = completePhone.replace(/[-\s]/g, "");
+    if (!/^0\d{9}$/.test(cleanPhone)) {
+      if (window.showToast)
+        window.showToast(
+          "Số điện thoại không hợp lệ! Định dạng 10 chữ số.",
+          "warning",
+        );
       return;
     }
     if (completePassword !== completeConfirm) {
@@ -458,133 +452,6 @@ export const Login = () => {
       console.error(err);
       if (window.showToast)
         window.showToast("Lỗi đồng bộ dữ liệu với máy chủ!", "error");
-    }
-  };
-
-
-
-  // Forgot password — step 1: send OTP
-  const startForgotTimer = () => {
-    setForgotTimerSec(59);
-    setShowForgotResend(false);
-    clearInterval(forgotTimerRef.current);
-    forgotTimerRef.current = setInterval(() => {
-      setForgotTimerSec((prev) => {
-        if (prev <= 1) {
-          clearInterval(forgotTimerRef.current);
-          setShowForgotResend(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleForgotSendOtp = async (e) => {
-    e.preventDefault();
-    const email = forgotEmail.trim();
-    if (!email) {
-      if (window.showToast) window.showToast('Vui lòng nhập địa chỉ email!', 'warning');
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      if (window.showToast) window.showToast('Địa chỉ email không hợp lệ!', 'warning');
-      return;
-    }
-    setForgotLoading(true);
-    try {
-      const res = await customerService.sendEmailOtp(email);
-      if (res.success) {
-        setForgotOtpDigits(['', '', '', '', '', '']);
-        setForgotNewPassword('');
-        setForgotConfirm('');
-        setPanel('forgot-otp');
-        startForgotTimer();
-        if (window.showToast) window.showToast('Mã OTP đã được gửi về Gmail của bạn!', 'success');
-      } else {
-        if (window.showToast) window.showToast(res.message || 'Lỗi gửi mã OTP!', 'error');
-      }
-    } catch (err) {
-      if (window.showToast) window.showToast(err.response?.data?.message || 'Có lỗi xảy ra khi gửi OTP!', 'error');
-    } finally {
-      setForgotLoading(false);
-    }
-  };
-
-  const handleForgotOtpKeyDown = (idx, e) => {
-    if (/^\d$/.test(e.key)) {
-      e.preventDefault();
-      const newDigits = [...forgotOtpDigits];
-      newDigits[idx] = e.key;
-      setForgotOtpDigits(newDigits);
-      if (idx < 5) {
-        document.getElementById(`fotp-${idx + 1}`)?.focus();
-      }
-      return;
-    }
-    if (e.key === 'Backspace') {
-      e.preventDefault();
-      const newDigits = [...forgotOtpDigits];
-      if (newDigits[idx]) {
-        newDigits[idx] = '';
-        setForgotOtpDigits(newDigits);
-      } else if (idx > 0) {
-        newDigits[idx - 1] = '';
-        setForgotOtpDigits(newDigits);
-        document.getElementById(`fotp-${idx - 1}`)?.focus();
-      }
-    }
-  };
-
-  const handleForgotOtpInput = (idx, val) => {
-    // Only handles paste (onKeyDown + preventDefault covers individual keystrokes)
-    const clean = val.replace(/\D/g, '');
-    if (clean.length > 1) {
-      const newDigits = [...forgotOtpDigits];
-      clean.split('').slice(0, 6 - idx).forEach((d, i) => { newDigits[idx + i] = d; });
-      setForgotOtpDigits(newDigits);
-      document.getElementById(`fotp-${Math.min(idx + clean.length - 1, 5)}`)?.focus();
-    }
-  };
-
-  // Forgot password — step 2: verify OTP + reset password
-  const handleForgotVerify = async () => {
-    const code = forgotOtpDigits.join('');
-    if (code.length < 6) {
-      if (window.showToast) window.showToast('Vui lòng nhập đầy đủ mã 6 chữ số!', 'warning');
-      return;
-    }
-    if (!forgotNewPassword || !forgotConfirm) {
-      if (window.showToast) window.showToast('Vui lòng nhập mật khẩu mới!', 'warning');
-      return;
-    }
-    if (forgotNewPassword !== forgotConfirm) {
-      if (window.showToast) window.showToast('Mật khẩu xác nhận không trùng khớp!', 'error');
-      return;
-    }
-    if (forgotNewPassword.length < 6) {
-      if (window.showToast) window.showToast('Mật khẩu phải có ít nhất 6 ký tự!', 'error');
-      return;
-    }
-    setForgotLoading(true);
-    try {
-      const res = await customerService.verifyEmailAndChangePassword(forgotEmail.trim(), code, '', forgotNewPassword);
-      if (res.success) {
-        clearInterval(forgotTimerRef.current);
-        if (window.showToast) window.showToast('Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại.', 'success');
-        setForgotEmail('');
-        setForgotOtpDigits(['', '', '', '', '', '']);
-        setForgotNewPassword('');
-        setForgotConfirm('');
-        setPanel('login');
-      } else {
-        if (window.showToast) window.showToast(res.message || 'Mã OTP không hợp lệ hoặc đã hết hạn!', 'error');
-      }
-    } catch (err) {
-      if (window.showToast) window.showToast(err.response?.data?.message || 'Mã OTP không đúng hoặc đã hết hạn!', 'error');
-    } finally {
-      setForgotLoading(false);
     }
   };
 
@@ -796,7 +663,18 @@ export const Login = () => {
                 </div>
               </div>
 
-              <a href="#" onClick={(e) => { e.preventDefault(); setForgotEmail(''); setPanel('forgot'); }} className="auth-link">
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (window.showToast)
+                    window.showToast(
+                      "Vui lòng liên hệ quản trị viên hoặc sử dụng Đổi mật khẩu qua Email OTP trong Hồ sơ!",
+                      "info",
+                    );
+                }}
+                className="auth-link"
+              >
                 Quên mật khẩu?
               </a>
 
@@ -1055,139 +933,6 @@ export const Login = () => {
               className="btn btn-link text-secondary text-decoration-none small mt-2 p-0"
             >
               Quay lại đăng ký
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* PANEL: FORGOT PASSWORD — STEP 1: EMAIL INPUT */}
-      {panel === 'forgot' && (
-        <div className="glass-card animate-up" style={{ width: '100%', maxWidth: '420px', zIndex: 10 }}>
-          <div className="success-checkmark-wrapper mb-3" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7' }}>
-            <i className="fas fa-key"></i>
-          </div>
-          <h4 className="fw-bold mt-2 text-center">Quên mật khẩu</h4>
-          <p className="text-secondary small px-2 mt-2 text-center">
-            Nhập địa chỉ email đã đăng ký. Hệ thống sẽ gửi mã OTP để xác thực và đặt lại mật khẩu mới.
-          </p>
-
-          <form onSubmit={handleForgotSendOtp} className="mt-4">
-            <div className="auth-input-group">
-              <label className="auth-label">ĐỊA CHỈ EMAIL</label>
-              <div className="auth-input-wrapper">
-                <span className="auth-input-icon"><i className="fas fa-envelope"></i></span>
-                <input
-                  type="email"
-                  className="auth-input-field"
-                  placeholder="email@example.com"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            <button type="submit" disabled={forgotLoading} className="app-btn-primary mb-3 py-3 w-100 border-0 mt-2" style={{ borderRadius: '12px', fontSize: '0.85rem' }}>
-              {forgotLoading ? 'Đang gửi...' : 'GỬI MÃ OTP'} <i className="fas fa-paper-plane ms-1"></i>
-            </button>
-          </form>
-
-          <div className="text-center">
-            <button onClick={() => setPanel('login')} className="btn btn-link text-secondary text-decoration-none small p-0">
-              Quay lại đăng nhập
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* PANEL: FORGOT PASSWORD — STEP 2: OTP + NEW PASSWORD */}
-      {panel === 'forgot-otp' && (
-        <div className="glass-card text-center animate-up" style={{ width: '100%', maxWidth: '420px', zIndex: 10 }}>
-          <div className="success-checkmark-wrapper mb-3" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7' }}>
-            <i className="fas fa-shield-alt"></i>
-          </div>
-          <h4 className="fw-bold mt-2">Đặt lại mật khẩu</h4>
-          <p className="text-secondary small px-2 mt-2">
-            Nhập mã OTP 6 chữ số đã gửi đến <span className="text-cyan fw-bold">{forgotEmail}</span> và mật khẩu mới của bạn.
-          </p>
-
-          <div className="d-flex justify-content-center gap-2 mb-4 mt-4">
-            {forgotOtpDigits.map((val, idx) => (
-              <input
-                key={idx}
-                type="text"
-                id={`fotp-${idx}`}
-                inputMode="numeric"
-                autoComplete="off"
-                className="otp-input"
-                value={val}
-                placeholder=""
-                onChange={(e) => handleForgotOtpInput(idx, e.target.value)}
-                onKeyDown={(e) => handleForgotOtpKeyDown(idx, e)}
-                onFocus={(e) => e.target.select()}
-              />
-            ))}
-          </div>
-
-          <div className="auth-input-group text-start mb-3">
-            <label className="auth-label">MẬT KHẨU MỚI</label>
-            <div className="auth-input-wrapper">
-              <span className="auth-input-icon"><i className="fas fa-lock-open"></i></span>
-              <input
-                type="password"
-                className="auth-input-field"
-                placeholder="Mật khẩu mới ít nhất 6 ký tự"
-                value={forgotNewPassword}
-                onChange={(e) => setForgotNewPassword(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="auth-input-group text-start mb-4">
-            <label className="auth-label">XÁC NHẬN MẬT KHẨU MỚI</label>
-            <div className="auth-input-wrapper">
-              <span className="auth-input-icon"><i className="fas fa-lock"></i></span>
-              <input
-                type="password"
-                className="auth-input-field"
-                placeholder="Nhập lại mật khẩu mới"
-                value={forgotConfirm}
-                onChange={(e) => setForgotConfirm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <button onClick={handleForgotVerify} disabled={forgotLoading} className="app-btn-primary mb-3 py-3 w-100 border-0" style={{ borderRadius: '12px', fontSize: '0.85rem' }}>
-            {forgotLoading ? 'Đang xử lý...' : 'ĐẶT LẠI MẬT KHẨU'} <i className="fas fa-check-circle ms-1"></i>
-          </button>
-
-          <div className="text-center mt-1">
-            {!showForgotResend ? (
-              <p className="text-secondary small">
-                Gửi lại mã sau <span className="text-cyan fw-bold">{forgotTimerSec}</span>s
-              </p>
-            ) : (
-              <button
-                className="btn btn-link text-cyan text-decoration-none small fw-bold p-0"
-                onClick={async () => {
-                  try {
-                    const res = await customerService.sendEmailOtp(forgotEmail.trim());
-                    if (res.success) {
-                      startForgotTimer();
-                      if (window.showToast) window.showToast('Đã gửi lại mã OTP mới!', 'info');
-                    }
-                  } catch {
-                    if (window.showToast) window.showToast('Lỗi khi gửi lại OTP!', 'error');
-                  }
-                }}
-              >
-                Gửi lại mã OTP
-              </button>
-            )}
-            <br />
-            <button onClick={() => setPanel('forgot')} className="btn btn-link text-secondary text-decoration-none small mt-2 p-0">
-              Đổi email khác
             </button>
           </div>
         </div>
