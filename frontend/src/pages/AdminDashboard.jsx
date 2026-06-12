@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
 import '../styles/shared.css';
 import '../styles/admin/dashboard.css';
@@ -96,7 +96,7 @@ export const AdminDashboard = () => {
       let statsRes = null;
       try {
         statsRes = await adminService.getDashboardStats();
-      } catch (e) {
+      } catch {
         statsRes = {
           revenue7Days: [432000, 216000, 108000, 756000, 540000, 130000, 85000],
           totalRevenue: 2267000,
@@ -113,7 +113,7 @@ export const AdminDashboard = () => {
       let configRes = null;
       try {
         configRes = await adminService.getLoyaltyConfig();
-      } catch (e) {
+      } catch {
         configRes = {
           pointsPerThousandVND: 1,
           pointExpiryMonths: 12,
@@ -205,10 +205,6 @@ export const AdminDashboard = () => {
     updatedTiers[idx] = { ...updatedTiers[idx], [field]: Number(val) };
     setLoyaltyConfig({ ...loyaltyConfig, tiers: updatedTiers });
   };
-
-  const revPctChange = stats.prevTotalRevenue > 0
-    ? Math.round(((stats.totalRevenue - stats.prevTotalRevenue) / stats.prevTotalRevenue) * 100)
-    : 0;
 
   if (loading) {
     return (

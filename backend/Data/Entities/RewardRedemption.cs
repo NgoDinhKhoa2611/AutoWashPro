@@ -19,9 +19,7 @@ namespace Auto_Wash.Data.Entities
 
         public int? BookingId { get; set; }
 
-        [Required]
-        [MaxLength(20)]
-        public string Status { get; set; } = "Active";
+        public RedemptionStatus Status { get; set; } = RedemptionStatus.Active;
 
         public DateTime ExpiresAt { get; set; }
 

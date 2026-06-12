@@ -28,7 +28,7 @@ namespace Auto_Wash.Services
                 .Include(q => q.Booking)
                     .ThenInclude(b => b!.BookingServices)
                         .ThenInclude(bs => bs.Service)
-                .Where(q => q.CheckInAt.Date == today && q.Status != QueueStatus.Cancelled.ToString())
+                .Where(q => q.CheckInAt.Date == today && q.Status != QueueStatus.Cancelled)
                 .ToListAsync();
 
             // 2. Get unchecked bookings for today
@@ -41,8 +41,8 @@ namespace Auto_Wash.Services
                 .Include(b => b.BookingServices)
                     .ThenInclude(bs => bs.Service)
                 .Where(b => b.ScheduledAt.Date == today 
-                         && (b.Status == (int)BookingStatus.Pending || b.Status == (int)BookingStatus.Confirmed)
-                         && !_context.Queues.Any(q => q.BookingId == b.BookingId && q.Status != QueueStatus.Cancelled.ToString()))
+                         && (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed)
+                         && !_context.Queues.Any(q => q.BookingId == b.BookingId && q.Status != QueueStatus.Cancelled))
                 .ToListAsync();
 
             var list = new List<QueueListItem>();
@@ -71,7 +71,7 @@ namespace Auto_Wash.Services
                     CustomerName = q.CustomerName ?? "Khách vãng lai",
                     TierName = q.Tier?.TierName ?? "Member",
                     TierId = q.TierId ?? 1,
-                    Status = q.Status,
+                    Status = q.Status.ToString(),
                     Position = q.Position,
                     CheckInAt = q.CheckInAt,
                     StartedAt = q.StartedAt,
@@ -151,13 +151,13 @@ namespace Auto_Wash.Services
                 }
 
                 // Enforce: Do not check-in Cancelled or Completed bookings
-                if (booking.Status == (int)BookingStatus.Cancelled || booking.Status == (int)BookingStatus.Completed)
+                if (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
                 {
                     return (false, "Không thể check-in lịch đặt đã bị hủy hoặc đã hoàn thành!", null!);
                 }
 
                 var existingQueue = await _context.Queues
-                    .FirstOrDefaultAsync(q => q.BookingId == booking.BookingId && q.Status != QueueStatus.Cancelled.ToString());
+                    .FirstOrDefaultAsync(q => q.BookingId == booking.BookingId && q.Status != QueueStatus.Cancelled);
                 if (existingQueue != null)
                 {
                     return (false, "Lịch đặt này đã được check-in vào hàng đợi rồi!", null!);
@@ -165,7 +165,7 @@ namespace Auto_Wash.Services
 
                 var today = DateTime.Today;
                 var lastPos = await _context.Queues
-                    .Where(q => q.CheckInAt.Date == today && q.Status != QueueStatus.Cancelled.ToString())
+                    .Where(q => q.CheckInAt.Date == today && q.Status != QueueStatus.Cancelled)
                     .Select(q => (int?)q.Position)
                     .MaxAsync() ?? 0;
 
@@ -177,14 +177,14 @@ namespace Auto_Wash.Services
                     LicensePlate = booking.Vehicle?.LicensePlate?.ToUpper()?.Trim() ?? string.Empty,
                     CustomerName = booking.Customer?.Account?.FullName ?? "Khách vãng lai",
                     TierId = booking.Customer?.TierId ?? 1,
-                    Status = QueueStatus.LPR_Scan.ToString(), // Starts at LPR_Scan when checked-in
+                    Status = QueueStatus.LPR_Scan,
                     Position = lastPos + 1,
                     CheckInAt = DateTime.Now,
                     StartedAt = DateTime.Now,
                     StaffNote = booking.Notes ?? string.Empty
                 };
 
-                booking.Status = (int)BookingStatus.CheckedIn; // CheckedIn / InProgress
+                booking.Status = BookingStatus.CheckedIn; // CheckedIn / InProgress
 
                 _context.Queues.Add(newQueue);
                 await _context.SaveChangesAsync();
@@ -200,14 +200,14 @@ namespace Auto_Wash.Services
                     return (false, "Không tìm thấy xe trong hàng đợi!", null!);
                 }
 
-                string nextStatus = q.Status switch
+                QueueStatus? nextStatus = q.Status switch
                 {
-                    "Waiting" => QueueStatus.LPR_Scan.ToString(),
-                    "LPR_Scan" => QueueStatus.Washing.ToString(),
-                    "Washing" => QueueStatus.Addon_Processing.ToString(),
-                    "Addon_Processing" => QueueStatus.Drying.ToString(),
-                    "Drying" => QueueStatus.Completed.ToString(),
-                    _ => null!
+                    QueueStatus.Waiting => QueueStatus.LPR_Scan,
+                    QueueStatus.LPR_Scan => QueueStatus.Washing,
+                    QueueStatus.Washing => QueueStatus.Addon_Processing,
+                    QueueStatus.Addon_Processing => QueueStatus.Drying,
+                    QueueStatus.Drying => QueueStatus.Completed,
+                    _ => (QueueStatus?)null
                 };
 
                 if (nextStatus == null)
@@ -215,23 +215,26 @@ namespace Auto_Wash.Services
                     return (false, $"Không thể chuyển tiếp từ trạng thái '{q.Status}'!", null!);
                 }
 
-                q.Status = nextStatus;
-                if (q.StartedAt == null && nextStatus != QueueStatus.Waiting.ToString())
+                q.Status = nextStatus.Value;
+                if (q.StartedAt == null && nextStatus != QueueStatus.Waiting)
                 {
                     q.StartedAt = DateTime.Now;
                 }
-                if (nextStatus == QueueStatus.Completed.ToString())
+                if (nextStatus == QueueStatus.Completed)
                 {
                     q.CompletedAt ??= DateTime.Now;
                 }
 
                 await _context.SaveChangesAsync();
-                return (true, "Cập nhật trạng thái thành công!", nextStatus);
+                return (true, "Cập nhật trạng thái thành công!", nextStatus.Value.ToString());
             }
         }
 
         public async Task<(bool success, string message)> UpdateQueueAsync(int id, string? status, string? staffNote)
         {
+            QueueStatus? parsedStatus = null;
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<QueueStatus>(status, true, out var parsed))
+                parsedStatus = parsed;
             if (id < 0)
             {
                 int bookingId = -id;
@@ -261,12 +264,12 @@ namespace Auto_Wash.Services
 
                 // Perform check-in and set requested status
                 var q = await _context.Queues
-                    .FirstOrDefaultAsync(que => que.BookingId == booking.BookingId && que.Status != QueueStatus.Cancelled.ToString());
+                    .FirstOrDefaultAsync(que => que.BookingId == booking.BookingId && que.Status != QueueStatus.Cancelled);
                 if (q == null)
                 {
                     var today = DateTime.Today;
                     var lastPos = await _context.Queues
-                        .Where(que => que.CheckInAt.Date == today && que.Status != QueueStatus.Cancelled.ToString())
+                        .Where(que => que.CheckInAt.Date == today && que.Status != QueueStatus.Cancelled)
                         .Select(que => (int?)que.Position)
                         .MaxAsync() ?? 0;
 
@@ -278,20 +281,20 @@ namespace Auto_Wash.Services
                         LicensePlate = booking.Vehicle?.LicensePlate?.ToUpper()?.Trim() ?? string.Empty,
                         CustomerName = booking.Customer?.Account?.FullName ?? "Khách vãng lai",
                         TierId = booking.Customer?.TierId ?? 1,
-                        Status = status,
+                        Status = parsedStatus ?? QueueStatus.Waiting,
                         Position = lastPos + 1,
                         CheckInAt = DateTime.Now,
                         StartedAt = DateTime.Now,
                         StaffNote = staffNote ?? booking.Notes ?? string.Empty
                     };
-                    booking.Status = (int)BookingStatus.CheckedIn; // CheckedIn / InProgress
+                    booking.Status = BookingStatus.CheckedIn; // CheckedIn / InProgress
                     _context.Queues.Add(q);
                 }
                 else
                 {
-                    q.Status = status;
+                    if (parsedStatus.HasValue) q.Status = parsedStatus.Value;
                     if (staffNote != null) q.StaffNote = staffNote;
-                    if (q.StartedAt == null && status != QueueStatus.Waiting.ToString()) q.StartedAt = DateTime.Now;
+                    if (q.StartedAt == null && q.Status != QueueStatus.Waiting) q.StartedAt = DateTime.Now;
                 }
 
                 await _context.SaveChangesAsync();
@@ -305,10 +308,10 @@ namespace Auto_Wash.Services
                     return (false, "Không tìm thấy xe trong hàng đợi!");
                 }
 
-                if (!string.IsNullOrEmpty(status)) q.Status = status;
+                if (parsedStatus.HasValue) q.Status = parsedStatus.Value;
                 if (staffNote != null) q.StaffNote = staffNote;
-                if (q.StartedAt == null && q.Status != QueueStatus.Waiting.ToString()) q.StartedAt = DateTime.Now;
-                if (q.Status == QueueStatus.Completed.ToString()) q.CompletedAt ??= DateTime.Now;
+                if (q.StartedAt == null && q.Status != QueueStatus.Waiting) q.StartedAt = DateTime.Now;
+                if (q.Status == QueueStatus.Completed) q.CompletedAt ??= DateTime.Now;
 
                 await _context.SaveChangesAsync();
                 return (true, "Cập nhật hàng đợi thành công!");
@@ -326,7 +329,7 @@ namespace Auto_Wash.Services
                     return (false, "Không tìm thấy lịch đặt!");
                 }
 
-                booking.Status = (int)BookingStatus.Cancelled; // Cancelled
+                booking.Status = BookingStatus.Cancelled; // Cancelled
                 await _context.SaveChangesAsync();
                 return (true, "Hủy lịch đặt thành công!");
             }
@@ -338,10 +341,10 @@ namespace Auto_Wash.Services
                     return (false, "Không tìm thấy xe trong hàng đợi!");
                 }
 
-                q.Status = QueueStatus.Cancelled.ToString();
+                q.Status = QueueStatus.Cancelled;
                 if (q.Booking != null)
                 {
-                    q.Booking.Status = (int)BookingStatus.Cancelled; // Cancelled
+                    q.Booking.Status = BookingStatus.Cancelled; // Cancelled
                 }
 
                 await _context.SaveChangesAsync();
@@ -367,13 +370,13 @@ namespace Auto_Wash.Services
                 return (false, "Không tìm thấy xe trong hàng đợi!", 0, 0);
             }
 
-            if (q.Status == QueueStatus.Completed.ToString())
+            if (q.Status == QueueStatus.Completed)
             {
                 return (false, "Xe này đã được thanh toán và checkout trước đó!", 0, 0);
             }
 
             var now = DateTime.Now;
-            q.Status = QueueStatus.Completed.ToString();
+            q.Status = QueueStatus.Completed;
             q.CompletedAt ??= now;
 
             int finalPrice = 0;
@@ -384,9 +387,9 @@ namespace Auto_Wash.Services
                 finalPrice = q.Booking.FinalPrice;
                 pointsEarned = q.Booking.PointsEarned;
 
-                if (q.Booking.Status != (int)BookingStatus.Completed)
+                if (q.Booking.Status != BookingStatus.Completed)
                 {
-                    q.Booking.Status = (int)BookingStatus.Completed; // Completed
+                    q.Booking.Status = BookingStatus.Completed; // Completed
                     q.Booking.PaidAt ??= now;
 
                     var customer = q.Booking.Customer;
@@ -452,7 +455,7 @@ namespace Auto_Wash.Services
 
             var today = DateTime.Today;
             var lastPos = await _context.Queues
-                .Where(q => q.CheckInAt.Date == today && q.Status != QueueStatus.Cancelled.ToString())
+                .Where(q => q.CheckInAt.Date == today && q.Status != QueueStatus.Cancelled)
                 .Select(q => (int?)q.Position)
                 .MaxAsync() ?? 0;
 
@@ -469,11 +472,11 @@ namespace Auto_Wash.Services
                         .ThenInclude(bs => bs.Service)
                     .FirstOrDefaultAsync(b => b.VehicleId == vehicleId.Value
                                            && b.ScheduledAt.Date == today
-                                           && (b.Status == (int)BookingStatus.Pending || b.Status == (int)BookingStatus.Confirmed));
+                                           && (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed));
                 if (booking != null)
                 {
                     bookingId = booking.BookingId;
-                    booking.Status = (int)BookingStatus.CheckedIn; // CheckedIn
+                    booking.Status = BookingStatus.CheckedIn; // CheckedIn
                     bookingSvcs = string.Join(", ", booking.BookingServices.Select(bs => bs.Service.ServiceName));
                 }
             }
@@ -486,7 +489,7 @@ namespace Auto_Wash.Services
                 CustomerId = customerId,
                 VehicleId = vehicleId,
                 BookingId = bookingId,
-                Status = QueueStatus.Waiting.ToString(),
+                Status = QueueStatus.Waiting,
                 Position = lastPos + 1,
                 CheckInAt = DateTime.Now
             };

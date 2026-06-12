@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { GlobalToastAndConfirm } from '../components/GlobalToastAndConfirm';
@@ -25,8 +25,7 @@ export const CustomerLayout = () => {
   const activeNav = location.pathname.startsWith('/customer/dashboard') ? 'dashboard' :
                     location.pathname.startsWith('/customer/booking') ? 'booking' :
                     location.pathname.startsWith('/customer/vehicles') ? 'vehicles' :
-                    location.pathname.startsWith('/customer/loyalty') ? 
-                      (location.search.includes('tab=vouchers') ? 'vouchers' : 'loyalty') :
+                    location.pathname.startsWith('/customer/loyalty') ? 'loyalty' :
                     location.pathname.startsWith('/customer/history') ? 'history' :
                     location.pathname.startsWith('/customer/profile') ? 'profile' : 'dashboard';
 
@@ -174,10 +173,7 @@ export const CustomerLayout = () => {
             <i className="fas fa-motorcycle"></i><span>Phương tiện của tôi</span>
           </Link>
           <Link to="/customer/loyalty" className={`customer-sidebar-link ${activeNav === 'loyalty' ? 'active' : ''}`}>
-            <i className="fas fa-crown"></i><span>AutoWash Loyalty</span>
-          </Link>
-          <Link to="/customer/loyalty?tab=vouchers" className={`customer-sidebar-link ${activeNav === 'vouchers' ? 'active' : ''}`}>
-            <i className="fas fa-ticket-alt"></i><span>Ví Voucher</span>
+            <i className="fas fa-crown"></i><span>Loyalty & Voucher</span>
           </Link>
           <Link to="/customer/history" className={`customer-sidebar-link ${activeNav === 'history' ? 'active' : ''}`}>
             <i className="fas fa-history"></i><span>Lịch sử & Đánh giá</span>
@@ -189,10 +185,10 @@ export const CustomerLayout = () => {
 
         {/* Sidebar Footer */}
         <div className="mt-auto pt-4 d-flex flex-column gap-2">
-          <a href="javascript:void(0)" className="customer-sidebar-link text-danger" onClick={handleLogout} style={{ borderRadius: '12px' }}>
+          <button type="button" className="customer-sidebar-link text-danger border-0 bg-transparent w-100 text-start" onClick={handleLogout} style={{ borderRadius: '12px' }}>
             <i className="fas fa-sign-out-alt text-danger"></i>
             <span>Đăng xuất</span>
-          </a>
+          </button>
           <button className="sidebar-collapse-btn" onClick={toggleSidebar}>
             <i className={`fas ${sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
             <span>Thu gọn menu</span>
@@ -209,7 +205,7 @@ export const CustomerLayout = () => {
               {activeNav === 'dashboard' ? 'Dashboard' :
                activeNav === 'booking' ? 'Đặt lịch rửa xe' :
                activeNav === 'vehicles' ? 'Phương tiện của tôi' :
-               activeNav === 'loyalty' ? 'Tích điểm & Ưu đãi' :
+               activeNav === 'loyalty' ? 'AutoWash Loyalty & Voucher' :
                activeNav === 'history' ? 'Lịch sử rửa xe' : 'Hồ sơ của tôi'}
             </h5>
           </div>
@@ -275,9 +271,9 @@ export const CustomerLayout = () => {
                 <Link to="/customer/profile" className="profile-dropdown-item" onClick={() => setProfileDropdownOpen(false)}>
                   <i className="fas fa-user-circle"></i> Trang cá nhân
                 </Link>
-                <a href="javascript:void(0)" className="profile-dropdown-item text-danger" onClick={handleLogout}>
+                <button type="button" className="profile-dropdown-item text-danger border-0 bg-transparent w-100 text-start" onClick={handleLogout}>
                   <i className="fas fa-sign-out-alt text-danger"></i> Đăng xuất
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -295,7 +291,7 @@ export const CustomerLayout = () => {
           <div className="mobile-nav-bg-left"></div>
           <div className="mobile-nav-bg-center">
             <svg width="86" height="72" viewBox="0 0 86 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0 1 L6 1 C16 1, 18 28, 43 28 C68 28, 70 1, 80 1 L86 1 L86 72 L0 72 Z" fill="white" stroke="rgba(15, 23, 42, 0.06)" stroke-width="1.5" />
+              <path d="M0 1 L6 1 C16 1, 18 28, 43 28 C68 28, 70 1, 80 1 L86 1 L86 72 L0 72 Z" fill="white" stroke="rgba(15, 23, 42, 0.06)" strokeWidth="1.5" />
             </svg>
           </div>
           <div className="mobile-nav-bg-right"></div>

@@ -22,7 +22,7 @@ namespace Auto_Wash.Controllers
 
         private async Task<object> SetupSessionAndBuildResponseAsync(Account account, bool isNewUser = false)
         {
-            var roleStr = account.Role == 1 ? "admin" : account.Role == 2 ? "staff" : "customer";
+            var roleStr = account.Role == AccountRole.Admin ? "admin" : account.Role == AccountRole.Staff ? "staff" : "customer";
             HttpContext.Session.SetString("UserRole", roleStr);
             HttpContext.Session.SetString("UserName", account.FullName);
             HttpContext.Session.SetString("UserEmail", account.Email ?? "");
@@ -32,7 +32,7 @@ namespace Auto_Wash.Controllers
             int? points = null;
             int? customerId = null;
 
-            if (account.Role == 3)
+            if (account.Role == AccountRole.Customer)
             {
                 var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
                 if (customer != null)
@@ -112,13 +112,13 @@ namespace Auto_Wash.Controllers
                 return Ok(new { isAuthenticated = false });
             }
 
-            var roleStr = account.Role == 1 ? "admin" : account.Role == 2 ? "staff" : "customer";
+            var roleStr = account.Role == AccountRole.Admin ? "admin" : account.Role == AccountRole.Staff ? "staff" : "customer";
 
             string? tier = null;
             int? points = null;
             int? customerId = null;
 
-            if (account.Role == 3)
+            if (account.Role == AccountRole.Customer)
             {
                 var customer = await _accountService.GetCustomerProfileAsync(account.AccountId);
                 if (customer != null)
@@ -205,6 +205,11 @@ namespace Auto_Wash.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.GoogleId))
             {
                 return BadRequest(new { success = false, message = "Dữ liệu hoàn thành đăng ký không hợp lệ!" });
+            }
+
+            if (!PhoneHelper.IsValidVietnamesePhone(request.Phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không đúng định dạng Việt Nam (ví dụ: 0912345678)!" });
             }
 
             try
@@ -294,6 +299,11 @@ namespace Auto_Wash.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.FullName) || string.IsNullOrWhiteSpace(request.OtpCode))
             {
                 return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ tất cả các trường và mã OTP!" });
+            }
+
+            if (!PhoneHelper.IsValidVietnamesePhone(request.Phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không đúng định dạng Việt Nam (ví dụ: 0912345678)!" });
             }
 
             try

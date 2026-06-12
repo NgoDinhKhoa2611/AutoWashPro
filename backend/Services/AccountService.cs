@@ -87,7 +87,7 @@ namespace Auto_Wash.Services
                 RankingBalance = 0,
                 TotalVisits = 0,
                 TotalSpend = 0,
-                JoinedAt = DateTime.UtcNow
+                JoinedAt = DateTime.Now
             };
 
             _context.Customers.Add(customer);
@@ -133,9 +133,9 @@ namespace Auto_Wash.Services
                     GoogleId = googleIdTrimmed,
                     Phone = phoneTrimmed,
                     PasswordHash = PasswordHelper.HashPassword(request.Password.Trim()),
-                    Role = 3, // Customer
+                    Role = AccountRole.Customer,
                     IsActive = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 };
                 _context.Accounts.Add(account);
                 await _context.SaveChangesAsync();
@@ -191,9 +191,9 @@ namespace Auto_Wash.Services
                 FullName = request.FullName.Trim(),
                 Phone = phoneTrimmed,
                 PasswordHash = PasswordHelper.HashPassword(request.Password.Trim()),
-                Role = 3,
+                Role = AccountRole.Customer,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now
             };
 
             _context.Accounts.Add(account);

@@ -52,7 +52,7 @@ namespace Auto_Wash.Services
                 {
                     CustomerId = customerId,
                     RewardId = reward.RewardId,
-                    Status = "Active", 
+                    Status = RedemptionStatus.Active, 
                     ExpiresAt = DateTime.Now.AddDays(30),
                     RedeemedAt = DateTime.Now
                 };

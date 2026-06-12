@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Auto_Wash.Services;
 using Auto_Wash.DTOs.AdminQueue;
+using Auto_Wash.Helpers;
 
 namespace Auto_Wash.Controllers
 {
@@ -138,6 +139,11 @@ namespace Auto_Wash.Controllers
             if (request == null)
             {
                 return BadRequest(new { success = false, message = "Dữ liệu yêu cầu không hợp lệ!" });
+            }
+
+            if (!LicensePlateHelper.IsValidVietnameseLicensePlate(request.LicensePlate))
+            {
+                return BadRequest(new { success = false, message = "Biển số xe không hợp lệ hoặc đầu số tỉnh thành không tồn tại!" });
             }
 
             try

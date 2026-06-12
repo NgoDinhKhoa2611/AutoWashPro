@@ -33,7 +33,7 @@ namespace Auto_Wash.Services
         public async Task<Customer?> GetCurrentCustomerAsync()
         {
             var account = await GetCurrentAccountAsync();
-            if (account == null || account.Role != 3 || !account.IsActive) return null;
+            if (account == null || account.Role != AccountRole.Customer || !account.IsActive) return null;
 
             return await _context.Customers
                 .Include(c => c.Tier)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { GlobalToastAndConfirm } from '../components/GlobalToastAndConfirm';
@@ -6,7 +6,7 @@ import '../styles/shared.css';
 import '../styles/admin/admin.css';
 
 export const AdminLayout = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -66,9 +66,9 @@ export const AdminLayout = () => {
             <i className="fas fa-tags"></i> <span>Voucher & ưu đãi</span>
           </Link>
           <hr className="mx-3 opacity-10 my-4" />
-          <a href="javascript:void(0)" className="sidebar-link text-danger opacity-75" onClick={handleLogout}>
+          <button type="button" className="sidebar-link text-danger opacity-75 border-0 bg-transparent w-100 text-start" onClick={handleLogout}>
             <i className="fas fa-sign-out-alt"></i> <span>Đăng xuất</span>
-          </a>
+          </button>
         </div>
 
         <div className="p-3">

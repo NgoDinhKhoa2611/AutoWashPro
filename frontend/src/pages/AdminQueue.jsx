@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
 import '../styles/shared.css';
 import '../styles/admin/queue.css';
@@ -223,11 +223,26 @@ export const AdminQueue = () => {
     }
   };
 
+  const normalizePlate = (plate) =>
+    plate.trim().toUpperCase().replace(/[\s\-.]/g, '');
+
+  const isValidVietnamesePlate = (plate) => {
+    const clean = normalizePlate(plate);
+    if (!/^\d{2}[A-Z]{1,2}\d{4,5}$/.test(clean)) return false;
+    const province = clean.slice(0, 2);
+    const validProvinces = new Set(['11','12','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','40','41','43','47','48','49','50','51','52','53','54','55','56','57','58','59','60','61','62','63','64','65','66','67','68','69','70','71','72','73','74','75','76','77','78','79','80','81','82','83','84','85','86','88','89','90','92','93','94','95','97','98','99']);
+    return validProvinces.has(province);
+  };
+
   // Add Walk-in Check-in
   const handleAddWalkIn = async (e) => {
     e.preventDefault();
     if (!walkInPlate.trim()) {
       if (window.showToast) window.showToast('Vui lòng điền biển số xe!', 'warning');
+      return;
+    }
+    if (!isValidVietnamesePlate(walkInPlate)) {
+      if (window.showToast) window.showToast('Biển số xe không hợp lệ! Ví dụ hợp lệ: 51A-123.45, 29H1-2345', 'warning');
       return;
     }
 
@@ -317,6 +332,13 @@ export const AdminQueue = () => {
       </div>
 
       {/* KANBAN BOARD LAYOUT */}
+      {loading ? (
+        <div className="d-flex justify-content-center align-items-center py-5">
+          <div className="spinner-border text-info" role="status">
+            <span className="visually-hidden">Đang tải...</span>
+          </div>
+        </div>
+      ) : (
       <div className="kanban-board-container d-flex gap-3">
         {KANBAN_COLUMNS.map(col => {
           const colItems = queue.filter(item => item.status === col.id);
@@ -400,6 +422,7 @@ export const AdminQueue = () => {
           );
         })}
       </div>
+      )}
 
       {/* DETAIL SERVICE WORKFLOW MODAL */}
       {selectedVehicle && (

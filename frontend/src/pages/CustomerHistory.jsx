@@ -1,15 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useState, useEffect } from 'react';
 import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/history.css';
 
 const STEP_BADGES = ['Đã nhận diện LPR', 'Đang phun rửa vỏ', 'Đang sấy khí áp lực', 'Đã rửa sạch & Check-out'];
 
-const INITIAL_HISTORY = [];
-
 export const CustomerHistory = () => {
-  const { user, updateUser } = useAuth();
   const [history, setHistory] = useState([]);
   const [activeBooking, setActiveBooking] = useState(null);
   const [washStep, setWashStep] = useState(0);
@@ -132,14 +128,14 @@ export const CustomerHistory = () => {
                 <i className="fas fa-satellite-dish"></i>
               </div>
               <div>
-                <h6 className="fw-bold mb-0 text-dark" id="active-plate">{activeBooking.plate}</h6>
-                <small className="text-secondary" id="active-service">{activeBooking.service}</small>
+                <h6 className="fw-bold mb-0 text-dark" id="active-plate">{activeBooking.vehicle}</h6>
+                <small className="text-secondary" id="active-service">
+                  {activeBooking.mainService}
+                  {activeBooking.addons?.length ? ` + ${activeBooking.addons.join(', ')}` : ''}
+                </small>
               </div>
             </div>
             <div className="text-end">
-              <span className="badge bg-cyan text-dark rounded px-2.5 py-1.5 fw-bold font-monospace mb-1 d-block" id="active-tier-badge" style={{ fontSize: '0.62rem' }}>
-                VIP {activeBooking.tier} PRIORITY
-              </span>
               <small className="text-muted" style={{ fontSize: '0.72rem' }}>
                 Giờ hẹn: <strong id="active-time">{activeBooking.bookingTime}</strong> • <span className="badge bg-info bg-opacity-10 text-cyan px-2 py-0.5 rounded" id="active-step-badge">{STEP_BADGES[Math.min(washStep, 3)]}</span>
               </small>
@@ -229,17 +225,11 @@ export const CustomerHistory = () => {
                         Điểm nhận được: <strong className="text-warning">+{item.points} PTS</strong>
                       </span>
 
-                      {item.surveyStatus === 'pending' ? (
+                      {item.status === 'Hoàn tất' && item.surveyStatus === 'pending' ? (
                         <button
                           className="app-btn-primary py-2 px-3 shadow-none border-0"
                           style={{ fontSize: '0.78rem', borderRadius: '10px' }}
-                          onClick={() => {
-                            if (window.showToast) {
-                              window.showToast('Chức năng đánh giá sẽ được đồng bộ backend ở phase sau.', 'info');
-                            } else {
-                              alert('Chức năng đánh giá sẽ được đồng bộ backend ở phase sau.');
-                            }
-                          }}
+                          onClick={() => handleOpenSurvey(item.id)}
                         >
                           <i className="fas fa-comment-alt me-1"></i> ĐÁNH GIÁ
                         </button>
@@ -275,7 +265,7 @@ export const CustomerHistory = () => {
               <div className="confirm-modal-body text-center py-5" id="survey-success-view">
                 <i className="fas fa-check-circle fa-4x text-success mb-3 animate-pulse"></i>
                 <h5 className="fw-bold text-success">GỬI PHẢN HỒI THÀNH CÔNG!</h5>
-                <p className="text-muted small mb-0 mt-2">Bạn nhận được +50 PTS điểm thưởng AutoWash Loyalty.</p>
+                <p className="text-muted small mb-0 mt-2">Cảm ơn bạn đã chia sẻ trải nghiệm dịch vụ.</p>
               </div>
             ) : (
               <div className="confirm-modal-body" id="survey-form-view">

@@ -405,12 +405,7 @@ h1, h2, h3, h4, h5, h6,
     padding: 22px;
     border: 1px solid #f1f5f9;
     box-shadow: var(--card-shadow);
-    transition: all 0.3s ease;
 }
-
-    .app-card:hover {
-        box-shadow: var(--premium-shadow);
-    }
 
 /* ── Shared Button Components ─────────────────────────────── */
 .app-btn-primary {

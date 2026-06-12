@@ -1,33 +1,42 @@
-import React from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Layouts
-import GuestLayout from './layouts/GuestLayout';
-import CustomerLayout from './layouts/CustomerLayout';
-import AdminLayout from './layouts/AdminLayout';
+const GuestLayout = lazy(() => import('./layouts/GuestLayout'));
+const CustomerLayout = lazy(() => import('./layouts/CustomerLayout'));
+const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 
 // Pages
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import CustomerDashboard from './pages/CustomerDashboard';
-import CustomerBooking from './pages/CustomerBooking';
-import CustomerLoyalty from './pages/CustomerLoyalty';
-import CustomerHistory from './pages/CustomerHistory';
-import CustomerProfile from './pages/CustomerProfile';
-import CustomerVehicles from './pages/CustomerVehicles';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminQueue from './pages/AdminQueue';
-import AdminCustomers from './pages/AdminCustomers';
-import AdminServices from './pages/AdminServices';
-import AdminPromotions from './pages/AdminPromotions';
+const Landing = lazy(() => import('./pages/Landing'));
+const Login = lazy(() => import('./pages/Login'));
+const CustomerDashboard = lazy(() => import('./pages/CustomerDashboard'));
+const CustomerBooking = lazy(() => import('./pages/CustomerBooking'));
+const CustomerLoyalty = lazy(() => import('./pages/CustomerLoyalty'));
+const CustomerHistory = lazy(() => import('./pages/CustomerHistory'));
+const CustomerProfile = lazy(() => import('./pages/CustomerProfile'));
+const CustomerVehicles = lazy(() => import('./pages/CustomerVehicles'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminQueue = lazy(() => import('./pages/AdminQueue'));
+const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
+const AdminServices = lazy(() => import('./pages/AdminServices'));
+const AdminPromotions = lazy(() => import('./pages/AdminPromotions'));
+
+const PageLoader = () => (
+  <div className="d-flex align-items-center justify-content-center vh-100 bg-light">
+    <div className="spinner-border text-info" role="status">
+      <span className="visually-hidden">Đang tải...</span>
+    </div>
+  </div>
+);
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
           {/* Guest Routes */}
           <Route element={<GuestLayout />}>
             <Route path="/" element={<Landing />} />
@@ -72,7 +81,8 @@ function App() {
 
           {/* Fallback routing */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );

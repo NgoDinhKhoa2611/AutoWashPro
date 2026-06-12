@@ -32,7 +32,7 @@ namespace Auto_Wash.Services
 
             // 3. Revenue
             var completedBookingsGrouped = await _context.Bookings
-                .Where(b => b.Status == 4 && b.PaidAt.HasValue && b.PaidAt.Value >= startDate)
+                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue && b.PaidAt.Value >= startDate)
                 .GroupBy(b => b.PaidAt!.Value.Date)
                 .Select(g => new { Date = g.Key, Total = g.Sum(b => b.FinalPrice) })
                 .ToListAsync();
@@ -46,22 +46,22 @@ namespace Auto_Wash.Services
                 }).ToArray();
 
             var totalRevenue = await _context.Bookings
-                .Where(b => b.Status == 4 && b.PaidAt.HasValue && b.PaidAt.Value >= startDate)
+                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue && b.PaidAt.Value >= startDate)
                 .SumAsync(b => (long)b.FinalPrice);
 
             var prevTotalRevenue = await _context.Bookings
-                .Where(b => b.Status == 4 && b.PaidAt.HasValue
+                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue
                          && b.PaidAt.Value >= prevStart && b.PaidAt.Value < startDate)
                 .SumAsync(b => (long)b.FinalPrice);
 
             // 4. Monthly Revenue (last 30 days)
             var monthlyRevenue = await _context.Bookings
-                .Where(b => b.Status == 4 && b.PaidAt.HasValue && b.PaidAt.Value >= today.AddDays(-30))
+                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue && b.PaidAt.Value >= today.AddDays(-30))
                 .SumAsync(b => (long)b.FinalPrice);
 
             // 5. Active Queue
             var activeQueue = await _context.Queues
-                .CountAsync(q => q.Status == "Waiting" || q.Status == "In Progress");
+                .CountAsync(q => q.Status == QueueStatus.Waiting || q.Status == QueueStatus.Washing || q.Status == QueueStatus.LPR_Scan || q.Status == QueueStatus.Addon_Processing || q.Status == QueueStatus.Drying);
 
             // 6. Average Wash Duration
             double avgMinutesVal = 0;
@@ -320,7 +320,7 @@ namespace Auto_Wash.Services
             service.ServiceName = dto.Name.Trim();
             service.Description = dto.Description?.Trim();
             service.IsAddOn = dto.Category == "Dịch vụ đi kèm";
-            service.Category = service.IsAddOn ? 4 : 1; 
+            service.Category = service.IsAddOn ? ServiceCategory.AddOn : ServiceCategory.Basic;
             service.BasePrice = dto.Price;
             service.EstimatedMinutes = dto.EstimatedMinutes;
             service.IsActive = dto.IsActive;
@@ -382,7 +382,7 @@ namespace Auto_Wash.Services
             var list = await query.ToListAsync();
 
             var activeVouchersCounts = await _context.RewardRedemptions
-                .Where(r => r.Status == "Active")
+                .Where(r => r.Status == RedemptionStatus.Active)
                 .GroupBy(r => r.CustomerId)
                 .Select(g => new { CustomerId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.CustomerId, x => x.Count);
@@ -430,13 +430,13 @@ namespace Auto_Wash.Services
                     date = b.ScheduledAt.ToString("dd/MM/yyyy"),
                     service = b.BookingServices.Where(bs => !bs.Service.IsAddOn).Select(bs => bs.Service.ServiceName).FirstOrDefault() ?? "Rửa xe",
                     price = b.FinalPrice,
-                    status = b.Status == 4 ? "Completed" : b.Status == 5 ? "Cancelled" : "In Progress"
+                    status = b.Status == BookingStatus.Completed ? "Completed" : b.Status == BookingStatus.Cancelled ? "Cancelled" : "In Progress"
                 })
                 .ToListAsync();
 
             var vouchers = await _context.RewardRedemptions
                 .Include(r => r.Reward)
-                .Where(r => r.CustomerId == customerId && r.Status == "Active")
+                .Where(r => r.CustomerId == customerId && r.Status == RedemptionStatus.Active)
                 .Select(r => new {
                     code = r.Reward.RewardId.ToString(),
                     title = r.Reward.RewardName,
@@ -518,7 +518,7 @@ namespace Auto_Wash.Services
             {
                 CustomerId = customerId,
                 RewardId = rewardId,
-                Status = "Active",
+                Status = RedemptionStatus.Active,
                 ExpiresAt = DateTime.Now.AddDays(reward.ValidDays),
                 RedeemedAt = DateTime.Now
             };
@@ -552,7 +552,7 @@ namespace Auto_Wash.Services
                 string status = "Stopped";
                 if (c.Status == 1)
                 {
-                    status = c.EndDate < DateTime.Today ? "Expired" : "Active";
+                    status = c.EndDate < DateOnly.FromDateTime(DateTime.Today) ? "Expired" : "Active";
                 }
                 
                 return new {
@@ -578,7 +578,7 @@ namespace Auto_Wash.Services
             string status = "Stopped";
             if (c.Status == 1)
             {
-                status = c.EndDate < DateTime.Today ? "Expired" : "Active";
+                status = c.EndDate < DateOnly.FromDateTime(DateTime.Today) ? "Expired" : "Active";
             }
 
             return new {
@@ -609,8 +609,8 @@ namespace Auto_Wash.Services
                 CampaignName = dto.Name.Trim(),
                 Description = dto.Description?.Trim(),
                 TargetTierMinId = targetTierId,
-                StartDate = DateTime.Today,
-                EndDate = DateTime.Today.AddYears(1), // Default to 1 year
+                StartDate = DateOnly.FromDateTime(DateTime.Today),
+                EndDate = DateOnly.FromDateTime(DateTime.Today.AddYears(1)),
                 Status = 1, // Active
                 PromoCode = "CAMPAIGN_" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
                 DiscountValue = 10,

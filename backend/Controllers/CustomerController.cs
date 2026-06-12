@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Auto_Wash.Services;
+using Auto_Wash.Helpers;
 
 namespace Auto_Wash.Controllers
 {
@@ -32,6 +33,11 @@ namespace Auto_Wash.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.FullName))
             {
                 return BadRequest(new { success = false, message = "Thông tin không hợp lệ!" });
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Phone) && !PhoneHelper.IsValidVietnamesePhone(request.Phone))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không đúng định dạng Việt Nam (ví dụ: 0912345678)!" });
             }
 
             try

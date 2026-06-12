@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/booking.css';
-
-const DEFAULT_MAIN_SERVICES = [];
-const DEFAULT_ADDON_SERVICES = [];
 
 const DEFAULT_TIME_SLOTS = [
   '08:00', '09:00', '10:00', '11:00', '12:00', 
@@ -90,7 +87,7 @@ export const CustomerBooking = () => {
       try {
         const response = await customerService.getServices();
         if (response.success && response.services && response.services.length > 0) {
-          const mains = response.services.filter(s => s.category.includes('cơ bản') || s.category.includes('cao cấp'))
+          const mains = response.services.filter(s => s.category !== 'Dịch vụ đi kèm')
             .map(s => ({
               id: s.id,
               name: s.name,
@@ -104,7 +101,7 @@ export const CustomerBooking = () => {
             setSelectedMain(mains[0]);
           }
 
-          const addons = response.services.filter(s => s.category.includes('đi kèm'))
+          const addons = response.services.filter(s => s.category === 'Dịch vụ đi kèm')
             .map(s => ({
               id: s.id,
               name: s.name,
@@ -133,7 +130,22 @@ export const CustomerBooking = () => {
       try {
         const response = await customerService.getVouchers();
         if (response.success && response.vouchers) {
-          setMyVouchers(response.vouchers.filter(v => v.status === 1)); // 1 = Available
+          const availableVouchers = response.vouchers.filter(v => v.status === 1);
+          setMyVouchers(availableVouchers);
+
+          const selectedCode = sessionStorage.getItem('selected_voucher_code');
+          const selectedVoucher = availableVouchers.find(v => v.code === selectedCode);
+          if (selectedVoucher) {
+            setPromoCode(selectedVoucher.code);
+            setAppliedVoucher({
+              redemptionId: selectedVoucher.redemptionId,
+              code: selectedVoucher.code,
+              title: selectedVoucher.title,
+              rewardType: selectedVoucher.rewardType,
+              rewardValue: selectedVoucher.rewardValue
+            });
+          }
+          sessionStorage.removeItem('selected_voucher_code');
         }
       } catch (err) {
         console.error(err);
@@ -142,7 +154,7 @@ export const CustomerBooking = () => {
     fetchVouchers();
   }, [user]);
 
-  const getAvailableTimeSlots = () => {
+  const availableTimeSlots = useMemo(() => {
     const today = new Date();
     const todayStr = today.getFullYear() + '-' + 
       String(today.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -158,16 +170,15 @@ export const CustomerBooking = () => {
       });
     }
     return DEFAULT_TIME_SLOTS;
-  };
+  }, [bookingDate]);
 
   useEffect(() => {
     if (bookingTime && bookingDate) {
-      const slots = getAvailableTimeSlots();
-      if (!slots.includes(bookingTime)) {
+      if (!availableTimeSlots.includes(bookingTime)) {
         setBookingTime('');
       }
     }
-  }, [bookingDate]);
+  }, [availableTimeSlots, bookingDate, bookingTime]);
 
   const handleSelectVehicle = (plate) => {
     setSelectedVehicle(plate);
@@ -227,11 +238,6 @@ export const CustomerBooking = () => {
   const addonTotal = Object.values(selectedAddons).reduce((s, a) => s + Number(a.price), 0);
   const mainPrice = selectedMain ? Number(selectedMain.price) : 0;
   const baseTotal = mainPrice + addonTotal;
-
-  // VIP discount (Tier-based Loyalty perks) - Disabled in this phase as backend calculates base total
-  const tier = (user?.tier || 'Silver Member').toUpperCase();
-  const tierDiscountPercent = 0;
-  const tierDiscountAmount = 0;
 
   // Voucher discount
   const promoDiscountAmount = appliedVoucher && baseTotal > 0
@@ -376,7 +382,7 @@ export const CustomerBooking = () => {
           {/* Step 3: Chọn dịch vụ đi kèm (Add-ons Cards Grid) */}
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
             <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">3</span> Chọn dịch vụ đi kèm (Add-ons)
+              <span className="step-num-badge">3</span> Chọn dịch vụ đi kèm
             </h5>
             <div className="addons-grid-layout" id="addon-services-list">
               {addonServices.map((a) => {
@@ -434,12 +440,12 @@ export const CustomerBooking = () => {
               <div className="col-md-6">
                 <label className="form-label small fw-bold text-secondary mb-2">KHUNG GIỜ</label>
                 <div className="row g-2" id="time-slots">
-                  {getAvailableTimeSlots().length === 0 ? (
+                  {availableTimeSlots.length === 0 ? (
                     <div className="col-12 text-center text-danger py-2 small fw-bold">
                       Không còn khung giờ trống cho hôm nay. Vui lòng chọn ngày khác!
                     </div>
                   ) : (
-                    getAvailableTimeSlots().map((t) => (
+                    availableTimeSlots.map((t) => (
                       <div key={t} className="col-4">
                         <div
                           className={`text-center py-2.5 rounded-3 border fw-bold selectable-card ${
@@ -461,7 +467,7 @@ export const CustomerBooking = () => {
 
         {/* Right Column: Order Summary (Realtime updates) */}
         <div className="col-lg-4">
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 sticky-lg-top" style={{ top: '90px' }}>
+          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 booking-summary-fixed">
             <h5 className="fw-bold mb-3 border-bottom pb-2.5" style={{ color: 'var(--navy-dark)', fontSize: '0.95rem' }}>
               <i className="fas fa-receipt text-cyan me-2"></i> TÓM TẮT ĐƠN HÀNG
             </h5>
@@ -518,15 +524,6 @@ export const CustomerBooking = () => {
 
             {/* Discounts and Loyalty calculations */}
             <div className="d-flex flex-column gap-2 mb-4 bg-light p-3 rounded-3" style={{ background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-              {tierDiscountAmount > 0 && baseTotal > 0 && (
-                <div className="d-flex justify-content-between align-items-center" id="tier-perk-row">
-                  <small className="text-muted fw-bold" style={{ fontSize: '0.68rem' }}>ĐẶC QUYỀN {tier.replace(' MEMBER', '')} ({tierDiscountPercent}%):</small>
-                  <span className="fw-bold text-success" id="tier-perk-value" style={{ fontSize: '0.78rem' }}>
-                    -{Number(tierDiscountAmount).toLocaleString()}đ
-                  </span>
-                </div>
-              )}
-
               {appliedVoucher && baseTotal > 0 && (
                 <div className="d-flex justify-content-between align-items-center" id="promo-applied-msg">
                   <small className="text-muted fw-bold" style={{ fontSize: '0.68rem' }}>VOUCHER ({appliedVoucher.code}):</small>
@@ -555,17 +552,21 @@ export const CustomerBooking = () => {
                   <i className="fas fa-ticket-alt me-1"></i>Ví Voucher
                 </button>
               </div>
-              <div className="input-group">
+              <div className="input-group promo-input-group">
                 <input
                   type="text"
                   id="promo-code-input"
-                  className="form-control bg-light border-0 py-2 font-monospace"
+                  className="form-control font-monospace promo-code-input"
                   placeholder="VÍ DỤ: WASH10K"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
                 />
-                <button className="btn btn-dark fw-bold px-3" style={{ fontSize: '0.8rem' }} onClick={() => applyPromo()}>
-                  ÁP DỤNG
+                <button
+                  type="button"
+                  className="promo-apply-btn"
+                  onClick={() => applyPromo()}
+                >
+                  ÁP DỤNG <i className="fas fa-check ms-1"></i>
                 </button>
               </div>
             </div>
@@ -586,10 +587,18 @@ export const CustomerBooking = () => {
             <button
               onClick={handleConfirmBooking}
               disabled={vehicles.length === 0}
-              className="app-btn-primary w-100 py-3 shadow-lg fs-6 border-0 text-dark fw-bold"
-              style={{ borderRadius: '14px', opacity: vehicles.length === 0 ? 0.5 : 1, cursor: vehicles.length === 0 ? 'not-allowed' : 'pointer' }}
+              className="app-btn-primary w-100 border-0 fw-bold"
+              style={{
+                borderRadius: '12px',
+                padding: '14px',
+                fontSize: '0.88rem',
+                letterSpacing: '0.5px',
+                opacity: vehicles.length === 0 ? 0.45 : 1,
+                cursor: vehicles.length === 0 ? 'not-allowed' : 'pointer',
+                boxShadow: '0 6px 20px rgba(14,165,233,0.28)'
+              }}
             >
-              XÁC NHẬN ĐẶT LỊCH <i className="fas fa-chevron-right ms-1"></i>
+              XÁC NHẬN ĐẶT LỊCH <i className="fas fa-arrow-right ms-2"></i>
             </button>
           </div>
         </div>

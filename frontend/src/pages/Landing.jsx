@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/shared.css';
 import '../styles/landing.css';
@@ -17,6 +17,69 @@ export const Landing = () => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
 
   const demoTimeouts = useRef([]);
+  const demoRunningRef = useRef(false);
+
+  const clearDemoTimeouts = useCallback(() => {
+    demoTimeouts.current.forEach(t => clearTimeout(t));
+    demoTimeouts.current = [];
+  }, []);
+
+  const scheduleTimeout = useCallback((callback, ms) => {
+    const t = setTimeout(callback, ms);
+    demoTimeouts.current.push(t);
+  }, []);
+
+  const startDemoSimulation = useCallback(() => {
+    if (demoRunningRef.current) return;
+    demoRunningRef.current = true;
+
+    clearDemoTimeouts();
+
+    setDemoState('scanning');
+    setPipelineStep(1);
+    setScannerStatus('ĐANG ĐỌC BIỂN SỐ XE...');
+    setProgressWidth('0%');
+    setProgressLabel('Đang quét biển số...');
+
+    scheduleTimeout(() => {
+      setDemoState('recognized');
+      setScannerStatus('XÁC MINH PHƯƠNG TIỆN THÀNH CÔNG');
+      setProgressWidth('15%');
+      setProgressLabel('Đã xếp hàng (15%)');
+    }, 2000);
+
+    scheduleTimeout(() => {
+      setDemoState('washing_snow');
+      setPipelineStep(2);
+      setScannerStatus('TIẾN TRÌNH: RỬA VỎ & PHUN BỌT TUYẾT');
+      setProgressWidth('50%');
+      setProgressLabel('Đang phun bọt tuyết (50%)');
+    }, 4000);
+
+    scheduleTimeout(() => {
+      setDemoState('washing_dry');
+      setScannerStatus('TIẾN TRÌNH: SẤY KHÔ & HIỆU CHỈNH BÓNG');
+      setProgressWidth('85%');
+      setProgressLabel('Đang sấy khô (85%)');
+    }, 6500);
+
+    scheduleTimeout(() => {
+      setDemoState('completed');
+      setPipelineStep(3);
+      setScannerStatus('HOÀN THÀNH RỬA XE - HẸN GẶP LẠI!');
+      setProgressWidth('100%');
+      setProgressLabel('Đã hoàn thành (100%)');
+    }, 9000);
+
+    scheduleTimeout(() => {
+      setDemoState('idle');
+      setPipelineStep(0);
+      setScannerStatus('HỆ THỐNG OFFLINE');
+      setProgressWidth('0%');
+      setProgressLabel('Chưa bắt đầu');
+      demoRunningRef.current = false;
+    }, 13000);
+  }, [clearDemoTimeouts, scheduleTimeout]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,74 +102,9 @@ export const Landing = () => {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(initialDemoTimer);
       clearDemoTimeouts();
+      demoRunningRef.current = false;
     };
-  }, []);
-
-  const clearDemoTimeouts = () => {
-    demoTimeouts.current.forEach(t => clearTimeout(t));
-    demoTimeouts.current = [];
-  };
-
-  const scheduleTimeout = (callback, ms) => {
-    const t = setTimeout(callback, ms);
-    demoTimeouts.current.push(t);
-  };
-
-  const startDemoSimulation = () => {
-    if (demoState !== 'idle' && demoState !== 'completed') return;
-
-    clearDemoTimeouts();
-
-    // STEP 1: Scanning LPR (0s)
-    setDemoState('scanning');
-    setPipelineStep(1);
-    setScannerStatus('ĐANG ĐỌC BIỂN SỐ XE...');
-    setProgressWidth('0%');
-    setProgressLabel('Đang quét biển số...');
-
-    // STEP 2: Recognized Plate (2.0s)
-    scheduleTimeout(() => {
-      setDemoState('recognized');
-      setScannerStatus('XÁC MINH PHƯƠNG TIỆN THÀNH CÔNG');
-      setProgressWidth('15%');
-      setProgressLabel('Đã xếp hàng (15%)');
-    }, 2000);
-
-    // STEP 3: Washing (4.0s)
-    scheduleTimeout(() => {
-      setDemoState('washing_snow');
-      setPipelineStep(2);
-      setScannerStatus('TIẾN TRÌNH: RỬA VỎ & PHUN BỌT TUYẾT');
-      setProgressWidth('50%');
-      setProgressLabel('Đang phun bọt tuyết (50%)');
-    }, 4000);
-
-    // STEP 4: Drying (6.5s)
-    scheduleTimeout(() => {
-      setDemoState('washing_dry');
-      setScannerStatus('TIẾN TRÌNH: SẤY KHÔ & HIỆU CHỈNH BÓNG');
-      setProgressWidth('85%');
-      setProgressLabel('Đang sấy khô (85%)');
-    }, 6500);
-
-    // STEP 5: Completed (9.0s)
-    scheduleTimeout(() => {
-      setDemoState('completed');
-      setPipelineStep(3);
-      setScannerStatus('HOÀN THÀNH RỬA XE - HẸN GẶP LẠI!');
-      setProgressWidth('100%');
-      setProgressLabel('Đã hoàn thành (100%)');
-    }, 9000);
-
-    // STEP 6: Reset to idle (13.0s)
-    scheduleTimeout(() => {
-      setDemoState('idle');
-      setPipelineStep(0);
-      setScannerStatus('HỆ THỐNG OFFLINE');
-      setProgressWidth('0%');
-      setProgressLabel('Chưa bắt đầu');
-    }, 13000);
-  };
+  }, [clearDemoTimeouts, startDemoSimulation]);
 
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { customerService } from '../services/customerService';
 import '../styles/shared.css';
@@ -43,6 +43,11 @@ export const CustomerProfile = () => {
       return;
     }
 
+    if (profilePhone && !/^0(3[2-9]|5[2569]|7[06-9]|8[1-9]|9[0-9])\d{7}$/.test(profilePhone.trim())) {
+      if (window.showToast) window.showToast('Số điện thoại không hợp lệ! Vui lòng nhập đúng số di động Việt Nam (ví dụ: 0912345678).', 'warning');
+      return;
+    }
+
     setProfileLoading(true);
     try {
       const response = await customerService.updateProfile(profileName, profilePhone);
@@ -52,7 +57,7 @@ export const CustomerProfile = () => {
       } else {
         if (window.showToast) window.showToast(response.message || 'Lỗi cập nhật hồ sơ!', 'error');
       }
-    } catch (err) {
+    } catch {
       if (window.showToast) window.showToast('Lỗi kết nối máy chủ!', 'error');
     } finally {
       setProfileLoading(false);
@@ -113,7 +118,7 @@ export const CustomerProfile = () => {
       } else {
         if (window.showToast) window.showToast(response.message || 'Lỗi gửi Email OTP!', 'error');
       }
-    } catch (err) {
+    } catch {
       if (window.showToast) window.showToast('Không thể kết nối máy chủ gửi Email!', 'error');
     } finally {
       setPwLoading(false);
