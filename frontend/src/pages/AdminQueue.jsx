@@ -23,7 +23,7 @@ export const AdminQueue = () => {
   const [walkInPlate, setWalkInPlate] = useState('');
   const [walkInName, setWalkInName] = useState('');
   const [walkInPhone, setWalkInPhone] = useState('');
-  const [walkInMainSvc, setWalkInMainSvc] = useState('Combo Rửa xe cao cấp');
+  const [walkInMainSvc, setWalkInMainSvc] = useState('Combo chăm sóc ô tô cao cấp');
   const [walkInAddons, setWalkInAddons] = useState([]);
   const [walkInPriority, setWalkInPriority] = useState('Standard Loyalty');
   const [walkInNote, setWalkInNote] = useState('');
@@ -34,16 +34,17 @@ export const AdminQueue = () => {
 
   // Static services list for walk-in form
   const mainServicesList = [
-    'Rửa xe phổ thông',
-    'Combo Rửa xe cao cấp',
-    'Rửa xe siêu nhanh'
+    'Rửa ô tô tiêu chuẩn',
+    'Combo chăm sóc ô tô cao cấp',
+    'Rửa ô tô siêu nhanh'
   ];
 
   const addonServicesList = [
-    'Vệ sinh nội thất',
+    'Hút bụi khoang nội thất',
     'Wax nano',
-    'Chăm sóc dưỡng nhựa',
-    'Vệ sinh sên xích'
+    'Vệ sinh kính lái',
+    'Dưỡng bóng lốp xe',
+    'Xịt rửa gầm xe'
   ];
 
   useEffect(() => {
@@ -242,7 +243,7 @@ export const AdminQueue = () => {
       return;
     }
     if (!isValidVietnamesePlate(walkInPlate)) {
-      if (window.showToast) window.showToast('Biển số xe không hợp lệ! Ví dụ hợp lệ: 51A-123.45, 29H1-2345', 'warning');
+      if (window.showToast) window.showToast('Biển số xe không hợp lệ! Ví dụ hợp lệ: 51A-123.45, 30F-678.90', 'warning');
       return;
     }
 

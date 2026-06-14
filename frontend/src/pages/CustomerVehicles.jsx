@@ -32,10 +32,20 @@ export const CustomerVehicles = () => {
 
   const isValidVietnamesePlate = (plate) => {
     const clean = normalizePlate(plate);
-    if (!/^\d{2}[A-Z]{1,2}\d{4,5}$/.test(clean)) return false;
+    if (!/^\d{2}[A-Z]{1,2}\d{4,6}$/.test(clean)) return false;
     const province = clean.slice(0, 2);
     const validProvinces = new Set(['11','12','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','40','41','43','47','48','49','50','51','52','53','54','55','56','57','58','59','60','61','62','63','64','65','66','67','68','69','70','71','72','73','74','75','76','77','78','79','80','81','82','83','84','85','86','88','89','90','92','93','94','95','97','98','99']);
     return validProvinces.has(province);
+  };
+
+  const isMotorcyclePlate = (plate) => {
+    const clean = normalizePlate(plate);
+    if (/^\d{2}[A-Z]\d\d{4,5}$/.test(clean)) return true;
+    if (/^\d{2}[A-Z]{2}\d{4,5}$/.test(clean)) {
+      const letters = clean.slice(2, 4);
+      if (letters.startsWith('A') || letters.startsWith('M')) return true;
+    }
+    return false;
   };
 
   const handleSendVehicleOtp = async (e) => {
@@ -47,6 +57,17 @@ export const CustomerVehicles = () => {
     if (!isValidVietnamesePlate(newPlate)) {
       if (window.showToast) window.showToast('Biển số xe không hợp lệ! Ví dụ hợp lệ: 51A-123.45, 29H1-2345', 'warning');
       return;
+    }
+    if (newType) {
+      const isMotoType = newType === 'Xe gắn máy';
+      const isMotoPlate = isMotorcyclePlate(newPlate);
+      if (isMotoType && !isMotoPlate) {
+        if (window.showToast) window.showToast('Biển số xe không đúng định dạng xe gắn máy! Ví dụ: 29-K1 123.45, 59-G2 3456.', 'warning');
+        return;
+      } else if (!isMotoType && newType !== 'Khác' && isMotoPlate) {
+        if (window.showToast) window.showToast('Biển số xe này là định dạng xe gắn máy! Vui lòng chọn loại xe là "Xe gắn máy".', 'warning');
+        return;
+      }
     }
 
     setVehicleLoading(true);
@@ -123,13 +144,13 @@ export const CustomerVehicles = () => {
         <div className="col-lg-8">
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
             <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <i className="fas fa-motorcycle text-cyan me-2"></i>GARAGE XE MÁY ĐÃ ĐĂNG KÝ
+              <i className="fas fa-car-side text-cyan me-2"></i>GARAGE PHƯƠNG TIỆN ĐÃ ĐĂNG KÝ
             </h5>
 
             <div className="d-flex flex-column gap-2 mb-4">
               {vehicles.length === 0 ? (
                 <div className="text-center py-5 text-muted small bg-light rounded-4 border border-dashed" style={{ background: 'rgba(15,23,42,0.02)' }}>
-                  <i className="fas fa-motorcycle fa-2x mb-3 text-secondary" style={{ opacity: 0.5 }}></i>
+                  <i className="fas fa-car-side fa-2x mb-3 text-secondary" style={{ opacity: 0.5 }}></i>
                   <div>Bạn chưa đăng ký phương tiện nào.</div>
                 </div>
               ) : (
@@ -137,7 +158,7 @@ export const CustomerVehicles = () => {
                   <div key={i} className="d-flex justify-content-between align-items-center p-3 border border-light rounded-4 bg-light bg-opacity-30">
                     <div className="d-flex align-items-center gap-3">
                       <div className="rounded-3 d-flex align-items-center justify-content-center bg-white border" style={{ width: '42px', height: '42px', flexShrink: 0 }}>
-                        <i className="fas fa-motorcycle text-muted"></i>
+                        <i className={`fas ${v.type === 'Xe gắn máy' || isMotorcyclePlate(v.plate) ? 'fa-motorcycle' : 'fa-car-side'} text-muted`}></i>
                       </div>
                       <div>
                         <div className="fw-bold font-monospace" style={{ color: 'var(--navy-dark)', fontSize: '0.88rem' }}>{v.plate}</div>
@@ -196,10 +217,14 @@ export const CustomerVehicles = () => {
                       <label className="form-label small fw-bold text-muted">LOẠI XE</label>
                       <select className="form-select py-2.5" value={newType} onChange={(e) => setNewType(e.target.value)}>
                         <option value="">-- Chọn loại xe (Không bắt buộc) --</option>
-                        <option value="Xe tay ga">Xe tay ga</option>
-                        <option value="Xe số">Xe số</option>
-                        <option value="Xe côn tay">Xe côn tay</option>
-                        <option value="Xe phân khối lớn">Xe phân khối lớn</option>
+                        <option value="Sedan">Sedan</option>
+                        <option value="SUV">SUV</option>
+                        <option value="Hatchback">Hatchback</option>
+                        <option value="MPV / 7 chỗ">MPV / 7 chỗ</option>
+                        <option value="Bán tải">Bán tải</option>
+                        <option value="Xe điện">Xe điện</option>
+                        <option value="Xe gắn máy">Xe gắn máy</option>
+                        <option value="Khác">Khác</option>
                       </select>
                     </div>
                   </div>

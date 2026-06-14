@@ -62,6 +62,21 @@ namespace Auto_Wash.Controllers
                 return BadRequest(new { success = false, message = "Biển số xe không hợp lệ hoặc đầu số tỉnh thành không tồn tại!" });
             }
 
+            if (!string.IsNullOrEmpty(request.Type))
+            {
+                bool isMotoType = request.Type.Trim().Equals("Xe gắn máy", StringComparison.OrdinalIgnoreCase);
+                bool isMotoPlate = LicensePlateHelper.IsMotorcyclePlate(request.LicensePlate);
+
+                if (isMotoType && !isMotoPlate)
+                {
+                    return BadRequest(new { success = false, message = "Biển số xe không đúng định dạng xe gắn máy! Ví dụ: 29-K1 123.45, 59-G2 3456." });
+                }
+                else if (!isMotoType && !request.Type.Trim().Equals("Khác", StringComparison.OrdinalIgnoreCase) && isMotoPlate)
+                {
+                    return BadRequest(new { success = false, message = "Biển số xe này là định dạng xe gắn máy! Vui lòng chọn loại xe là 'Xe gắn máy'." });
+                }
+            }
+
             try
             {
                 bool exists = await _vehicleService.IsPlateRegisteredAsync(request.LicensePlate);
@@ -133,6 +148,21 @@ namespace Auto_Wash.Controllers
             if (!LicensePlateHelper.IsValidVietnameseLicensePlate(request.LicensePlate))
             {
                 return BadRequest(new { success = false, message = "Biển số xe không hợp lệ hoặc đầu số tỉnh thành không tồn tại!" });
+            }
+
+            if (!string.IsNullOrEmpty(request.Type))
+            {
+                bool isMotoType = request.Type.Trim().Equals("Xe gắn máy", StringComparison.OrdinalIgnoreCase);
+                bool isMotoPlate = LicensePlateHelper.IsMotorcyclePlate(request.LicensePlate);
+
+                if (isMotoType && !isMotoPlate)
+                {
+                    return BadRequest(new { success = false, message = "Biển số xe không đúng định dạng xe gắn máy! Ví dụ: 29-K1 123.45, 59-G2 3456." });
+                }
+                else if (!isMotoType && !request.Type.Trim().Equals("Khác", StringComparison.OrdinalIgnoreCase) && isMotoPlate)
+                {
+                    return BadRequest(new { success = false, message = "Biển số xe này là định dạng xe gắn máy! Vui lòng chọn loại xe là 'Xe gắn máy'." });
+                }
             }
 
             try

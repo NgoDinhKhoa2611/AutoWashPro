@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import "../styles/shared.css";
 import "../styles/customer/loyalty.css";
@@ -29,7 +29,7 @@ const TIER_DATA = {
     multiplier: "x1.2",
     queuePerk: "Bypass hàng rửa xe thường. Vào thẳng ô rửa VIP.",
     birthday:
-      "Tặng 01 combo cao cấp rửa xe + vệ sinh sên miễn phí vào tháng sinh nhật.",
+      "Tặng 01 combo cao cấp rửa xe + hút bụi nội thất miễn phí vào tháng sinh nhật.",
     nextTier: "Platinum",
     neededPts: 2000,
   },
@@ -147,7 +147,7 @@ export const CustomerLoyalty = () => {
     }
   };
 
-  const handleUseVoucher = (redemptionId) => {
+  const handleUseVoucher = () => {
     if (window.showToast) {
       window.showToast(
         "Voucher này sẽ tự động có sẵn để bạn chọn khi đặt lịch tại tab ĐẶT LỊCH (Booking)!",

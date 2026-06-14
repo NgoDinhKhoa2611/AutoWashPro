@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { authService } from "../services/authService";
@@ -65,6 +65,12 @@ export const Login = () => {
   const [completePassword, setCompletePassword] = useState("");
   const [completeConfirm, setCompleteConfirm] = useState("");
   const [completeAgree, setCompleteAgree] = useState(false);
+
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirm, setShowRegConfirm] = useState(false);
+  const [showCompletePassword, setShowCompletePassword] = useState(false);
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
 
   useEffect(() => {
     const isWaiting = loginLoading || regLoading;
@@ -545,7 +551,7 @@ export const Login = () => {
                     <i className="fas fa-lock"></i>
                   </span>
                   <input
-                    type="password"
+                    type={showRegPassword ? "text" : "password"}
                     className="auth-input-field"
                     placeholder="Min. 6 ký tự"
                     value={regPassword}
@@ -553,6 +559,13 @@ export const Login = () => {
                     disabled={regLoading}
                     required
                   />
+                  <button
+                    type="button"
+                    className="auth-password-toggle-btn"
+                    onClick={() => setShowRegPassword(!showRegPassword)}
+                  >
+                    <i className={`far ${showRegPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                  </button>
                 </div>
               </div>
 
@@ -563,7 +576,7 @@ export const Login = () => {
                     <i className="fas fa-shield-alt"></i>
                   </span>
                   <input
-                    type="password"
+                    type={showRegConfirm ? "text" : "password"}
                     className="auth-input-field"
                     placeholder="Nhập lại mật khẩu"
                     value={regConfirm}
@@ -571,6 +584,13 @@ export const Login = () => {
                     disabled={regLoading}
                     required
                   />
+                  <button
+                    type="button"
+                    className="auth-password-toggle-btn"
+                    onClick={() => setShowRegConfirm(!showRegConfirm)}
+                  >
+                    <i className={`far ${showRegConfirm ? "fa-eye-slash" : "fa-eye"}`}></i>
+                  </button>
                 </div>
               </div>
 
@@ -652,7 +672,7 @@ export const Login = () => {
                     <i className="fas fa-lock"></i>
                   </span>
                   <input
-                    type="password"
+                    type={showLoginPassword ? "text" : "password"}
                     className="auth-input-field"
                     placeholder="********"
                     value={loginPassword}
@@ -660,6 +680,13 @@ export const Login = () => {
                     disabled={loginLoading}
                     required
                   />
+                  <button
+                    type="button"
+                    className="auth-password-toggle-btn"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  >
+                    <i className={`far ${showLoginPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                  </button>
                 </div>
               </div>
 
@@ -1018,13 +1045,20 @@ export const Login = () => {
                   <i className="fas fa-lock"></i>
                 </span>
                 <input
-                  type="password"
+                  type={showCompletePassword ? "text" : "password"}
                   className="auth-input-field"
                   placeholder="Mật khẩu tối thiểu 6 ký tự"
                   value={completePassword}
                   onChange={(e) => setCompletePassword(e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  className="auth-password-toggle-btn"
+                  onClick={() => setShowCompletePassword(!showCompletePassword)}
+                >
+                  <i className={`far ${showCompletePassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                </button>
               </div>
             </div>
 
@@ -1035,13 +1069,20 @@ export const Login = () => {
                   <i className="fas fa-shield-alt"></i>
                 </span>
                 <input
-                  type="password"
+                  type={showCompleteConfirm ? "text" : "password"}
                   className="auth-input-field"
                   placeholder="Nhập lại mật khẩu mới"
                   value={completeConfirm}
                   onChange={(e) => setCompleteConfirm(e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  className="auth-password-toggle-btn"
+                  onClick={() => setShowCompleteConfirm(!showCompleteConfirm)}
+                >
+                  <i className={`far ${showCompleteConfirm ? "fa-eye-slash" : "fa-eye"}`}></i>
+                </button>
               </div>
             </div>
 

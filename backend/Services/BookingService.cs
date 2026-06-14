@@ -19,11 +19,85 @@ namespace Auto_Wash.Services
             _context = context;
         }
 
+        private static readonly Service[] DefaultMotorcycleAddOns =
+        {
+            new Service
+            {
+                ServiceName = "Vệ sinh sên xích",
+                Description = "Làm sạch bùn đất, bụi dầu bám trên sên xích xe gắn máy.",
+                Category = ServiceCategory.AddOn,
+                BasePrice = 15000,
+                EstimatedMinutes = 8,
+                IsAddOn = true,
+                IsActive = true
+            },
+            new Service
+            {
+                ServiceName = "Bôi trơn sên",
+                Description = "Tra dung dịch bôi trơn chuyên dụng giúp sên vận hành êm hơn.",
+                Category = ServiceCategory.AddOn,
+                BasePrice = 10000,
+                EstimatedMinutes = 5,
+                IsAddOn = true,
+                IsActive = true
+            },
+            new Service
+            {
+                ServiceName = "Rửa mâm xe máy",
+                Description = "Vệ sinh mâm, nan hoa và khu vực bánh xe gắn máy.",
+                Category = ServiceCategory.AddOn,
+                BasePrice = 12000,
+                EstimatedMinutes = 6,
+                IsAddOn = true,
+                IsActive = true
+            },
+            new Service
+            {
+                ServiceName = "Dưỡng nhựa nhám xe máy",
+                Description = "Phục hồi độ sạch và màu nhựa nhám trên dàn áo xe gắn máy.",
+                Category = ServiceCategory.AddOn,
+                BasePrice = 20000,
+                EstimatedMinutes = 10,
+                IsAddOn = true,
+                IsActive = true
+            }
+        };
+
         public async Task<List<Service>> GetServicesAsync()
         {
+            await EnsureDefaultMotorcycleAddOnsAsync();
+
             return await _context.Services
                 .Where(s => s.IsActive)
                 .ToListAsync();
+        }
+
+        private async Task EnsureDefaultMotorcycleAddOnsAsync()
+        {
+            var existingNames = await _context.Services
+                .Where(s => s.IsAddOn)
+                .Select(s => s.ServiceName)
+                .ToListAsync();
+
+            var missingServices = DefaultMotorcycleAddOns
+                .Where(s => !existingNames.Contains(s.ServiceName))
+                .Select(s => new Service
+                {
+                    ServiceName = s.ServiceName,
+                    Description = s.Description,
+                    Category = s.Category,
+                    BasePrice = s.BasePrice,
+                    EstimatedMinutes = s.EstimatedMinutes,
+                    IsAddOn = s.IsAddOn,
+                    IsActive = s.IsActive,
+                    IsFeatured = s.IsFeatured
+                })
+                .ToList();
+
+            if (missingServices.Count == 0) return;
+
+            _context.Services.AddRange(missingServices);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<List<Booking>> GetWashHistoryAsync(int customerId)
@@ -137,6 +211,8 @@ namespace Auto_Wash.Services
                 }
 
                 // 7. Validate services and fetch DB prices (enforce IsActive = true)
+                await EnsureDefaultMotorcycleAddOnsAsync();
+
                 var mainService = await _context.Services
                     .FirstOrDefaultAsync(s => s.ServiceName == request.MainServiceName.Trim() && !s.IsAddOn && s.IsActive);
                 if (mainService == null)

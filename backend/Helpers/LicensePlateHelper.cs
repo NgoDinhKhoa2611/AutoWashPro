@@ -23,7 +23,7 @@ namespace Auto_Wash.Helpers
             //   Motorcycles : [2 digits][1 letter][4 digits]        e.g. 51A1234    (7 chars)
             //   New series  : [2 digits][1 letter][1 digit][4 digits] e.g. 29H12345 (8 chars)
             //   2-letter    : [2 digits][2 letters][4-5 digits]     e.g. 29AB12345  (9 chars)
-            var match = Regex.Match(cleanPlate, @"^(\d{2})[A-Z]{1,2}\d{4,5}$");
+            var match = Regex.Match(cleanPlate, @"^(\d{2})[A-Z]{1,2}\d{4,6}$");
             if (!match.Success) return false;
 
             string provinceCode = match.Groups[1].Value;
@@ -33,6 +33,33 @@ namespace Auto_Wash.Helpers
             };
 
             return validProvinces.Contains(provinceCode);
+        }
+
+        public static bool IsMotorcyclePlate(string? licensePlate)
+        {
+            if (string.IsNullOrWhiteSpace(licensePlate)) return false;
+            string cleanPlate = Normalize(licensePlate);
+
+            // 1. Standard motorbike format: 2 digits + 1 letter + 1 digit + 4 or 5 digits
+            // e.g., 29H11234 (8 chars), 29H112345 (9 chars)
+            if (Regex.IsMatch(cleanPlate, @"^\d{2}[A-Z]\d\d{4,5}$"))
+            {
+                return true;
+            }
+
+            // 2. Under-50cc or Electric motorbike format: 2 digits + 2 letters + 4 or 5 digits
+            // where the letters start with A (AA, AB, AC...) or M (M1, M2... electric).
+            // e.g., 29AA12345 (9 chars), 29M11234 (8 chars)
+            if (Regex.IsMatch(cleanPlate, @"^\d{2}[A-Z]{2}\d{4,5}$"))
+            {
+                string letters = cleanPlate.Substring(2, 2);
+                if (letters.StartsWith("A") || letters.StartsWith("M"))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

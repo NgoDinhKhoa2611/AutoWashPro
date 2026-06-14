@@ -34,7 +34,7 @@ export const CustomerHistory = () => {
             id: b.id,
             date: b.bookingDate.split('-').reverse().join('/'),
             plate: b.vehicle,
-            type: 'Xe ga',
+            type: 'Ô tô',
             service: b.mainService + (b.addons && b.addons.length > 0 ? ` + ${b.addons.join(', ')}` : ''),
             price: b.price,
             points: b.points,

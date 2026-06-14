@@ -170,7 +170,7 @@ export const CustomerLayout = () => {
             <i className="fas fa-calendar-alt"></i><span>Đặt lịch rửa xe</span>
           </Link>
           <Link to="/customer/vehicles" className={`customer-sidebar-link ${activeNav === 'vehicles' ? 'active' : ''}`}>
-            <i className="fas fa-motorcycle"></i><span>Phương tiện của tôi</span>
+            <i className="fas fa-car-side"></i><span>Phương tiện của tôi</span>
           </Link>
           <Link to="/customer/loyalty" className={`customer-sidebar-link ${activeNav === 'loyalty' ? 'active' : ''}`}>
             <i className="fas fa-crown"></i><span>Loyalty & Voucher</span>

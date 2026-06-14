@@ -278,6 +278,23 @@
   color: #94a3b8;
 }
 
+.auth-password-toggle-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  transition: color 0.2s ease;
+}
+
+.auth-password-toggle-btn:hover {
+  color: #0284c7;
+}
+
 .auth-link {
   font-size: 0.82rem;
   color: #475569;
