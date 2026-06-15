@@ -10,27 +10,7 @@ const DEFAULT_TIME_SLOTS = [
   '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
 ];
 
-export const isMotorcycleType = (type = '') => {
-  const normalized = type.toLowerCase();
-  return normalized.includes('gắn máy') || normalized.includes('xe máy');
-};
 
-const isMotorcyclePlate = (plate = '') => {
-  const clean = plate.trim().toUpperCase().replace(/[\s\-.]/g, '');
-  if (/^\d{2}[A-Z]\d\d{4,6}$/.test(clean)) return true;
-  if (/^\d{2}[A-Z]{2}\d{4,6}$/.test(clean)) {
-    const letters = clean.slice(2, 4);
-    if (letters.startsWith('A') || letters.startsWith('M')) return true;
-  }
-  return false;
-};
-
-const MOTORCYCLE_ADDON_NAMES = [
-  'Vệ sinh sên xích',
-  'Bôi trơn sên',
-  'Rửa mâm xe máy',
-  'Dưỡng nhựa nhám xe máy'
-];
 
 export const CustomerBooking = () => {
   const { user } = useAuth();
@@ -41,15 +21,6 @@ export const CustomerBooking = () => {
   const [addonServices, setAddonServices] = useState([]);
   
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const selectedVehicleDetails = vehicles.find(v => v.plate === selectedVehicle);
-  const isSelectedMotorcycle = isMotorcycleType(selectedVehicleDetails?.type) && isMotorcyclePlate(selectedVehicleDetails?.plate);
-
-  const displayedAddonServices = useMemo(() => {
-    return addonServices.filter((service) => {
-      const isMotorcycleAddon = MOTORCYCLE_ADDON_NAMES.includes(service.name);
-      return isSelectedMotorcycle ? isMotorcycleAddon : !isMotorcycleAddon;
-    });
-  }, [addonServices, isSelectedMotorcycle]);
 
   useEffect(() => {
     setSelectedAddons({});
@@ -364,7 +335,7 @@ export const CustomerBooking = () => {
                     >
                       <div className="d-flex align-items-center gap-3">
                         <div className="rounded-3 d-flex align-items-center justify-content-center bg-white border shadow-sm" style={{ width: '44px', height: '44px' }}>
-                          <i className="fas fa-motorcycle text-muted"></i>
+                          <i className="fas fa-car-side text-muted"></i>
                         </div>
                         <div>
                           <div className="fw-bold" style={{ color: 'var(--navy-dark)', fontSize: '0.9rem' }}>{v.plate}</div>
@@ -418,10 +389,10 @@ export const CustomerBooking = () => {
           {/* Step 3: Chọn dịch vụ đi kèm (Add-ons Cards Grid) */}
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
             <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">3</span> Chọn dịch vụ đi kèm {isSelectedMotorcycle ? 'cho xe gắn máy' : 'cho ô tô'}
+              <span className="step-num-badge">3</span> Chọn dịch vụ đi kèm
             </h5>
             <div className="addons-grid-layout" id="addon-services-list">
-              {displayedAddonServices.map((a) => {
+              {addonServices.map((a) => {
                 const isSelected = !!selectedAddons[a.id];
                 return (
                   <div

@@ -333,7 +333,7 @@ export const CustomerLoyalty = () => {
             </div>
 
             {/* Filter buttons */}
-            <div className="d-flex flex-wrap gap-1.5 mb-4">
+            <div className="d-flex flex-nowrap gap-2 mb-4 w-100">
               {["Tất cả", "Giảm giá", "Dịch vụ", "Quà tặng"].map((f) => (
                 <button
                   key={f}

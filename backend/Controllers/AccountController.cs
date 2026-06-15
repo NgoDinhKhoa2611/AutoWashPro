@@ -256,31 +256,22 @@ namespace Auto_Wash.Controllers
 
                 string code = await _otpService.GenerateAndSaveOtpAsync(request.Email, "Register");
 
-                if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-                {
-                    Console.WriteLine("\n==============================================");
-                    Console.WriteLine($"[REGISTER EMAIL OTP SIMULATION] To: {request.Email}");
-                    Console.WriteLine($"Code: {code} (Valid for 5 minutes)");
-                    Console.WriteLine("==============================================\n");
-                }
-
-                string subject = "AutoWash Pro - Xác thực đăng ký tài khoản";
+                string subject = "AutoWash OTP Verification";
                 string body = $@"
-                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #cbd5e1; border-radius: 12px; background-color: #f8fafc;'>
-                        <div style='text-align: center; margin-bottom: 20px;'>
-                            <h2 style='color: #0f172a; margin: 0;'>AutoWash <span style='color: #06b6d4;'>Pro</span></h2>
-                            <p style='color: #64748b; font-size: 0.85rem; margin: 5px 0 0 0;'>Hệ Thống Quản Lý Rửa Xe Thông Minh</p>
+                    <div style='font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);'>
+                        <div style='text-align: center; margin-bottom: 25px;'>
+                            <h2 style='color: #0f172a; margin: 0; font-size: 1.5rem; font-weight: 700;'>AutoWash <span style='color: #06b6d4;'>Pro</span></h2>
+                            <p style='color: #64748b; font-size: 0.85rem; margin: 5px 0 0 0;'>Smart Car Wash Solutions</p>
                         </div>
-                        <hr style='border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;' />
-                        <p style='color: #334155;'>Xin chào,</p>
-                        <p style='color: #334155;'>Bạn đang thực hiện đăng ký tài khoản mới tại AutoWash Pro.</p>
-                        <p style='color: #334155;'>Vui lòng sử dụng mã xác thực OTP 6 chữ số dưới đây để hoàn tất thủ tục:</p>
-                        <div style='text-align: center; margin: 30px 0;'>
-                            <span style='font-size: 2rem; font-weight: bold; letter-spacing: 5px; color: #06b6d4; background-color: #0f172a; padding: 10px 25px; border-radius: 8px; display: inline-block;'>{code}</span>
+                        <div style='border-top: 1px solid #f1f5f9; padding-top: 25px; text-align: center;'>
+                            <p style='color: #334155; font-size: 1rem; margin-bottom: 20px;'>Your OTP code is: <strong style='color: #06b6d4; font-size: 1.15rem;'>{code}</strong>. This code expires in 5 minutes.</p>
+                            <div style='background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 15px; display: inline-block; font-size: 1.75rem; font-weight: 700; letter-spacing: 6px; color: #0f172a; margin-bottom: 20px;'>
+                                {code}
+                            </div>
                         </div>
-                        <p style='color: #64748b; font-size: 0.8rem; text-align: center;'>Mã OTP này có giá trị trong vòng 5 phút và chỉ được sử dụng một lần. Vui lòng không cung cấp mã này cho bất kỳ ai.</p>
-                        <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;' />
-                        <p style='font-size: 0.8rem; color: #64748b; text-align: center;'>Đây là email tự động từ hệ thống AutoWash Pro. Vui lòng không trả lời email này.</p>
+                        <div style='border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center; margin-top: 25px;'>
+                            <p style='font-size: 0.75rem; color: #94a3b8; margin: 0;'>This is an automated verification email. Please do not reply.</p>
+                        </div>
                     </div>";
 
                 await _otpService.SendEmailOtpAsync(request.Email.Trim(), subject, body);

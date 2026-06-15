@@ -25,15 +25,18 @@
   letter-spacing: 0.5px;
 }
 .loyalty-filter-btn {
-  font-size: clamp(0.78rem, 0.92vw, 0.88rem);
+  font-size: clamp(0.7rem, 2.2vw, 0.88rem);
   font-weight: 700;
-  min-width: clamp(110px, 18vw, 140px);
-  height: clamp(36px, 4.5vw, 42px);
-  padding: 0 1rem;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: auto !important;
+  height: clamp(34px, 4.5vw, 42px);
+  padding: 0 0.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
+  transition: all 0.2s ease;
 }
 .loyalty-expiry-note {
   font-size: 0.7rem;

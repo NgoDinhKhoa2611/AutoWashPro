@@ -38,6 +38,7 @@ export const Login = () => {
   const [loginPhone, setLoginPhone] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Input states (Register)
   const [regName, setRegName] = useState("");
@@ -87,6 +88,20 @@ export const Login = () => {
       document.documentElement.style.cursor = "";
     };
   }, [loginLoading, regLoading]);
+
+  useEffect(() => {
+    const savedPhone = localStorage.getItem("rememberedPhone");
+    const savedPass = localStorage.getItem("rememberedPassword");
+    if (savedPhone && savedPass) {
+      setLoginPhone(savedPhone);
+      try {
+        setLoginPassword(atob(savedPass));
+      } catch (e) {
+        setLoginPassword(savedPass);
+      }
+      setRememberMe(true);
+    }
+  }, []);
 
   useEffect(() => {
     // Google Sign-In button rendering inside the login panel
@@ -211,6 +226,19 @@ export const Login = () => {
     setLoginLoading(true);
     try {
       const data = await login(loginPhone, loginPassword);
+
+      if (rememberMe) {
+        localStorage.setItem("rememberedPhone", loginPhone);
+        try {
+          localStorage.setItem("rememberedPassword", btoa(loginPassword));
+        } catch (e) {
+          localStorage.setItem("rememberedPassword", loginPassword);
+        }
+      } else {
+        localStorage.removeItem("rememberedPhone");
+        localStorage.removeItem("rememberedPassword");
+      }
+
       if (window.showToast) {
         window.showToast(
           data.role === "admin" || data.role === "staff"
@@ -690,20 +718,30 @@ export const Login = () => {
                 </div>
               </div>
 
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (window.showToast)
-                    window.showToast(
-                      "Vui lòng liên hệ quản trị viên hoặc sử dụng Đổi mật khẩu qua Email OTP trong Hồ sơ!",
-                      "info",
-                    );
-                }}
-                className="auth-link"
-              >
-                Quên mật khẩu?
-              </a>
+              <div className="auth-options-row">
+                <label className="auth-remember-me">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <span>Ghi nhớ đăng nhập</span>
+                </label>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (window.showToast)
+                      window.showToast(
+                        "Vui lòng liên hệ quản trị viên hoặc sử dụng Đổi mật khẩu qua Email OTP trong Hồ sơ!",
+                        "info",
+                      );
+                  }}
+                  className="auth-link"
+                >
+                  Quên mật khẩu?
+                </a>
+              </div>
 
               <button
                 type="submit"
