@@ -258,7 +258,7 @@ namespace Auto_Wash.Services
                 {
                     CustomerId = c.CustomerId,
                     Points = 0,
-                    TransactionType = "TierChange",
+                    TransactionType = "TIER_UPGRADE",
                     FromTierId = c.TierId,
                     ToTierId = newTier.TierId,
                     Note = "Monthly Tier Review",
@@ -417,7 +417,9 @@ namespace Auto_Wash.Services
                 .Where(v => v.CustomerId == customerId)
                 .Select(v => new {
                     plate = v.LicensePlate,
-                    type = string.IsNullOrEmpty(v.Name) ? v.Brand : $"{v.Brand} {v.Name}"
+                    brand = v.Brand,
+                    model = v.Model,
+                    vehicleClass = v.VehicleClass
                 })
                 .ToListAsync();
 
@@ -480,7 +482,7 @@ namespace Auto_Wash.Services
             {
                 CustomerId = customerId,
                 Points = pointsChange,
-                TransactionType = "Adjusted",
+                TransactionType = "ADJUST",
                 Note = reason.Trim(),
                 CreatedAt = DateTime.Now
             });

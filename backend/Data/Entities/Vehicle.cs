@@ -18,11 +18,17 @@ namespace Auto_Wash.Data.Entities
         [MaxLength(20)]
         public string LicensePlate { get; set; } = string.Empty;
 
+        [Required]
         [MaxLength(50)]
-        public string? Brand { get; set; }
+        public string Brand { get; set; } = string.Empty;
 
+        [Required]
         [MaxLength(50)]
-        public string? Name { get; set; }
+        public string Model { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(50)]
+        public string VehicleClass { get; set; } = string.Empty;
 
         public DateTime RegisteredAt { get; set; } = DateTime.Now;
 

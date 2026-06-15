@@ -131,7 +131,7 @@ namespace Auto_Wash.Services
             {
                 CustomerId = customerId,
                 Points = -reward.PointCost,
-                TransactionType = "Redeemed",
+                TransactionType = "REDEEM",
                 Note = $"Đổi điểm nhận quà: {reward.RewardName}",
                 CreatedAt = DateTime.Now
             });

@@ -42,7 +42,7 @@ namespace Auto_Wash.Controllers
         }
 
         [HttpPost]
-        [Route("Customer/SendVehicleOtp")]
+        [Route("api/vehicle/send-otp")]
         public async Task<IActionResult> SendVehicleOtp([FromBody] CreateVehicleDto request)
         {
             var account = await _authContextService.GetCurrentAccountAsync();
@@ -57,17 +57,23 @@ namespace Auto_Wash.Controllers
                 return BadRequest(new { success = false, message = "Biển số xe không được để trống!" });
             }
 
-            if (!LicensePlateHelper.IsValidVietnameseLicensePlate(request.LicensePlate))
+            string normPlate = LicensePlateHelper.Normalize(request.LicensePlate);
+            if (!LicensePlateHelper.IsValidVietnameseLicensePlate(normPlate))
             {
                 return BadRequest(new { success = false, message = "Biển số xe không hợp lệ hoặc đầu số tỉnh thành không tồn tại!" });
             }
 
+            if (string.IsNullOrWhiteSpace(request.Brand) || string.IsNullOrWhiteSpace(request.Model) || string.IsNullOrWhiteSpace(request.VehicleClass))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng nhập đầy đủ thông tin phương tiện." });
+            }
+
             try
             {
-                bool exists = await _vehicleService.IsPlateRegisteredAsync(request.LicensePlate);
+                bool exists = await _vehicleService.IsPlateRegisteredAsync(normPlate);
                 if (exists)
                 {
-                    return BadRequest(new { success = false, message = "Biển số xe này đã được đăng ký trên hệ thống!" });
+                    return Conflict(new { message = "Biển số xe đã được đăng ký." });
                 }
 
                 if (string.IsNullOrEmpty(account.Email))
@@ -75,7 +81,7 @@ namespace Auto_Wash.Controllers
                     return BadRequest(new { success = false, message = "Không tìm thấy email của tài khoản để nhận mã OTP!" });
                 }
 
-                string code = await _vehicleService.SendVehicleOtpAsync(account.Email, request.LicensePlate);
+                string code = await _vehicleService.SendVehicleOtpAsync(account.Email, normPlate);
 
                 string subject = "AutoWash OTP Verification";
                 string body = $@"
@@ -85,7 +91,7 @@ namespace Auto_Wash.Controllers
                             <p style='color: #64748b; font-size: 0.85rem; margin: 5px 0 0 0;'>Smart Car Wash Solutions</p>
                         </div>
                         <div style='border-top: 1px solid #f1f5f9; padding-top: 25px; text-align: center;'>
-                            <p style='color: #334155; margin-bottom: 15px;'>Đăng ký biển số xe: <strong>{request.LicensePlate.ToUpper()}</strong></p>
+                            <p style='color: #334155; margin-bottom: 15px;'>Đăng ký biển số xe: <strong>{normPlate}</strong></p>
                             <p style='color: #334155; font-size: 1rem; margin-bottom: 20px;'>Your OTP code is: <strong style='color: #06b6d4; font-size: 1.15rem;'>{code}</strong>. This code expires in 5 minutes.</p>
                             <div style='background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 15px; display: inline-block; font-size: 1.75rem; font-weight: 700; letter-spacing: 6px; color: #0f172a; margin-bottom: 20px;'>
                                 {code}
@@ -107,7 +113,7 @@ namespace Auto_Wash.Controllers
         }
 
         [HttpPost]
-        [Route("Customer/VerifyVehicleOtpAndSave")]
+        [Route("api/vehicle/verify-otp")]
         public async Task<IActionResult> VerifyVehicleOtpAndSave([FromBody] VerifyVehicleOtpDto request)
         {
             var account = await _authContextService.GetCurrentAccountAsync();
@@ -122,9 +128,15 @@ namespace Auto_Wash.Controllers
                 return BadRequest(new { success = false, message = "Dữ liệu xác thực không hợp lệ!" });
             }
 
-            if (!LicensePlateHelper.IsValidVietnameseLicensePlate(request.LicensePlate))
+            string normPlate = LicensePlateHelper.Normalize(request.LicensePlate);
+            if (!LicensePlateHelper.IsValidVietnameseLicensePlate(normPlate))
             {
                 return BadRequest(new { success = false, message = "Biển số xe không hợp lệ hoặc đầu số tỉnh thành không tồn tại!" });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Brand) || string.IsNullOrWhiteSpace(request.Model) || string.IsNullOrWhiteSpace(request.VehicleClass))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng nhập đầy đủ thông tin phương tiện." });
             }
 
             try
@@ -134,19 +146,26 @@ namespace Auto_Wash.Controllers
                     return BadRequest(new { success = false, message = "Không tìm thấy email liên kết với tài khoản!" });
                 }
 
-                bool otpValid = await _vehicleService.VerifyVehicleOtpAsync(account.Email, request.OtpCode, request.LicensePlate);
+                bool exists = await _vehicleService.IsPlateRegisteredAsync(normPlate);
+                if (exists)
+                {
+                    return Conflict(new { message = "Biển số xe đã được đăng ký." });
+                }
+
+                bool otpValid = await _vehicleService.VerifyVehicleOtpAsync(account.Email, request.OtpCode, normPlate);
                 if (!otpValid)
                 {
                     return BadRequest(new { success = false, message = "Mã OTP không hợp lệ hoặc đã hết hạn!" });
                 }
 
-                bool exists = await _vehicleService.IsPlateRegisteredAsync(request.LicensePlate);
-                if (exists)
-                {
-                    return BadRequest(new { success = false, message = "Biển số xe này đã được đăng ký trên hệ thống!" });
-                }
+                Console.WriteLine($"[VEHICLE REGISTRATION LOG] LicensePlate: {normPlate}, Brand: {request.Brand}, Model: {request.Model}, VehicleClass: {request.VehicleClass}");
 
-                await _vehicleService.SaveVehicleAsync(customer.CustomerId, request.LicensePlate, request.Type);
+                await _vehicleService.SaveVehicleAsync(
+                    customer.CustomerId, 
+                    normPlate, 
+                    request.Brand, 
+                    request.Model, 
+                    request.VehicleClass);
 
                 return Ok(new { success = true, message = "Đăng ký phương tiện thành công!" });
             }
@@ -156,9 +175,40 @@ namespace Auto_Wash.Controllers
             }
         }
 
-        [HttpPost]
-        [Route("Customer/DeleteVehicle")]
-        public async Task<IActionResult> DeleteVehicle([FromBody] DeleteVehicleDto request)
+        [HttpPut]
+        [Route("api/vehicle/{id}")]
+        public async Task<IActionResult> UpdateVehicle(int id, [FromBody] UpdateVehicleDto request)
+        {
+            var customer = await _authContextService.GetCurrentCustomerAsync();
+            if (customer == null)
+            {
+                return Unauthorized(new { success = false, message = "Bạn cần đăng nhập để sửa thông tin phương tiện!" });
+            }
+
+            if (request == null || string.IsNullOrWhiteSpace(request.Brand) || string.IsNullOrWhiteSpace(request.Model) || string.IsNullOrWhiteSpace(request.VehicleClass))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng nhập đầy đủ thông tin phương tiện." });
+            }
+
+            try
+            {
+                var result = await _vehicleService.UpdateVehicleAsync(customer.CustomerId, id, request.Brand, request.Model, request.VehicleClass);
+                if (!result.success)
+                {
+                    return BadRequest(new { success = false, message = result.message });
+                }
+
+                return Ok(new { success = true, message = result.message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpDelete]
+        [Route("api/vehicle/{id}")]
+        public async Task<IActionResult> DeleteVehicle(int id)
         {
             var customer = await _authContextService.GetCurrentCustomerAsync();
             if (customer == null)
@@ -166,14 +216,9 @@ namespace Auto_Wash.Controllers
                 return Unauthorized(new { success = false, message = "Bạn cần đăng nhập để thực hiện thao tác này!" });
             }
 
-            if (request == null || string.IsNullOrWhiteSpace(request.LicensePlate))
-            {
-                return BadRequest(new { success = false, message = "Biển số xe không hợp lệ!" });
-            }
-
             try
             {
-                var result = await _vehicleService.DeleteVehicleAsync(customer.CustomerId, request.LicensePlate);
+                var result = await _vehicleService.DeleteVehicleByIdAsync(customer.CustomerId, id);
                 if (!result.success)
                 {
                     return BadRequest(new { success = false, message = result.message });

@@ -20,7 +20,6 @@ namespace Auto_Wash.Helpers
 
             // Vietnamese plate formats (after normalization):
             //   Cars/trucks : [2 digits][1 letter][5 digits]        e.g. 51A12345   (8 chars)
-            //   Motorcycles : [2 digits][1 letter][4 digits]        e.g. 51A1234    (7 chars)
             //   New series  : [2 digits][1 letter][1 digit][4 digits] e.g. 29H12345 (8 chars)
             //   2-letter    : [2 digits][2 letters][4-5 digits]     e.g. 29AB12345  (9 chars)
             var match = Regex.Match(cleanPlate, @"^(\d{2})[A-Z]{1,2}\d{4,5}$");

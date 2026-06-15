@@ -2,12 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Auto_Wash.DTOs.Vehicle
 {
-    public class CreateVehicleDto
+    public class UpdateVehicleDto
     {
-        [Required]
-        [MaxLength(20)]
-        public string LicensePlate { get; set; } = string.Empty;
-
         [Required]
         [MaxLength(50)]
         public string Brand { get; set; } = string.Empty;

@@ -60,7 +60,7 @@ namespace Auto_Wash.Services
 
                 if (services.Count == 0)
                 {
-                    services.Add(new QueueServiceItem { Name = "Rửa xe phổ thông", Price = 35000 });
+                    services.Add(new QueueServiceItem { Name = "Rửa Basic", Price = 50000 });
                 }
 
                 list.Add(new QueueListItem
@@ -407,7 +407,7 @@ namespace Auto_Wash.Services
                     {
                         CustomerId = q.Booking.CustomerId,
                         Points = q.Booking.PointsEarned,
-                        TransactionType = "Earned",
+                        TransactionType = "EARN",
                         BookingId = q.BookingId,
                         Note = $"Tích điểm dịch vụ rửa xe {q.LicensePlate}",
                         CreatedAt = now

@@ -51,13 +51,19 @@ export const CustomerBooking = () => {
 
     // Calculate min/max dates
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
     setMinDateStr(todayStr);
     setBookingDate(todayStr);
 
     const maxDate = new Date();
     maxDate.setDate(today.getDate() + days);
-    const maxDateStr = maxDate.toISOString().split('T')[0];
+    const maxYear = maxDate.getFullYear();
+    const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
+    const maxDay = String(maxDate.getDate()).padStart(2, '0');
+    const maxDateStr = `${maxYear}-${maxMonth}-${maxDay}`;
     setMaxDateStr(maxDateStr);
 
     // Load vehicles
@@ -67,8 +73,13 @@ export const CustomerBooking = () => {
         if (response.success) {
           if (response.vehicles && response.vehicles.length > 0) {
             const list = response.vehicles.map(v => ({
-              plate: v.plate,
-              type: v.type,
+              vehicleId: v.vehicleId,
+              licensePlate: v.licensePlate,
+              brand: v.brand,
+              model: v.model,
+              vehicleClass: v.vehicleClass,
+              plate: v.licensePlate,
+              type: `${v.brand} ${v.model} (${v.vehicleClass})`,
               lastWash: 'Vừa xong',
               totalWashes: 0
             }));
@@ -94,7 +105,7 @@ export const CustomerBooking = () => {
       try {
         const response = await customerService.getServices();
         if (response.success && response.services && response.services.length > 0) {
-          const mains = response.services.filter(s => s.category !== 'Dịch vụ đi kèm')
+          const mains = response.services.filter(s => s.isAddon === false && s.isActive === true)
             .map(s => ({
               id: s.id,
               name: s.name,
@@ -108,7 +119,7 @@ export const CustomerBooking = () => {
             setSelectedMain(mains[0]);
           }
 
-          const addons = response.services.filter(s => s.category === 'Dịch vụ đi kèm')
+          const addons = response.services.filter(s => s.isAddon === true && s.isActive === true)
             .map(s => ({
               id: s.id,
               name: s.name,
@@ -239,6 +250,14 @@ export const CustomerBooking = () => {
     setPromoCode(code);
     applyPromo(code);
     setVoucherModalOpen(false);
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setPromoCode('');
+    if (window.showToast) {
+      window.showToast('Đã hủy voucher.', 'success');
+    }
   };
 
   // Pricing calculations
@@ -559,23 +578,43 @@ export const CustomerBooking = () => {
                   <i className="fas fa-ticket-alt me-1"></i>Ví Voucher
                 </button>
               </div>
-              <div className="input-group promo-input-group">
-                <input
-                  type="text"
-                  id="promo-code-input"
-                  className="form-control font-monospace promo-code-input"
-                  placeholder="VÍ DỤ: WASH10K"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="promo-apply-btn"
-                  onClick={() => applyPromo()}
-                >
-                  ÁP DỤNG <i className="fas fa-check ms-1"></i>
-                </button>
-              </div>
+              {appliedVoucher ? (
+                <div className="d-flex align-items-center justify-content-between p-2.5 px-3 rounded-3 border border-success border-opacity-30 bg-success bg-opacity-10 text-success">
+                  <div className="d-flex align-items-center gap-2">
+                    <i className="fas fa-ticket-alt"></i>
+                    <div>
+                      <div className="fw-bold small">{appliedVoucher.code}</div>
+                      <div className="text-muted small" style={{ fontSize: '0.75rem', color: '#15803d' }}>{appliedVoucher.title}</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger border-0 p-1 px-2 text-danger rounded-3"
+                    style={{ fontSize: '0.75rem', fontWeight: 'bold' }}
+                    onClick={handleRemoveVoucher}
+                  >
+                    Hủy Voucher <i className="fas fa-times ms-1"></i>
+                  </button>
+                </div>
+              ) : (
+                <div className="input-group promo-input-group">
+                  <input
+                    type="text"
+                    id="promo-code-input"
+                    className="form-control font-monospace promo-code-input"
+                    placeholder="VÍ DỤ: WASH10K"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="promo-apply-btn"
+                    onClick={() => applyPromo()}
+                  >
+                    ÁP DỤNG <i className="fas fa-check ms-1"></i>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Final Cost & Points */}
