@@ -141,7 +141,8 @@ export const AdminQueue = () => {
       }
     } catch (err) {
       console.error(err);
-      if (window.showToast) window.showToast('Lỗi kết nối khi cập nhật hàng đợi!', 'error');
+      const errMsg = err.response?.data?.message || 'Lỗi kết nối khi cập nhật hàng đợi!';
+      if (window.showToast) window.showToast(errMsg, 'error');
     }
   };
 
@@ -185,6 +186,15 @@ export const AdminQueue = () => {
         const response = await adminService.updateQueue(selectedVehicle.queueId, newStatus, selectedVehicle.staffNote);
         if (response.success) {
           if (window.showToast) window.showToast('Đã cập nhật công đoạn rửa xe!', 'success');
+          
+          // Cập nhật ID thực tế từ backend nếu nó thay đổi (từ âm sang dương)
+          if (response.queueId && response.queueId !== selectedVehicle.queueId) {
+            const finalQueueId = response.queueId;
+            const updatedWithNewId = { ...updatedItem, queueId: finalQueueId };
+            setSelectedVehicle(updatedWithNewId);
+            setQueue(prevQueue => prevQueue.map(q => q.queueId === selectedVehicle.queueId ? updatedWithNewId : q));
+          }
+          
           fetchQueue();
         } else {
           if (window.showToast) window.showToast(response.message || 'Lỗi khi cập nhật công đoạn!', 'error');
@@ -192,7 +202,8 @@ export const AdminQueue = () => {
       }
     } catch (err) {
       console.error('Lỗi khi gọi API UpdateQueue:', err);
-      if (window.showToast) window.showToast('Lỗi kết nối khi cập nhật công đoạn!', 'error');
+      const errMsg = err.response?.data?.message || 'Lỗi kết nối khi cập nhật công đoạn!';
+      if (window.showToast) window.showToast(errMsg, 'error');
     }
   };
 
@@ -212,7 +223,8 @@ export const AdminQueue = () => {
         }
       } catch (err) {
         console.error(err);
-        if (window.showToast) window.showToast('Lỗi kết nối khi checkout!', 'error');
+        const errMsg = err.response?.data?.message || 'Lỗi kết nối khi checkout!';
+        if (window.showToast) window.showToast(errMsg, 'error');
       }
     };
 
@@ -262,7 +274,8 @@ export const AdminQueue = () => {
       }
     } catch (err) {
       console.error(err);
-      if (window.showToast) window.showToast('Lỗi kết nối khi check-in xe!', 'error');
+      const errMsg = err.response?.data?.message || 'Lỗi kết nối khi check-in xe!';
+      if (window.showToast) window.showToast(errMsg, 'error');
     }
   };
 

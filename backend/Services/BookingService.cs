@@ -111,152 +111,156 @@ namespace Auto_Wash.Services
                 return (false, $"Hạng thành viên của bạn chỉ được đặt trước tối đa {bookingWindowDays} ngày.", 0);
             }
 
-            // Wrap in transaction to prevent race conditions on capacity
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            // Wrap in execution strategy to support retries with user-initiated transaction
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                // 5. Prevent duplicate bookings for the same vehicle in the same hour
-                var hasDuplicate = await _context.Bookings
-                    .AnyAsync(b => b.VehicleId == vehicle.VehicleId
-                                && b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled
-                                && b.ScheduledAt.Date == scheduledAt.Date
-                                && b.ScheduledAt.Hour == scheduledAt.Hour);
-                if (hasDuplicate)
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    return (false, "Phương tiện này đã có lịch hẹn trong khung giờ đã chọn.", 0);
-                }
-
-                // 6. Capacity constraints: max 3 bookings per hour slot
-                var slotCount = await _context.Bookings
-                    .CountAsync(b => b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled
-                                  && b.ScheduledAt.Date == scheduledAt.Date
-                                  && b.ScheduledAt.Hour == scheduledAt.Hour);
-                if (slotCount >= 3)
-                {
-                    return (false, "Khung giờ này đã đầy, vui lòng chọn khung giờ khác.", 0);
-                }
-
-                // 7. Validate services and fetch DB prices (enforce IsActive = true)
-                var mainService = await _context.Services
-                    .FirstOrDefaultAsync(s => s.ServiceName == request.MainServiceName.Trim() && !s.IsAddOn && s.IsActive);
-                if (mainService == null)
-                {
-                    return (false, "Dịch vụ chính không hợp lệ hoặc đã ngừng hoạt động.", 0);
-                }
-
-                var addonsList = new List<Service>();
-                if (request.AddonServiceNames != null)
-                {
-                    foreach (var addonName in request.AddonServiceNames)
+                    // 5. Prevent duplicate bookings for the same vehicle in the same hour
+                    var hasDuplicate = await _context.Bookings
+                        .AnyAsync(b => b.VehicleId == vehicle.VehicleId
+                                    && b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled
+                                    && b.ScheduledAt.Date == scheduledAt.Date
+                                    && b.ScheduledAt.Hour == scheduledAt.Hour);
+                    if (hasDuplicate)
                     {
-                        if (string.IsNullOrWhiteSpace(addonName)) continue;
-                        var addon = await _context.Services
-                            .FirstOrDefaultAsync(s => s.ServiceName == addonName.Trim() && s.IsAddOn && s.IsActive);
-                        if (addon == null)
-                        {
-                            return (false, $"Dịch vụ đi kèm '{addonName}' không hợp lệ hoặc đã ngừng hoạt động.", 0);
-                        }
-                        addonsList.Add(addon);
+                        return (false, "Phương tiện này đã có lịch hẹn trong khung giờ đã chọn.", 0);
                     }
-                }
 
-                int calculatedBasePrice = mainService.BasePrice + addonsList.Sum(a => a.BasePrice);
-                int finalPrice = calculatedBasePrice;
-                int promoDiscount = 0;
-                RewardRedemption? redemption = null;
+                    // 6. Capacity constraints: max 3 bookings per hour slot
+                    var slotCount = await _context.Bookings
+                        .CountAsync(b => b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled
+                                      && b.ScheduledAt.Date == scheduledAt.Date
+                                      && b.ScheduledAt.Hour == scheduledAt.Hour);
+                    if (slotCount >= 3)
+                    {
+                        return (false, "Khung giờ này đã đầy, vui lòng chọn khung giờ khác.", 0);
+                    }
 
-                if (request.AppliedRedemptionId.HasValue)
-                {
-                    redemption = await _context.RewardRedemptions
-                        .Include(r => r.Reward)
-                        .FirstOrDefaultAsync(r => r.RedemptionId == request.AppliedRedemptionId.Value 
-                                               && r.CustomerId == customer.CustomerId 
-                                               && r.Status == RedemptionStatus.Active);
+                    // 7. Validate services and fetch DB prices (enforce IsActive = true)
+                    var mainService = await _context.Services
+                        .FirstOrDefaultAsync(s => s.ServiceName == request.MainServiceName.Trim() && !s.IsAddOn && s.IsActive);
+                    if (mainService == null)
+                    {
+                        return (false, "Dịch vụ chính không hợp lệ hoặc đã ngừng hoạt động.", 0);
+                    }
+
+                    var addonsList = new List<Service>();
+                    if (request.AddonServiceNames != null)
+                    {
+                        foreach (var addonName in request.AddonServiceNames)
+                        {
+                            if (string.IsNullOrWhiteSpace(addonName)) continue;
+                            var addon = await _context.Services
+                                .FirstOrDefaultAsync(s => s.ServiceName == addonName.Trim() && s.IsAddOn && s.IsActive);
+                            if (addon == null)
+                            {
+                                return (false, $"Dịch vụ đi kèm '{addonName}' không hợp lệ hoặc đã ngừng hoạt động.", 0);
+                            }
+                            addonsList.Add(addon);
+                        }
+                    }
+
+                    int calculatedBasePrice = mainService.BasePrice + addonsList.Sum(a => a.BasePrice);
+                    int finalPrice = calculatedBasePrice;
+                    int promoDiscount = 0;
+                    RewardRedemption? redemption = null;
+
+                    if (request.AppliedRedemptionId.HasValue)
+                    {
+                        redemption = await _context.RewardRedemptions
+                            .Include(r => r.Reward)
+                            .FirstOrDefaultAsync(r => r.RedemptionId == request.AppliedRedemptionId.Value 
+                                                   && r.CustomerId == customer.CustomerId 
+                                                   && r.Status == RedemptionStatus.Active);
+                        if (redemption != null)
+                        {
+                            if (redemption.Reward.RewardType == "DiscountPercent")
+                            {
+                                promoDiscount = (int)(calculatedBasePrice * (redemption.Reward.DiscountValue ?? 0) / 100);
+                            }
+                            else
+                            {
+                                promoDiscount = (int)(redemption.Reward.DiscountValue ?? 0);
+                            }
+
+                            if (promoDiscount > calculatedBasePrice)
+                            {
+                                promoDiscount = calculatedBasePrice;
+                            }
+
+                            finalPrice = calculatedBasePrice - promoDiscount;
+                            Console.WriteLine($"\n==============================================");
+                            Console.WriteLine($"[VOUCHER APPLIED] RedemptionId: {redemption.RedemptionId}");
+                            Console.WriteLine($"Voucher Name: '{redemption.Reward.RewardName}'");
+                            Console.WriteLine($"Discount: -{promoDiscount:N0} VND");
+                            Console.WriteLine($"Base Price: {calculatedBasePrice:N0} VND | Final Price: {finalPrice:N0} VND");
+                            Console.WriteLine("==============================================\n");
+                        }
+                    }
+
+                    // Backend loyalty points calculation
+                    var config = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
+                    int pointsPerThousand = config?.PointsPerThousandVND ?? 1;
+                    int pointsEarned = (finalPrice / 1000) * pointsPerThousand;
+
+                    // Create Booking
+                    var booking = new Booking
+                    {
+                        CustomerId = customer.CustomerId,
+                        VehicleId = vehicle.VehicleId,
+                        ScheduledAt = scheduledAt,
+                        Status = BookingStatus.Pending,
+                        BasePrice = calculatedBasePrice,
+                        PromoDiscount = promoDiscount,
+                        FinalPrice = finalPrice,
+                        PointsEarned = pointsEarned,
+                        RedemptionId = redemption?.RedemptionId,
+                        Notes = request.Notes,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    _context.Bookings.Add(booking);
+                    await _context.SaveChangesAsync();
+
                     if (redemption != null)
                     {
-                        if (redemption.Reward.RewardType == "DiscountPercent")
-                        {
-                            promoDiscount = (int)(calculatedBasePrice * (redemption.Reward.DiscountValue ?? 0) / 100);
-                        }
-                        else
-                        {
-                            promoDiscount = (int)(redemption.Reward.DiscountValue ?? 0);
-                        }
-
-                        if (promoDiscount > calculatedBasePrice)
-                        {
-                            promoDiscount = calculatedBasePrice;
-                        }
-
-                        finalPrice = calculatedBasePrice - promoDiscount;
-                        Console.WriteLine($"\n==============================================");
-                        Console.WriteLine($"[VOUCHER APPLIED] RedemptionId: {redemption.RedemptionId}");
-                        Console.WriteLine($"Voucher Name: '{redemption.Reward.RewardName}'");
-                        Console.WriteLine($"Discount: -{promoDiscount:N0} VND");
-                        Console.WriteLine($"Base Price: {calculatedBasePrice:N0} VND | Final Price: {finalPrice:N0} VND");
-                        Console.WriteLine("==============================================\n");
+                        redemption.Status = RedemptionStatus.Used;
+                        redemption.UsedAt = DateTime.Now;
+                        redemption.BookingId = booking.BookingId;
                     }
-                }
 
-                // Backend loyalty points calculation
-                var config = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
-                int pointsPerThousand = config?.PointsPerThousandVND ?? 1;
-                int pointsEarned = (finalPrice / 1000) * pointsPerThousand;
-
-                // Create Booking
-                var booking = new Booking
-                {
-                    CustomerId = customer.CustomerId,
-                    VehicleId = vehicle.VehicleId,
-                    ScheduledAt = scheduledAt,
-                    Status = BookingStatus.Pending,
-                    BasePrice = calculatedBasePrice,
-                    PromoDiscount = promoDiscount,
-                    FinalPrice = finalPrice,
-                    PointsEarned = pointsEarned,
-                    RedemptionId = redemption?.RedemptionId,
-                    Notes = request.Notes,
-                    CreatedAt = DateTime.Now
-                };
-
-                _context.Bookings.Add(booking);
-                await _context.SaveChangesAsync();
-
-                if (redemption != null)
-                {
-                    redemption.Status = RedemptionStatus.Used;
-                    redemption.UsedAt = DateTime.Now;
-                    redemption.BookingId = booking.BookingId;
-                }
-
-                // Save BookingServices with PriceSnapshot
-                _context.BookingServices.Add(new Auto_Wash.Data.Entities.BookingService
-                {
-                    BookingId = booking.BookingId,
-                    ServiceId = mainService.ServiceId,
-                    PriceSnapshot = mainService.BasePrice
-                });
-
-                foreach (var addon in addonsList)
-                {
+                    // Save BookingServices with PriceSnapshot
                     _context.BookingServices.Add(new Auto_Wash.Data.Entities.BookingService
                     {
                         BookingId = booking.BookingId,
-                        ServiceId = addon.ServiceId,
-                        PriceSnapshot = addon.BasePrice
+                        ServiceId = mainService.ServiceId,
+                        PriceSnapshot = mainService.BasePrice
                     });
+
+                    foreach (var addon in addonsList)
+                    {
+                        _context.BookingServices.Add(new Auto_Wash.Data.Entities.BookingService
+                        {
+                            BookingId = booking.BookingId,
+                            ServiceId = addon.ServiceId,
+                            PriceSnapshot = addon.BasePrice
+                        });
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return (true, "Đặt lịch thành công!", booking.BookingId);
                 }
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return (true, "Đặt lịch thành công!", booking.BookingId);
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return (false, $"Đã xảy ra lỗi hệ thống: {ex.Message}", 0);
-            }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return (false, $"Đã xảy ra lỗi hệ thống: {ex.Message}", 0);
+                }
+            });
         }
     }
 }
