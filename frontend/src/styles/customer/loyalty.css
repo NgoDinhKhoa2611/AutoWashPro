@@ -24,52 +24,19 @@
   font-size: 0.8rem;
   letter-spacing: 0.5px;
 }
-.loyalty-filter-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(4px, 0.8vw, 10px);
-  width: 100%;
-  align-items: stretch;
-}
-
 .loyalty-filter-btn {
-  width: 100%;
-  min-width: 0;
-  height: clamp(34px, 4vw, 42px);
-  padding: 0 clamp(4px, 1vw, 16px);
-  font-size: clamp(0.62rem, 1.35vw, 0.88rem);
+  font-size: clamp(0.7rem, 2.2vw, 0.88rem);
   font-weight: 700;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: auto !important;
+  height: clamp(34px, 4.5vw, 42px);
+  padding: 0 0.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  line-height: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transform: none !important;
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.loyalty-filter-btn:hover,
-.loyalty-filter-btn:focus,
-.loyalty-filter-btn:active,
-.loyalty-filter-btn[aria-pressed="true"] {
-  transform: none !important;
-}
-
-@media (max-width: 420px) {
-  .loyalty-filter-grid {
-    gap: 4px;
-  }
-
-  .loyalty-filter-btn {
-    height: 34px;
-    padding-inline: 3px;
-    letter-spacing: -0.02em;
-  }
+  transition: all 0.2s ease;
 }
 .loyalty-expiry-note {
   font-size: 0.7rem;

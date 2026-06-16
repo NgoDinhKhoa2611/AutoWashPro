@@ -81,21 +81,27 @@ namespace Auto_Wash.Services
 
         public async Task SendEmailOtpAsync(string toEmail, string subject, string body)
         {
+            var smtpHost = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
+            var smtpPortStr = _configuration["Smtp:Port"] ?? "587";
+            int smtpPort = int.TryParse(smtpPortStr, out var port) ? port : 587;
+            var smtpUser = _configuration["Smtp:Username"] ?? "";
+            var smtpPass = _configuration["Smtp:Password"] ?? "";
+            var fromEmail = _configuration["Smtp:FromEmail"] ?? "";
+
+            if (string.IsNullOrWhiteSpace(smtpUser) || string.IsNullOrWhiteSpace(smtpPass))
+            {
+                var errorMsg = "[SMTP ERROR] SMTP Username or Password is not configured in settings.";
+                Console.WriteLine(errorMsg);
+                throw new InvalidOperationException(errorMsg);
+            }
+
+            if (string.IsNullOrWhiteSpace(fromEmail))
+            {
+                fromEmail = smtpUser;
+            }
+
             try
             {
-                var smtpHost = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
-                var smtpPortStr = _configuration["Smtp:Port"] ?? "587";
-                int smtpPort = int.TryParse(smtpPortStr, out var port) ? port : 587;
-                var smtpUser = _configuration["Smtp:Username"] ?? "";
-                var smtpPass = _configuration["Smtp:Password"] ?? "";
-                var fromEmail = _configuration["Smtp:FromEmail"] ?? "autowashpro.service@gmail.com";
-
-                if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPass))
-                {
-                    Console.WriteLine($"[SMTP NOT CONFIG] Email could not be sent to {toEmail} because SMTP is not configured.");
-                    return;
-                }
-
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress("AutoWash Pro Support", fromEmail));
                 message.To.Add(new MailboxAddress("", toEmail));
@@ -117,13 +123,12 @@ namespace Auto_Wash.Services
                     await client.AuthenticateAsync(smtpUser, smtpPass);
                     await client.SendAsync(message);
                     await client.DisconnectAsync(true);
-
-                    Console.WriteLine($"[SMTP SUCCESS] MailKit successfully dispatched Email OTP to {toEmail}");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[SMTP ERROR] MailKit failed to send email to {toEmail}: {ex.Message}");
+                throw;
             }
         }
     }

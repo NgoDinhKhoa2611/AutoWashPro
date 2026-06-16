@@ -123,13 +123,13 @@ export const CustomerVehicles = () => {
         <div className="col-lg-8">
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
             <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <i className="fas fa-motorcycle text-cyan me-2"></i>GARAGE XE MÁY ĐÃ ĐĂNG KÝ
+              <i className="fas fa-car-side text-cyan me-2"></i>GARAGE PHƯƠNG TIỆN ĐÃ ĐĂNG KÝ
             </h5>
 
             <div className="d-flex flex-column gap-2 mb-4">
               {vehicles.length === 0 ? (
                 <div className="text-center py-5 text-muted small bg-light rounded-4 border border-dashed" style={{ background: 'rgba(15,23,42,0.02)' }}>
-                  <i className="fas fa-motorcycle fa-2x mb-3 text-secondary" style={{ opacity: 0.5 }}></i>
+                  <i className="fas fa-car-side fa-2x mb-3 text-secondary" style={{ opacity: 0.5 }}></i>
                   <div>Bạn chưa đăng ký phương tiện nào.</div>
                 </div>
               ) : (
@@ -137,7 +137,7 @@ export const CustomerVehicles = () => {
                   <div key={i} className="d-flex justify-content-between align-items-center p-3 border border-light rounded-4 bg-light bg-opacity-30">
                     <div className="d-flex align-items-center gap-3">
                       <div className="rounded-3 d-flex align-items-center justify-content-center bg-white border" style={{ width: '42px', height: '42px', flexShrink: 0 }}>
-                        <i className="fas fa-motorcycle text-muted"></i>
+                        <i className="fas fa-car-side text-muted"></i>
                       </div>
                       <div>
                         <div className="fw-bold font-monospace" style={{ color: 'var(--navy-dark)', fontSize: '0.88rem' }}>{v.plate}</div>
@@ -196,10 +196,13 @@ export const CustomerVehicles = () => {
                       <label className="form-label small fw-bold text-muted">LOẠI XE</label>
                       <select className="form-select py-2.5" value={newType} onChange={(e) => setNewType(e.target.value)}>
                         <option value="">-- Chọn loại xe (Không bắt buộc) --</option>
-                        <option value="Xe tay ga">Xe tay ga</option>
-                        <option value="Xe số">Xe số</option>
-                        <option value="Xe côn tay">Xe côn tay</option>
-                        <option value="Xe phân khối lớn">Xe phân khối lớn</option>
+                        <option value="Sedan">Sedan</option>
+                        <option value="SUV">SUV</option>
+                        <option value="Hatchback">Hatchback</option>
+                        <option value="MPV / 7 chỗ">MPV / 7 chỗ</option>
+                        <option value="Bán tải">Bán tải</option>
+                        <option value="Xe điện">Xe điện</option>
+                        <option value="Khác">Khác</option>
                       </select>
                     </div>
                   </div>

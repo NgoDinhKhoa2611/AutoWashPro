@@ -278,17 +278,68 @@
   color: #94a3b8;
 }
 
+.auth-password-toggle-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  transition: color 0.2s ease;
+}
+
+.auth-password-toggle-btn:hover {
+  color: #0284c7;
+}
+
 .auth-link {
   font-size: 0.82rem;
   color: #475569;
   text-decoration: none;
-  font-weight: 600;
-  transition: color 0.25s ease;
+  transition: color 0.2s ease;
   align-self: flex-end;
 }
 
 .auth-link:hover {
   color: #0284c7;
+}
+
+.auth-options-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.auth-options-row .auth-link {
+  align-self: auto;
+}
+
+.auth-remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.82rem;
+  color: #475569;
+  transition: color 0.2s ease;
+}
+
+.auth-remember-me:hover {
+  color: #0284c7;
+}
+
+.auth-remember-me input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #0284c7;
 }
 
 /* Premium Button with scale animations */

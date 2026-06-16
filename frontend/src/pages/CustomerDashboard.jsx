@@ -312,7 +312,7 @@ export const CustomerDashboard = () => {
         <div className="col-6 col-md-3">
           <Link to="/customer/vehicles" className="app-card summary-widget-card">
             <div className="summary-icon-wrapper" style={{ background: 'rgba(2, 132, 199, 0.08)', color: '#0284c7' }}>
-              <i className="fas fa-motorcycle"></i>
+              <i className="fas fa-car-side"></i>
             </div>
             <div className="text-start">
               <span className="summary-title">Xe của tôi</span>
@@ -379,7 +379,7 @@ export const CustomerDashboard = () => {
           <div className="app-card border-0 p-4 mb-4 text-start">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
-                <i className="fas fa-motorcycle text-cyan me-2"></i>GARAGE XE CỦA TÔI
+                <i className="fas fa-car-side text-cyan me-2"></i>GARAGE Ô TÔ CỦA TÔI
               </h5>
               <Link to="/customer/vehicles" className="compact-action-link">
                 Quản lý garage ➔
@@ -400,7 +400,7 @@ export const CustomerDashboard = () => {
                   <div className="col-sm-6 mb-2 mb-sm-0">
                     <div className="d-flex align-items-center gap-3">
                       <div className="rounded-circle bg-white border d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px', color: '#64748b' }}>
-                        <i className="fas fa-motorcycle fa-lg"></i>
+                        <i className="fas fa-car-side fa-lg"></i>
                       </div>
                       <div>
                         <div className="fw-bold font-monospace text-dark" style={{ fontSize: '1rem' }}>{vehicles[0].plate}</div>
@@ -425,7 +425,7 @@ export const CustomerDashboard = () => {
                   <div key={idx} className="col-sm-6">
                     <div className="d-flex justify-content-between align-items-center p-2.5 rounded-3 border bg-white" style={{ borderColor: '#e2e8f0' }}>
                       <div className="d-flex align-items-center gap-2">
-                        <i className="fas fa-motorcycle text-secondary" style={{ fontSize: '0.85rem' }}></i>
+                        <i className="fas fa-car-side text-secondary" style={{ fontSize: '0.85rem' }}></i>
                         <span className="fw-bold text-dark font-monospace" style={{ fontSize: '0.8rem' }}>{v.plate}</span>
                       </div>
                       <span className="badge bg-light text-secondary border px-2 py-1" style={{ fontSize: '0.65rem' }}>{v.type}</span>
@@ -499,7 +499,7 @@ export const CustomerDashboard = () => {
               </div>
               <div className="personal-stat-box">
                 <div className="personal-stat-icon" style={{ background: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' }}>
-                  <i className="fas fa-motorcycle"></i>
+                  <i className="fas fa-car-side"></i>
                 </div>
                 <span className="personal-stat-num">{vehicles.length}</span>
                 <span className="personal-stat-text">Xe quản lý</span>
@@ -755,7 +755,7 @@ export const CustomerDashboard = () => {
                     Dịch vụ: <strong className="text-dark">{activeBooking.mainService}</strong>
                   </div>
                   <div className="text-secondary mb-1">
-                    <i className="fas fa-motorcycle me-1.5 text-muted"></i>
+                    <i className="fas fa-car-side me-1.5 text-muted"></i>
                     Biển số: <strong className="text-dark font-monospace">{activeBooking.vehicle}</strong>
                   </div>
                   <div className="text-secondary">

@@ -10,6 +10,8 @@ const DEFAULT_TIME_SLOTS = [
   '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
 ];
 
+
+
 export const CustomerBooking = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -19,6 +21,11 @@ export const CustomerBooking = () => {
   const [addonServices, setAddonServices] = useState([]);
   
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+
+  useEffect(() => {
+    setSelectedAddons({});
+  }, [selectedVehicle]);
+  
   const [selectedMain, setSelectedMain] = useState(null);
   const [selectedAddons, setSelectedAddons] = useState({});
   const [bookingDate, setBookingDate] = useState('');
@@ -328,7 +335,7 @@ export const CustomerBooking = () => {
                     >
                       <div className="d-flex align-items-center gap-3">
                         <div className="rounded-3 d-flex align-items-center justify-content-center bg-white border shadow-sm" style={{ width: '44px', height: '44px' }}>
-                          <i className="fas fa-motorcycle text-muted"></i>
+                          <i className="fas fa-car-side text-muted"></i>
                         </div>
                         <div>
                           <div className="fw-bold" style={{ color: 'var(--navy-dark)', fontSize: '0.9rem' }}>{v.plate}</div>

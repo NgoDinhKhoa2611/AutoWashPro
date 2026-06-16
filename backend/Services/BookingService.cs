@@ -19,6 +19,7 @@ namespace Auto_Wash.Services
             _context = context;
         }
 
+
         public async Task<List<Service>> GetServicesAsync()
         {
             return await _context.Services
