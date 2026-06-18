@@ -147,7 +147,7 @@ export const CustomerLoyalty = () => {
     }
   };
 
-  const handleUseVoucher = () => {
+  const handleUseVoucher = (redemptionId) => {
     if (window.showToast) {
       window.showToast(
         "Voucher này sẽ tự động có sẵn để bạn chọn khi đặt lịch tại tab ĐẶT LỊCH (Booking)!",

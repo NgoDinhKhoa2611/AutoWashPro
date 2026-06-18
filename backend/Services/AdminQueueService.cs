@@ -230,7 +230,7 @@ namespace Auto_Wash.Services
             }
         }
 
-        public async Task<(bool success, string message)> UpdateQueueAsync(int id, string? status, string? staffNote)
+        public async Task<(bool success, string message, int queueId)> UpdateQueueAsync(int id, string? status, string? staffNote)
         {
             QueueStatus? parsedStatus = null;
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<QueueStatus>(status, true, out var parsed))
@@ -248,7 +248,7 @@ namespace Auto_Wash.Services
 
                 if (booking == null)
                 {
-                    return (false, "Không tìm thấy lịch đặt!");
+                    return (false, "Không tìm thấy lịch đặt!", 0);
                 }
 
                 // If only updating notes or status is still Waiting, don't create real queue
@@ -259,7 +259,7 @@ namespace Auto_Wash.Services
                         booking.Notes = staffNote;
                     }
                     await _context.SaveChangesAsync();
-                    return (true, "Cập nhật ghi chú lịch đặt thành công!");
+                    return (true, "Cập nhật ghi chú lịch đặt thành công!", id);
                 }
 
                 // Perform check-in and set requested status
@@ -298,14 +298,14 @@ namespace Auto_Wash.Services
                 }
 
                 await _context.SaveChangesAsync();
-                return (true, "Cập nhật hàng đợi thành công!");
+                return (true, "Cập nhật hàng đợi thành công!", q.QueueId);
             }
             else
             {
                 var q = await _context.Queues.FindAsync(id);
                 if (q == null)
                 {
-                    return (false, "Không tìm thấy xe trong hàng đợi!");
+                    return (false, "Không tìm thấy xe trong hàng đợi!", 0);
                 }
 
                 if (parsedStatus.HasValue) q.Status = parsedStatus.Value;
@@ -314,7 +314,7 @@ namespace Auto_Wash.Services
                 if (q.Status == QueueStatus.Completed) q.CompletedAt ??= DateTime.Now;
 
                 await _context.SaveChangesAsync();
-                return (true, "Cập nhật hàng đợi thành công!");
+                return (true, "Cập nhật hàng đợi thành công!", q.QueueId);
             }
         }
 
@@ -370,7 +370,7 @@ namespace Auto_Wash.Services
                 return (false, "Không tìm thấy xe trong hàng đợi!", 0, 0);
             }
 
-            if (q.Status == QueueStatus.Completed)
+            if (q.Booking != null && q.Booking.Status == BookingStatus.Completed)
             {
                 return (false, "Xe này đã được thanh toán và checkout trước đó!", 0, 0);
             }

@@ -80,7 +80,7 @@ namespace Auto_Wash.Controllers
                 {
                     return BadRequest(new { success = false, message = result.message });
                 }
-                return Ok(new { success = true });
+                return Ok(new { success = true, queueId = result.queueId });
             }
             catch (Exception ex)
             {

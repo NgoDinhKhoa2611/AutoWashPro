@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const clearLocalStorage = () => {
+    localStorage.removeItem('session_version');
     localStorage.removeItem('user_role');
     localStorage.removeItem('user_display_name');
     localStorage.removeItem('user_email');
@@ -21,6 +22,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const syncUserFromAuthResponse = (data) => {
+    const sessionVersion = Date.now().toString() + '_' + Math.random().toString(36).substring(2, 9);
+    localStorage.setItem('session_version', sessionVersion);
+
     localStorage.setItem('user_role', data.role || 'customer');
     localStorage.setItem('user_display_name', data.fullName || data.name || '');
     localStorage.setItem('user_email', data.email || '');
@@ -39,7 +43,8 @@ export const AuthProvider = ({ children }) => {
       phone: data.phone || '',
       tier: data.tier || 'Member',
       points: data.points != null ? Number(data.points) : 0,
-      avatar: localStorage.getItem('user_avatar') || ''
+      avatar: localStorage.getItem('user_avatar') || '',
+      sessionVersion: sessionVersion
     };
     setUser(loggedUser);
     window.dispatchEvent(new Event('auth-state-changed'));
@@ -50,7 +55,34 @@ export const AuthProvider = ({ children }) => {
       try {
         const data = await authService.getCurrentUser();
         if (data && data.isAuthenticated) {
-          syncUserFromAuthResponse(data);
+          let currentSessionVersion = localStorage.getItem('session_version');
+          if (!currentSessionVersion) {
+            currentSessionVersion = Date.now().toString() + '_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('session_version', currentSessionVersion);
+          }
+
+          localStorage.setItem('user_role', data.role || 'customer');
+          localStorage.setItem('user_display_name', data.fullName || data.name || '');
+          localStorage.setItem('user_email', data.email || '');
+          if (data.phone) localStorage.setItem('user_phone', data.phone);
+          if (data.tier) localStorage.setItem('user_tier', data.tier);
+          if (data.points != null) localStorage.setItem('user_points', String(data.points));
+          localStorage.setItem('account_id', String(data.accountId || ''));
+          localStorage.setItem('customer_id', String(data.customerId || ''));
+
+          const loggedUser = {
+            accountId: data.accountId,
+            customerId: data.customerId,
+            role: data.role || 'customer',
+            name: data.fullName || data.name || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            tier: data.tier || 'Member',
+            points: data.points != null ? Number(data.points) : 0,
+            avatar: localStorage.getItem('user_avatar') || '',
+            sessionVersion: currentSessionVersion
+          };
+          setUser(loggedUser);
         } else {
           setUser(null);
           clearLocalStorage();
@@ -69,25 +101,63 @@ export const AuthProvider = ({ children }) => {
     // Lắng nghe sự kiện storage và auth-state-changed để xử lý đồng bộ và multi-tab logout
     const handleStorageChange = () => {
       const currentRole = localStorage.getItem('user_role');
-      if (!currentRole) {
-        setUser(null);
-      } else {
-        // Chỉ đồng bộ cập nhật thông tin hiển thị nếu user hiện tại đã đăng nhập
-        setUser(prevUser => {
-          if (!prevUser) return null; // Ngăn chặn việc khôi phục bừa bãi đăng nhập từ localStorage
-          return {
-            accountId: Number(localStorage.getItem('account_id') || 0) || null,
-            customerId: Number(localStorage.getItem('customer_id') || 0) || null,
-            role: currentRole,
-            name: localStorage.getItem('user_display_name') || '',
-            email: localStorage.getItem('user_email') || '',
-            phone: localStorage.getItem('user_phone') || '',
-            tier: localStorage.getItem('user_tier') || 'Member',
-            points: Number(localStorage.getItem('user_points') || 0),
-            avatar: localStorage.getItem('user_avatar') || ''
-          };
-        });
-      }
+      const currentAccountId = localStorage.getItem('account_id');
+      const currentSessionVersion = localStorage.getItem('session_version');
+
+      setUser(prevUser => {
+        if (prevUser) {
+          const hasLoggedOut = !currentRole;
+          const hasAccountChanged = currentAccountId && String(prevUser.accountId) !== String(currentAccountId);
+          const hasSessionVersionChanged = currentSessionVersion && prevUser.sessionVersion && prevUser.sessionVersion !== currentSessionVersion;
+
+          if (hasLoggedOut || hasAccountChanged || hasSessionVersionChanged) {
+            // Clear React states and session cache immediately
+            sessionStorage.clear();
+
+            if (window.showToast) {
+              window.showToast("Phiên đăng nhập đã thay đổi ở tab khác. Vui lòng đăng nhập lại.", "warning");
+            } else {
+              alert("Phiên đăng nhập đã thay đổi ở tab khác. Vui lòng đăng nhập lại.");
+            }
+
+            const cleanUpAndExit = async () => {
+              if (hasAccountChanged || hasSessionVersionChanged) {
+                try {
+                  await authService.logout();
+                } catch (e) {
+                  console.error('Lỗi khi hủy phiên ở backend:', e);
+                }
+              }
+              clearLocalStorage();
+              window.location.href = '/login';
+            };
+            cleanUpAndExit();
+
+            return null;
+          }
+        }
+
+        if (!currentRole) {
+          return null;
+        } else {
+          if (!prevUser) {
+            // Sync user if not logged in
+            return {
+              accountId: Number(currentAccountId || 0) || null,
+              customerId: Number(localStorage.getItem('customer_id') || 0) || null,
+              role: currentRole,
+              name: localStorage.getItem('user_display_name') || '',
+              email: localStorage.getItem('user_email') || '',
+              phone: localStorage.getItem('user_phone') || '',
+              tier: localStorage.getItem('user_tier') || 'Member',
+              points: Number(localStorage.getItem('user_points') || 0),
+              avatar: localStorage.getItem('user_avatar') || '',
+              sessionVersion: currentSessionVersion
+            };
+          }
+          return prevUser; // Do not update to another account automatically
+        }
+      });
     };
 
     window.addEventListener('storage', handleStorageChange);

@@ -552,7 +552,18 @@ export const CustomerBooking = () => {
             <div className="d-flex flex-column gap-2 mb-4 bg-light p-3 rounded-3" style={{ background: '#f8fafc', border: '1px solid #f1f5f9' }}>
               {appliedVoucher && baseTotal > 0 && (
                 <div className="d-flex justify-content-between align-items-center" id="promo-applied-msg">
-                  <small className="text-muted fw-bold" style={{ fontSize: '0.68rem' }}>VOUCHER ({appliedVoucher.code}):</small>
+                  <small className="text-muted fw-bold d-flex align-items-center gap-1" style={{ fontSize: '0.68rem' }}>
+                    VOUCHER ({appliedVoucher.code}):
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 text-danger border-0 ms-1"
+                      onClick={handleRemoveVoucher}
+                      title="Hủy voucher"
+                      style={{ fontSize: '0.75rem', lineHeight: 1 }}
+                    >
+                      <i className="fas fa-times-circle"></i>
+                    </button>
+                  </small>
                   <span className="fw-bold text-success" id="promo-discount-display" style={{ fontSize: '0.78rem' }}>
                     -{Number(promoDiscountAmount).toLocaleString()}đ
                   </span>
