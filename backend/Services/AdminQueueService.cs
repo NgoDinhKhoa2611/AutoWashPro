@@ -25,6 +25,8 @@ namespace Auto_Wash.Services
             // 1. Get real queues for today
             var realQueues = await _context.Queues
                 .Include(q => q.Tier)
+                .Include(q => q.Customer)
+                    .ThenInclude(c => c!.Account)
                 .Include(q => q.Booking)
                     .ThenInclude(b => b!.BookingServices)
                         .ThenInclude(bs => bs.Service)
@@ -68,7 +70,9 @@ namespace Auto_Wash.Services
                     QueueId = q.QueueId,
                     BookingId = q.BookingId,
                     LicensePlate = q.LicensePlate,
-                    CustomerName = q.CustomerName ?? "Khách vãng lai",
+                    CustomerName = q.CustomerName ?? q.Customer?.Account?.FullName ?? "Khách vãng lai",
+                    Phone = q.Customer?.Account?.Phone ?? string.Empty,
+                    Email = q.Customer?.Account?.Email ?? string.Empty,
                     TierName = q.Tier?.TierName ?? "Member",
                     TierId = q.TierId ?? 1,
                     Status = q.Status.ToString(),
@@ -101,6 +105,8 @@ namespace Auto_Wash.Services
                     BookingId = b.BookingId,
                     LicensePlate = b.Vehicle?.LicensePlate ?? string.Empty,
                     CustomerName = b.Customer?.Account?.FullName ?? "Khách vãng lai",
+                    Phone = b.Customer?.Account?.Phone ?? string.Empty,
+                    Email = b.Customer?.Account?.Email ?? string.Empty,
                     TierName = b.Customer?.Tier?.TierName ?? "Member",
                     TierId = b.Customer?.TierId ?? 1,
                     Status = QueueStatus.Waiting.ToString(),
@@ -507,6 +513,8 @@ namespace Auto_Wash.Services
         public int? BookingId { get; set; }
         public string LicensePlate { get; set; } = string.Empty;
         public string CustomerName { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public string TierName { get; set; } = string.Empty;
         public int TierId { get; set; }
         public string Status { get; set; } = "Waiting";

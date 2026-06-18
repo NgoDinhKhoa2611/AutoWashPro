@@ -100,7 +100,8 @@ export const AdminQueue = () => {
             queueId: item.queueId,
             licensePlate: item.licensePlate,
             customerName: item.customerName,
-            phone: '—',
+            phone: item.phone || '—',
+            email: item.email || '—',
             tierName: item.tierName,
             tierId: item.tierId,
             status: item.status,
@@ -468,6 +469,22 @@ export const AdminQueue = () => {
                   <div className="col-6 text-end mt-2">
                     <span className="text-muted d-block small">TIẾN ĐỘ</span>
                     <strong className="text-dark">{selectedVehicle.progress}%</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Contact Details */}
+              <div className="bg-light p-3 rounded-4 mb-3" style={{ border: '1px solid #e2e8f0' }}>
+                <h6 className="fw-bold mb-2 text-dark" style={{ fontSize: '0.82rem' }}><i className="fas fa-user-circle me-1 text-cyan"></i>Thông tin liên hệ</h6>
+                <div className="row g-2" style={{ fontSize: '0.78rem' }}>
+                  <div className="col-12">
+                    <span className="text-muted">Khách hàng:</span> <strong className="text-dark ms-1">{selectedVehicle.customerName}</strong>
+                  </div>
+                  <div className="col-12 mt-1">
+                    <span className="text-muted">Số điện thoại:</span> <strong className="text-dark ms-1">{selectedVehicle.phone}</strong>
+                  </div>
+                  <div className="col-12 mt-1">
+                    <span className="text-muted">Email:</span> <strong className="text-dark ms-1">{selectedVehicle.email}</strong>
                   </div>
                 </div>
               </div>

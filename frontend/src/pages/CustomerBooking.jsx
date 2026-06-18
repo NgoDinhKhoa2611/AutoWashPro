@@ -550,7 +550,7 @@ export const CustomerBooking = () => {
 
             {/* Discounts and Loyalty calculations */}
             <div className="d-flex flex-column gap-2 mb-4 bg-light p-3 rounded-3" style={{ background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-              {appliedVoucher && baseTotal > 0 && (
+              {appliedVoucher && (
                 <div className="d-flex justify-content-between align-items-center" id="promo-applied-msg">
                   <small className="text-muted fw-bold d-flex align-items-center gap-1" style={{ fontSize: '0.68rem' }}>
                     VOUCHER ({appliedVoucher.code}):
