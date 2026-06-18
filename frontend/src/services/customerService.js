@@ -31,26 +31,38 @@ export const customerService = {
     return response.data;
   },
 
-  sendVehicleOtp: async (licensePlate) => {
-    const response = await api.post('/Customer/SendVehicleOtp', {
-      LicensePlate: licensePlate
+  sendVehicleOtp: async (licensePlate, brand, model, vehicleClass) => {
+    const response = await api.post('/api/vehicle/send-otp', {
+      LicensePlate: licensePlate,
+      Brand: brand,
+      Model: model,
+      VehicleClass: vehicleClass
     });
     return response.data;
   },
 
-  verifyVehicleOtpAndSave: async (licensePlate, type, otpCode) => {
-    const response = await api.post('/Customer/VerifyVehicleOtpAndSave', {
+  verifyVehicleOtpAndSave: async (licensePlate, brand, model, vehicleClass, otpCode) => {
+    const response = await api.post('/api/vehicle/verify-otp', {
       LicensePlate: licensePlate,
-      Type: type,
+      Brand: brand,
+      Model: model,
+      VehicleClass: vehicleClass,
       OtpCode: otpCode
     });
     return response.data;
   },
 
-  deleteVehicle: async (licensePlate) => {
-    const response = await api.post('/Customer/DeleteVehicle', {
-      LicensePlate: licensePlate
+  editVehicle: async (vehicleId, brand, model, vehicleClass) => {
+    const response = await api.put(`/api/vehicle/${vehicleId}`, {
+      Brand: brand,
+      Model: model,
+      VehicleClass: vehicleClass
     });
+    return response.data;
+  },
+
+  deleteVehicle: async (vehicleId) => {
+    const response = await api.delete(`/api/vehicle/${vehicleId}`);
     return response.data;
   },
 

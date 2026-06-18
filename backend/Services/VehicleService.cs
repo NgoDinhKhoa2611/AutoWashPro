@@ -27,8 +27,13 @@ namespace Auto_Wash.Services
                 .Where(v => v.CustomerId == customerId)
                 .Select(v => new VehicleDto
                 {
-                    Plate = v.LicensePlate,
-                    Type = v.Name ?? v.Brand ?? "Chưa cập nhật"
+                    VehicleId = v.VehicleId,
+                    CustomerId = v.CustomerId,
+                    LicensePlate = v.LicensePlate,
+                    Brand = v.Brand,
+                    Model = v.Model,
+                    VehicleClass = v.VehicleClass,
+                    RegisteredAt = v.RegisteredAt
                 })
                 .ToListAsync();
         }
@@ -70,7 +75,7 @@ namespace Auto_Wash.Services
             return await _otpService.VerifyOtpAsync(email, code, "AddVehicle", normPlate);
         }
 
-        public async Task SaveVehicleAsync(int customerId, string licensePlate, string? type)
+        public async Task SaveVehicleAsync(int customerId, string licensePlate, string brand, string model, string vehicleClass)
         {
             string normPlate = LicensePlateHelper.Normalize(licensePlate);
             if (string.IsNullOrWhiteSpace(normPlate))
@@ -88,37 +93,60 @@ namespace Auto_Wash.Services
             {
                 throw new InvalidOperationException("Biển số xe này đã được đăng ký trên hệ thống!");
             }
-
-            var brandType = string.IsNullOrWhiteSpace(type) ? "Chưa cập nhật" : type.Trim();
             
             var vehicle = new Vehicle
             {
                 CustomerId = customerId,
                 LicensePlate = normPlate,
-                Brand = brandType,
-                Name = brandType                
+                Brand = brand.Trim(),
+                Model = model.Trim(),
+                VehicleClass = vehicleClass.Trim()
             };
 
             _context.Vehicles.Add(vehicle);
             await _context.SaveChangesAsync();
         }
 
-        public async Task<(bool success, string message)> DeleteVehicleAsync(int customerId, string licensePlate)
+        public async Task<(bool success, string message)> UpdateVehicleAsync(int customerId, int vehicleId, string brand, string model, string vehicleClass)
         {
-            string normPlate = LicensePlateHelper.Normalize(licensePlate);
             var vehicle = await _context.Vehicles
-                .FirstOrDefaultAsync(v => v.CustomerId == customerId && v.LicensePlate == normPlate);
+                .FirstOrDefaultAsync(v => v.CustomerId == customerId && v.VehicleId == vehicleId);
 
             if (vehicle == null)
             {
                 return (false, "Không tìm thấy phương tiện tương ứng của bạn!");
             }
 
-            // Check if vehicle has bookings
-            var hasBookings = await _context.Bookings.AnyAsync(b => b.VehicleId == vehicle.VehicleId);
-            if (hasBookings)
+            if (string.IsNullOrWhiteSpace(brand) || string.IsNullOrWhiteSpace(model) || string.IsNullOrWhiteSpace(vehicleClass))
             {
-                return (false, "Không thể xóa phương tiện đã có lịch sử đặt lịch.");
+                return (false, "Vui lòng nhập đầy đủ thông tin phương tiện.");
+            }
+
+            vehicle.Brand = brand.Trim();
+            vehicle.Model = model.Trim();
+            vehicle.VehicleClass = vehicleClass.Trim();
+
+            await _context.SaveChangesAsync();
+            return (true, "Cập nhật phương tiện thành công!");
+        }
+
+        public async Task<(bool success, string message)> DeleteVehicleByIdAsync(int customerId, int vehicleId)
+        {
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v => v.CustomerId == customerId && v.VehicleId == vehicleId);
+
+            if (vehicle == null)
+            {
+                return (false, "Không tìm thấy phương tiện tương ứng của bạn!");
+            }
+
+            // Check if vehicle has active bookings
+            var hasActiveBookings = await _context.Bookings.AnyAsync(b => b.VehicleId == vehicleId 
+                && b.Status != BookingStatus.Completed 
+                && b.Status != BookingStatus.Cancelled);
+            if (hasActiveBookings)
+            {
+                return (false, "Không thể xóa phương tiện đã có lịch đặt lịch đang chờ xử lý.");
             }
 
             _context.Vehicles.Remove(vehicle);

@@ -37,7 +37,8 @@ namespace Auto_Wash.Controllers
                         price = s.BasePrice,
                         estimatedMinutes = s.EstimatedMinutes,
                         isActive = s.IsActive,
-                        isFeatured = s.IsFeatured
+                        isFeatured = s.IsFeatured,
+                        isAddon = s.IsAddOn
                     })
                     .ToList();
 

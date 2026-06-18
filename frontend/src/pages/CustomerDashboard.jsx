@@ -66,7 +66,14 @@ export const CustomerDashboard = () => {
       try {
         const response = await customerService.getVehicles();
         if (response && response.success && response.vehicles) {
-          setVehicles(response.vehicles);
+          const list = response.vehicles.map(v => ({
+            ...v,
+            plate: v.licensePlate,
+            type: `${v.brand} ${v.model} (${v.vehicleClass})`,
+            lastWash: 'Vừa xong',
+            totalWashes: 0
+          }));
+          setVehicles(list);
         } else {
           setVehicles([]);
         }

@@ -110,13 +110,9 @@ namespace Auto_Wash.Data
 
             // 6. Vehicles
             builder.Entity<Vehicle>()
-                .HasIndex(v => new { v.CustomerId, v.LicensePlate })
-                .IsUnique()
-                .HasDatabaseName("uq_vehicles_customer_plate");
-
-            builder.Entity<Vehicle>()
                 .HasIndex(v => v.LicensePlate)
-                .HasDatabaseName("idx_vehicles_plate");
+                .IsUnique()
+                .HasDatabaseName("uq_vehicles_licenseplate");
 
             builder.Entity<Vehicle>()
                 .HasOne(v => v.Customer)
