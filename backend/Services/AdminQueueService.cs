@@ -33,20 +33,6 @@ namespace Auto_Wash.Services
                 .Where(q => q.CheckInAt.Date == today && q.Status != QueueStatus.Cancelled)
                 .ToListAsync();
 
-            // 2. Get unchecked bookings for today
-            var uncheckedBookings = await _context.Bookings
-                .Include(b => b.Customer)
-                    .ThenInclude(c => c.Account)
-                .Include(b => b.Customer)
-                    .ThenInclude(c => c.Tier)
-                .Include(b => b.Vehicle)
-                .Include(b => b.BookingServices)
-                    .ThenInclude(bs => bs.Service)
-                .Where(b => b.ScheduledAt.Date == today 
-                         && (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed)
-                         && !_context.Queues.Any(q => q.BookingId == b.BookingId && q.Status != QueueStatus.Cancelled))
-                .ToListAsync();
-
             var list = new List<QueueListItem>();
 
             // Map real queues
@@ -85,40 +71,6 @@ namespace Auto_Wash.Services
                     PointsEarned = q.Booking?.PointsEarned ?? 0,
                     Services = services,
                     QueuePriority = q.Tier?.QueuePriority ?? 0
-                });
-            }
-
-            // Map synthetic bookings
-            foreach (var b in uncheckedBookings)
-            {
-                var services = b.BookingServices
-                    .Select(bs => new QueueServiceItem
-                    {
-                        Name = bs.Service.ServiceName,
-                        Price = bs.PriceSnapshot
-                    })
-                    .ToList();
-
-                list.Add(new QueueListItem
-                {
-                    QueueId = -b.BookingId, // Negative ID for synthetic booking
-                    BookingId = b.BookingId,
-                    LicensePlate = b.Vehicle?.LicensePlate ?? string.Empty,
-                    CustomerName = b.Customer?.Account?.FullName ?? "Khách vãng lai",
-                    Phone = b.Customer?.Account?.Phone ?? string.Empty,
-                    Email = b.Customer?.Account?.Email ?? string.Empty,
-                    TierName = b.Customer?.Tier?.TierName ?? "Member",
-                    TierId = b.Customer?.TierId ?? 1,
-                    Status = QueueStatus.Waiting.ToString(),
-                    Position = 0,
-                    CheckInAt = b.ScheduledAt, // scheduled time is the check-in time equivalent
-                    StartedAt = null,
-                    CompletedAt = null,
-                    StaffNote = b.Notes ?? string.Empty,
-                    FinalPrice = b.FinalPrice,
-                    PointsEarned = b.PointsEarned,
-                    Services = services,
-                    QueuePriority = b.Customer?.Tier?.QueuePriority ?? 0
                 });
             }
 
@@ -183,10 +135,9 @@ namespace Auto_Wash.Services
                     LicensePlate = booking.Vehicle?.LicensePlate?.ToUpper()?.Trim() ?? string.Empty,
                     CustomerName = booking.Customer?.Account?.FullName ?? "Khách vãng lai",
                     TierId = booking.Customer?.TierId ?? 1,
-                    Status = QueueStatus.LPR_Scan,
+                    Status = QueueStatus.Waiting,
                     Position = lastPos + 1,
                     CheckInAt = DateTime.Now,
-                    StartedAt = DateTime.Now,
                     StaffNote = booking.Notes ?? string.Empty
                 };
 
@@ -195,7 +146,7 @@ namespace Auto_Wash.Services
                 _context.Queues.Add(newQueue);
                 await _context.SaveChangesAsync();
 
-                return (true, "Check-in thành công!", QueueStatus.LPR_Scan.ToString());
+                return (true, "Check-in thành công!", QueueStatus.Waiting.ToString());
             }
             else
             {
@@ -287,10 +238,9 @@ namespace Auto_Wash.Services
                         LicensePlate = booking.Vehicle?.LicensePlate?.ToUpper()?.Trim() ?? string.Empty,
                         CustomerName = booking.Customer?.Account?.FullName ?? "Khách vãng lai",
                         TierId = booking.Customer?.TierId ?? 1,
-                        Status = parsedStatus ?? QueueStatus.Waiting,
+                        Status = QueueStatus.Waiting,
                         Position = lastPos + 1,
                         CheckInAt = DateTime.Now,
-                        StartedAt = DateTime.Now,
                         StaffNote = staffNote ?? booking.Notes ?? string.Empty
                     };
                     booking.Status = BookingStatus.CheckedIn; // CheckedIn / InProgress

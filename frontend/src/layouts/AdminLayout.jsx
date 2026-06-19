@@ -13,6 +13,7 @@ export const AdminLayout = () => {
 
   const activeNav = location.pathname.startsWith('/admin/dashboard') ? 'dashboard' :
                     location.pathname.startsWith('/admin/queue') ? 'queue' :
+                    location.pathname.startsWith('/admin/bookings') ? 'bookings' :
                     location.pathname.startsWith('/admin/customers') ? 'customers' :
                     location.pathname.startsWith('/admin/services') ? 'services' :
                     location.pathname.startsWith('/admin/promotions') ? 'promotions' : 'dashboard';
@@ -55,6 +56,9 @@ export const AdminLayout = () => {
           </Link>
           <Link to="/admin/queue" className={`sidebar-link ${activeNav === 'queue' ? 'active' : ''}`}>
             <i className="fas fa-list-ol"></i> <span>Hàng đợi trực tiếp</span>
+          </Link>
+          <Link to="/admin/bookings" className={`sidebar-link ${activeNav === 'bookings' ? 'active' : ''}`}>
+            <i className="fas fa-calendar-check"></i> <span>Quản lý đặt lịch</span>
           </Link>
           <Link to="/admin/customers" className={`sidebar-link ${activeNav === 'customers' ? 'active' : ''}`}>
             <i className="fas fa-users"></i> <span>Khách hàng</span>

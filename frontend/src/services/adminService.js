@@ -137,5 +137,30 @@ export const adminService = {
   deletePromotion: async (id) => {
     const response = await api.delete(`/api/admin/promotions/${id}`);
     return response.data;
+  },
+
+  getBookings: async () => {
+    const response = await api.get('/api/admin/bookings');
+    return response.data;
+  },
+
+  getBookingDetail: async (id) => {
+    const response = await api.get(`/api/admin/bookings/${id}`);
+    return response.data;
+  },
+
+  confirmBooking: async (id) => {
+    const response = await api.put(`/api/admin/bookings/${id}/confirm`);
+    return response.data;
+  },
+
+  cancelBooking: async (id) => {
+    const response = await api.put(`/api/admin/bookings/${id}/cancel`);
+    return response.data;
+  },
+
+  checkinBooking: async (id) => {
+    const response = await api.put(`/api/admin/bookings/${id}/checkin`);
+    return response.data;
   }
 };

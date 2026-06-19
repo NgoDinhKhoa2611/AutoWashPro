@@ -22,6 +22,7 @@ const AdminQueue = lazy(() => import('./pages/AdminQueue'));
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
 const AdminServices = lazy(() => import('./pages/AdminServices'));
 const AdminPromotions = lazy(() => import('./pages/AdminPromotions'));
+const AdminBookings = lazy(() => import('./pages/AdminBookings'));
 
 const PageLoader = () => (
   <div className="d-flex align-items-center justify-content-center vh-100 bg-light">
@@ -74,6 +75,7 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="queue" element={<AdminQueue />} />
+            <Route path="bookings" element={<AdminBookings />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="services" element={<AdminServices />} />
             <Route path="promotions" element={<AdminPromotions />} />

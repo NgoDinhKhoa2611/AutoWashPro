@@ -38,7 +38,11 @@ export const CustomerHistory = () => {
             service: b.mainService + (b.addons && b.addons.length > 0 ? ` + ${b.addons.join(', ')}` : ''),
             price: b.price,
             points: b.points,
-            status: b.status === 'Completed' ? 'Hoàn tất' : 'Đang xử lý',
+            status: b.status === 'Pending Confirmation' ? 'Chờ xác nhận' :
+                    b.status === 'Confirmed' ? 'Đã xác nhận' :
+                    b.status === 'Checked In' ? 'Đã check-in' :
+                    b.status === 'Completed' ? 'Hoàn tất' :
+                    b.status === 'Cancelled' ? 'Đã hủy' : 'Đang xử lý',
             surveyStatus: 'pending'
           }));
           setHistory(list);
@@ -204,8 +208,20 @@ export const CustomerHistory = () => {
                         <div className="fw-bold fs-6" style={{ color: 'var(--navy-dark)' }}>{item.plate}</div>
                         <small className="text-muted" style={{ fontSize: '0.75rem' }}>{item.date} • {item.type}</small>
                       </div>
-                      <span className="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill small fw-bold">
-                        <i className="fas fa-check-circle me-1"></i>{item.status}
+                      <span className={`badge px-3 py-2 rounded-pill small fw-bold ${
+                        item.status === 'Hoàn tất' ? 'bg-success bg-opacity-10 text-success' :
+                        item.status === 'Đã hủy' ? 'bg-danger bg-opacity-10 text-danger' :
+                        item.status === 'Chờ xác nhận' ? 'bg-warning bg-opacity-15 text-warning' :
+                        item.status === 'Đã xác nhận' ? 'bg-primary bg-opacity-10 text-primary' :
+                        'bg-info bg-opacity-10 text-info'
+                      }`}>
+                        <i className={`fas me-1 ${
+                          item.status === 'Hoàn tất' ? 'fa-check-circle' :
+                          item.status === 'Đã hủy' ? 'fa-times-circle' :
+                          item.status === 'Chờ xác nhận' ? 'fa-hourglass-start' :
+                          item.status === 'Đã xác nhận' ? 'fa-calendar-check' :
+                          'fa-sign-in-alt'
+                        }`}></i>{item.status}
                       </span>
                     </div>
 

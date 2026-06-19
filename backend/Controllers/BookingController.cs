@@ -111,9 +111,10 @@ namespace Auto_Wash.Controllers
                         vehicle = b.Vehicle.LicensePlate,
                         mainService = b.BookingServices.Where(bs => !bs.Service.IsAddOn).Select(bs => bs.Service.ServiceName).FirstOrDefault() ?? "Rửa xe",
                         addons = b.BookingServices.Where(bs => bs.Service.IsAddOn).Select(bs => bs.Service.ServiceName).ToList(),
-                        status = b.Status == BookingStatus.Completed ? "Completed"
-                               : b.Status == BookingStatus.Pending ? "Booked"
+                        status = b.Status == BookingStatus.Pending ? "Pending Confirmation"
                                : b.Status == BookingStatus.Confirmed ? "Confirmed"
+                               : b.Status == BookingStatus.CheckedIn ? "Checked In"
+                               : b.Status == BookingStatus.Completed ? "Completed"
                                : b.Status == BookingStatus.Cancelled ? "Cancelled"
                                : "In Progress",
                         bookingDate = b.ScheduledAt.ToString("yyyy-MM-dd"),
@@ -182,7 +183,12 @@ namespace Auto_Wash.Controllers
                     vehicle = activeBooking.Vehicle.LicensePlate,
                     mainService = mainSvcName,
                     addons = addons,
-                    status = queueStatus == "Completed" ? "Completed" : "Booked",
+                    status = activeBooking.Status == BookingStatus.Pending ? "Pending Confirmation"
+                           : activeBooking.Status == BookingStatus.Confirmed ? "Confirmed"
+                           : activeBooking.Status == BookingStatus.CheckedIn ? "Checked In"
+                           : activeBooking.Status == BookingStatus.Completed ? "Completed"
+                           : activeBooking.Status == BookingStatus.Cancelled ? "Cancelled"
+                           : "In Progress",
                     bookingDate = activeBooking.ScheduledAt.ToString("yyyy-MM-dd"),
                     bookingTime = activeBooking.ScheduledAt.ToString("HH:mm"),
                     price = activeBooking.FinalPrice,

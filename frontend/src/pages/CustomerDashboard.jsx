@@ -767,7 +767,17 @@ export const CustomerDashboard = () => {
                   </div>
                   <div className="text-secondary">
                     <i className="fas fa-info-circle me-1.5 text-muted"></i>
-                    Trạng thái: <strong className="text-success">Đã xác nhận</strong>
+                    Trạng thái: <strong className={
+                      activeBooking.status === 'Pending Confirmation' ? 'text-warning' :
+                      activeBooking.status === 'Confirmed' ? 'text-primary' :
+                      activeBooking.status === 'Checked In' ? 'text-info' :
+                      activeBooking.status === 'Completed' ? 'text-success' : 'text-danger'
+                    }>{
+                      activeBooking.status === 'Pending Confirmation' ? 'Chờ xác nhận' :
+                      activeBooking.status === 'Confirmed' ? 'Đã xác nhận' :
+                      activeBooking.status === 'Checked In' ? 'Đã check-in' :
+                      activeBooking.status === 'Completed' ? 'Hoàn thành' : 'Đã hủy'
+                    }</strong>
                   </div>
                 </div>
               </div>
