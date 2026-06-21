@@ -85,10 +85,20 @@ namespace Auto_Wash.Services
                 id = n.NotificationId.ToString(),
                 title = n.Title,
                 body = n.Message,
-                time = "Vừa xong",
+                time = GetRelativeTime(n.CreatedAt),
                 type = n.Type,
                 read = n.IsRead
             }).Cast<object>().ToList();
+        }
+
+        private static string GetRelativeTime(DateTime dateTime)
+        {
+            var span = DateTime.Now - dateTime;
+            if (span.TotalMinutes < 1) return "Vừa xong";
+            if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes} phút trước";
+            if (span.TotalHours < 24) return $"{(int)span.TotalHours} giờ trước";
+            if (span.TotalDays < 7) return $"{(int)span.TotalDays} ngày trước";
+            return dateTime.ToString("dd/MM/yyyy HH:mm");
         }
 
         public async Task<bool> MarkNotificationAsReadAsync(int customerId, int notifId)

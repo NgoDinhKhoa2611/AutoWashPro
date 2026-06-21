@@ -25,6 +25,7 @@ namespace Auto_Wash.Data
         public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; } = null!;
         public DbSet<Queue> Queues { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
+        public DbSet<Review> Reviews { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -185,6 +186,12 @@ namespace Auto_Wash.Data
                 .HasDatabaseName("idx_bookings_status");
 
             builder.Entity<Booking>()
+                .HasIndex(b => new { b.VehicleId, b.ScheduledAt })
+                .IsUnique()
+                .HasFilter("status != 5")
+                .HasDatabaseName("uq_bookings_vehicle_scheduledat_active");
+
+            builder.Entity<Booking>()
                 .HasOne(b => b.Customer)
                 .WithMany(c => c.Bookings)
                 .HasForeignKey(b => b.CustomerId)
@@ -343,6 +350,24 @@ namespace Auto_Wash.Data
                 .WithMany(c => c.Notifications)
                 .HasForeignKey(n => n.CustomerId)
                 .OnDelete(DeleteBehavior.Cascade);            
+
+            // 17. Reviews
+            builder.Entity<Review>()
+                .HasIndex(r => r.BookingId)
+                .IsUnique()
+                .HasDatabaseName("uq_reviews_bookingid");
+
+            builder.Entity<Review>()
+                .HasOne(r => r.Booking)
+                .WithOne()
+                .HasForeignKey<Review>(r => r.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Review>()
+                .HasOne(r => r.Customer)
+                .WithMany()
+                .HasForeignKey(r => r.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Configure all tables and columns to be lowercase for Supabase PostgreSQL compatibility
             foreach (var entity in builder.Model.GetEntityTypes())

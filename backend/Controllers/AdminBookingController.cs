@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Auto_Wash.Services;
+using Auto_Wash.DTOs.Booking;
 
 namespace Auto_Wash.Controllers
 {
@@ -83,22 +84,58 @@ namespace Auto_Wash.Controllers
 
         [HttpPut]
         [Route("api/admin/bookings/{id}/cancel")]
-        public async Task<IActionResult> CancelBooking(int id)
+        public async Task<IActionResult> CancelBooking(int id, [FromBody] CancelBookingDto request)
         {
-            if (!IsAdminOrStaff()) return Unauthorized(new { success = false, message = "Bạn không có quyền thực hiện hành động này!" });
+            Console.WriteLine($"[CANCEL BOOKING] BookingId={id}");
+
+            if (request == null)
+            {
+                Console.WriteLine("[CANCEL BOOKING] Request NULL");
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Không nhận được dữ liệu hủy lịch."
+                });
+            }
+
+            Console.WriteLine($"[CANCEL BOOKING] Reason={request.Reason}");
+
+            if (string.IsNullOrWhiteSpace(request.Reason))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Lý do hủy là bắt buộc."
+                });
+            }
 
             try
             {
-                var result = await _adminBookingService.CancelBookingAsync(id);
+                var result = await _adminBookingService.CancelBookingAsync(id, request.Reason);
+
                 if (!result.success)
                 {
-                    return BadRequest(new { success = false, message = result.message });
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = result.message
+                    });
                 }
-                return Ok(new { success = true, message = result.message });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = result.message
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = ex.Message });
+                Console.WriteLine($"[CANCEL BOOKING ERROR] {ex}");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = ex.Message
+                });
             }
         }
 

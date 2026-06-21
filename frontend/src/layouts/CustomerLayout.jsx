@@ -23,6 +23,7 @@ export const CustomerLayout = () => {
 
   // Lấy đường dẫn hiện tại để active link
   const activeNav = location.pathname.startsWith('/customer/dashboard') ? 'dashboard' :
+                    location.pathname.startsWith('/customer/bookings') ? 'bookings' :
                     location.pathname.startsWith('/customer/booking') ? 'booking' :
                     location.pathname.startsWith('/customer/vehicles') ? 'vehicles' :
                     location.pathname.startsWith('/customer/loyalty') ? 'loyalty' :
@@ -175,8 +176,8 @@ export const CustomerLayout = () => {
           <Link to="/customer/loyalty" className={`customer-sidebar-link ${activeNav === 'loyalty' ? 'active' : ''}`}>
             <i className="fas fa-crown"></i><span>Loyalty & Voucher</span>
           </Link>
-          <Link to="/customer/history" className={`customer-sidebar-link ${activeNav === 'history' ? 'active' : ''}`}>
-            <i className="fas fa-history"></i><span>Lịch sử & Đánh giá</span>
+          <Link to="/customer/bookings" className={`customer-sidebar-link ${activeNav === 'bookings' ? 'active' : ''}`}>
+            <i className="fas fa-calendar-check"></i><span>Lịch hẹn của tôi</span>
           </Link>
           <Link to="/customer/profile" className={`customer-sidebar-link ${activeNav === 'profile' ? 'active' : ''}`}>
             <i className="fas fa-user-cog"></i><span>Tài khoản của tôi</span>
@@ -204,9 +205,10 @@ export const CustomerLayout = () => {
             <h5 className="fw-bold text-dark mb-0">
               {activeNav === 'dashboard' ? 'Dashboard' :
                activeNav === 'booking' ? 'Đặt lịch rửa xe' :
+               activeNav === 'bookings' ? 'Lịch hẹn của tôi' :
                activeNav === 'vehicles' ? 'Phương tiện của tôi' :
                activeNav === 'loyalty' ? 'AutoWash Loyalty & Voucher' :
-               activeNav === 'history' ? 'Lịch sử rửa xe' : 'Hồ sơ của tôi'}
+               activeNav === 'history' ? 'Lịch sử & Đánh giá' : 'Hồ sơ của tôi'}
             </h5>
           </div>
 
@@ -302,9 +304,9 @@ export const CustomerLayout = () => {
             <i className="fas fa-th-large"></i>
             <span>Trang chủ</span>
           </Link>
-          <Link to="/customer/history" className={`mobile-bottom-nav-link ${activeNav === 'history' ? 'active' : ''}`}>
-            <i className="fas fa-history"></i>
-            <span>Lịch sử</span>
+          <Link to="/customer/bookings" className={`mobile-bottom-nav-link ${activeNav === 'bookings' ? 'active' : ''}`}>
+            <i className="fas fa-calendar-check"></i>
+            <span>Lịch hẹn</span>
           </Link>
 
           {/* Center Floating circular button */}

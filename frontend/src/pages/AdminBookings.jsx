@@ -20,6 +20,13 @@ export const AdminBookings = () => {
   const [bookingDetail, setBookingDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Cancel Reason Modal States
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelBookingId, setCancelBookingId] = useState(null);
+  const [cancelCustomerName, setCancelCustomerName] = useState('');
+  const [selectedReason, setSelectedReason] = useState('Hết slot trong ngày');
+  const [customReason, setCustomReason] = useState('');
+
   // Hover Preview States
   const [hoveredBookingId, setHoveredBookingId] = useState(null);
   const [previewData, setPreviewData] = useState(null);
@@ -109,31 +116,37 @@ export const AdminBookings = () => {
     }
   };
 
-  const handleCancel = async (id, name) => {
-    const performCancel = async () => {
-      try {
-        const res = await adminService.cancelBooking(id);
-        if (res && res.success) {
-          if (window.showToast) window.showToast('Đã hủy lịch đặt thành công!', 'success');
-          loadBookings();
-          if (selectedBookingId === id) {
-            loadBookingDetail(id);
-          }
-        } else {
-          if (window.showToast) window.showToast(res.message || 'Lỗi hủy lịch đặt', 'error');
-        }
-      } catch (e) {
-        console.error('Cancel error', e);
-        if (window.showToast) window.showToast('Lỗi hệ thống hủy lịch', 'error');
-      }
-    };
+  const handleCancel = (id, name) => {
+    setCancelBookingId(id);
+    setCancelCustomerName(name);
+    setSelectedReason('Hết slot trong ngày');
+    setCustomReason('');
+    setShowCancelModal(true);
+  };
 
-    if (window.showConfirm) {
-      window.showConfirm('Hủy lịch đặt', `Bạn có chắc chắn muốn hủy lịch đặt cho khách hàng ${name}? Voucher đã sử dụng (nếu có) sẽ được hoàn trả.`, performCancel);
-    } else {
-      if (window.confirm(`Bạn có chắc chắn muốn hủy lịch đặt cho khách hàng ${name}?`)) {
-        performCancel();
+  const submitCancel = async () => {
+    const finalReason = selectedReason === 'Khác' ? customReason.trim() : selectedReason;
+    if (!finalReason) {
+      if (window.showToast) window.showToast('Vui lòng nhập lý do hủy lịch!', 'warning');
+      return;
+    }
+
+    try {
+      const res = await adminService.cancelBooking(cancelBookingId, finalReason);
+      if (res && res.success) {
+        if (window.showToast) window.showToast('Đã hủy lịch đặt thành công!', 'success');
+        setShowCancelModal(false);
+        loadBookings();
+        if (selectedBookingId === cancelBookingId) {
+          loadBookingDetail(cancelBookingId);
+        }
+      } else {
+        if (window.showToast) window.showToast(res.message || 'Lỗi hủy lịch đặt', 'error');
       }
+    } catch (e) {
+      console.error('Cancel error', e);
+      const errMsg = e.response?.data?.message || 'Lỗi hệ thống hủy lịch';
+      if (window.showToast) window.showToast(errMsg, 'error');
     }
   };
 
@@ -152,7 +165,8 @@ export const AdminBookings = () => {
         }
       } catch (e) {
         console.error('Check-in error', e);
-        if (window.showToast) window.showToast('Lỗi hệ thống check-in', 'error');
+        const errMsg = e.response?.data?.message || 'Lỗi hệ thống check-in';
+        if (window.showToast) window.showToast(errMsg, 'error');
       }
     };
 
@@ -755,6 +769,15 @@ export const AdminBookings = () => {
                   </div>
                 </div>
 
+                {bookingDetail.status === 'Cancelled' && bookingDetail.cancelReason && (
+                  <div className="booking-drawer-section">
+                    <div className="booking-drawer-section-title text-danger" style={{ fontWeight: 700 }}>Lý do hủy lịch</div>
+                    <div className="p-3 border border-danger-subtle rounded-4 text-danger bg-danger-subtle bg-opacity-10 small fw-semibold">
+                      <i className="fas fa-exclamation-circle me-1.5"></i>{bookingDetail.cancelReason}
+                    </div>
+                  </div>
+                )}
+
                 {/* Section 4: Service Information */}
                 <div className="booking-drawer-section">
                   <div className="booking-drawer-section-title">Chi tiết dịch vụ đã chọn</div>
@@ -860,24 +883,42 @@ export const AdminBookings = () => {
                   </>
                 )}
                 
-                {bookingDetail.status === 'Confirmed' && (
-                  <>
-                    <button
-                      className="btn btn-danger fw-bold text-white px-4 py-2"
-                      style={{ borderRadius: '12px', fontSize: '0.8rem' }}
-                      onClick={() => handleCancel(bookingDetail.bookingId, bookingDetail.customer.fullName)}
-                    >
-                      HỦY LỊCH HẸN
-                    </button>
-                    <button
-                      className="btn btn-info fw-bold text-dark px-4 py-2"
-                      style={{ borderRadius: '12px', fontSize: '0.8rem', background: 'var(--cyan-electric)', border: 'none' }}
-                      onClick={() => handleCheckIn(bookingDetail.bookingId, bookingDetail.vehicle.licensePlate)}
-                    >
-                      CHECK-IN NGAY
-                    </button>
-                  </>
-                )}
+                {bookingDetail.status === 'Confirmed' && (() => {
+                  const bookingDate = new Date(bookingDetail.scheduledAt);
+                  bookingDate.setHours(0, 0, 0, 0);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const isFutureBooking = bookingDate > today;
+
+                  return (
+                    <>
+                      <button
+                        className="btn btn-danger fw-bold text-white px-4 py-2"
+                        style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                        onClick={() => handleCancel(bookingDetail.bookingId, bookingDetail.customer.fullName)}
+                      >
+                        HỦY LỊCH HẸN
+                      </button>
+                      <button
+                        className="btn btn-info fw-bold text-dark px-4 py-2"
+                        style={{
+                          borderRadius: '12px',
+                          fontSize: '0.8rem',
+                          background: isFutureBooking ? '#6c757d' : 'var(--cyan-electric)',
+                          color: isFutureBooking ? '#fff' : 'var(--dark)',
+                          border: 'none',
+                          cursor: isFutureBooking ? 'not-allowed' : 'pointer',
+                          opacity: isFutureBooking ? 0.65 : 1
+                        }}
+                        disabled={isFutureBooking}
+                        title={isFutureBooking ? "Chỉ có thể check-in vào ngày hẹn." : ""}
+                        onClick={() => handleCheckIn(bookingDetail.bookingId, bookingDetail.vehicle.licensePlate)}
+                      >
+                        CHECK-IN NGAY
+                      </button>
+                    </>
+                  );
+                })()}
 
                 {bookingDetail.status === 'CheckedIn' && (
                   <button
@@ -896,6 +937,77 @@ export const AdminBookings = () => {
           )}
         </div>
       </div>
+
+      {/* Cancel Reason Modal */}
+      {showCancelModal && (
+        <div className="confirm-modal-backdrop show" style={{ display: 'flex', zIndex: 1060 }}>
+          <div className="confirm-modal-card animate-confirm-in" style={{ maxWidth: '480px', width: '100%', borderRadius: '24px' }}>
+            <div className="confirm-modal-header border-bottom pb-2">
+              <h5 className="confirm-modal-title text-dark fw-bold">
+                <i className="fas fa-times-circle text-danger me-2"></i>Hủy lịch hẹn của khách
+              </h5>
+              <button type="button" className="confirm-modal-close-btn" onClick={() => setShowCancelModal(false)}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="confirm-modal-body text-start py-3">
+              <p className="text-secondary small">
+                Bạn đang thực hiện hủy lịch hẹn cho khách hàng <strong>{cancelCustomerName}</strong>. Voucher đã sử dụng (nếu có) sẽ được hoàn trả.
+              </p>
+              
+              <div className="mb-3">
+                <label className="form-label small fw-bold text-muted">LÝ DO HỦY LỊCH HẸN *</label>
+                <div className="d-flex flex-column gap-2">
+                  {['Hết slot trong ngày', 'Hệ thống bảo trì', 'Khách yêu cầu hủy', 'Khác'].map((reason) => (
+                    <label key={reason} className="d-flex align-items-center gap-2 p-2 rounded border bg-light cursor-pointer" style={{ fontSize: '0.88rem' }}>
+                      <input
+                        type="radio"
+                        name="cancelReason"
+                        value={reason}
+                        checked={selectedReason === reason}
+                        onChange={() => setSelectedReason(reason)}
+                      />
+                      <span className="text-dark fw-medium">{reason}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {selectedReason === 'Khác' && (
+                <div className="mb-3 animate-confirm-in">
+                  <label className="form-label small fw-bold text-muted">NHẬP LÝ DO HỦY CHI TIẾT *</label>
+                  <textarea
+                    className="form-control bg-light border-0 py-2.5 text-dark"
+                    rows="3"
+                    maxLength="500"
+                    placeholder="Vui lòng nhập lý do hủy lịch hẹn..."
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    required
+                  ></textarea>
+                </div>
+              )}
+            </div>
+            <div className="confirm-modal-footer d-flex gap-2">
+              <button 
+                type="button" 
+                className="confirm-cancel-btn w-50" 
+                onClick={() => setShowCancelModal(false)}
+              >
+                HỦY BỎ
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-danger fw-bold text-white px-4 py-2 w-50"
+                style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                onClick={submitCancel}
+              >
+                XÁC NHẬN HỦY
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

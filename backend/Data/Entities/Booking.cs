@@ -66,6 +66,14 @@ namespace Auto_Wash.Data.Entities
 
         public int? RatingBonusPoints { get; set; }
 
+        [MaxLength(500)]
+        public string? CancelReason { get; set; }
+
+        [MaxLength(100)]
+        public string? CancelledBy { get; set; }
+
+        public DateTime? CancelledAt { get; set; }
+
         // Navigation properties
         [ForeignKey("CustomerId")]
         public virtual Customer Customer { get; set; } = null!;

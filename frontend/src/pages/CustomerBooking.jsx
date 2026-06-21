@@ -35,10 +35,16 @@ export const CustomerBooking = () => {
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [voucherModalOpen, setVoucherModalOpen] = useState(false);
   const [myVouchers, setMyVouchers] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [bookingDaysWindow, setBookingDaysWindow] = useState(7);
   const [minDateStr, setMinDateStr] = useState('');
   const [maxDateStr, setMaxDateStr] = useState('');
+
+  const [slotsStatus, setSlotsStatus] = useState({});
+  const [occupiedSlots, setOccupiedSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [earliestAvailableDate, setEarliestAvailableDate] = useState(null);
 
   useEffect(() => {
     // Determine booking days window based on membership tier
@@ -172,23 +178,63 @@ export const CustomerBooking = () => {
     fetchVouchers();
   }, [user]);
 
+  // Load occupied slots for selected date
+  useEffect(() => {
+    if (!bookingDate) return;
+    const fetchSlots = async () => {
+      setLoadingSlots(true);
+      setEarliestAvailableDate(null);
+      try {
+        const res = await customerService.getOccupiedSlots(bookingDate);
+        if (res.success) {
+          setSlotsStatus(res.slotsStatus || {});
+          setOccupiedSlots(res.occupiedSlots || []);
+        }
+      } catch (err) {
+        console.error("Error fetching slots status:", err);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    fetchSlots();
+  }, [bookingDate]);
+
   const availableTimeSlots = useMemo(() => {
     const today = new Date();
     const todayStr = today.getFullYear() + '-' + 
       String(today.getMonth() + 1).padStart(2, '0') + '-' + 
       String(today.getDate()).padStart(2, '0');
 
+    let slots = DEFAULT_TIME_SLOTS;
     if (bookingDate === todayStr) {
       const minAllowedTime = new Date(today.getTime() + 15 * 60 * 1000);
-      return DEFAULT_TIME_SLOTS.filter(t => {
+      slots = DEFAULT_TIME_SLOTS.filter(t => {
         const [hours, minutes] = t.split(':').map(Number);
         const slotDate = new Date();
         slotDate.setHours(hours, minutes, 0, 0);
         return slotDate > minAllowedTime;
       });
     }
-    return DEFAULT_TIME_SLOTS;
-  }, [bookingDate]);
+    // Filter out occupied slots
+    return slots.filter(t => !occupiedSlots.includes(t));
+  }, [bookingDate, occupiedSlots]);
+
+  // Find earliest available date if this date has no slots
+  useEffect(() => {
+    if (!loadingSlots && bookingDate && availableTimeSlots.length === 0) {
+      const fetchEarliestDate = async () => {
+        try {
+          const res = await customerService.getEarliestAvailableDate(bookingDate, bookingDaysWindow);
+          if (res.success && res.earliestDate) {
+            setEarliestAvailableDate(res.earliestDate);
+          }
+        } catch (err) {
+          console.error("Error fetching earliest available date:", err);
+        }
+      };
+      fetchEarliestDate();
+    }
+  }, [bookingDate, availableTimeSlots, loadingSlots, bookingDaysWindow]);
 
   useEffect(() => {
     if (bookingTime && bookingDate) {
@@ -279,6 +325,8 @@ export const CustomerBooking = () => {
 
   // Confirm booking
   const handleConfirmBooking = async () => {
+    if (isSubmitting) return;
+
     if (!selectedVehicle) {
       if (window.showToast) window.showToast('Vui lòng chọn phương tiện!', 'warning');
       return;
@@ -291,6 +339,20 @@ export const CustomerBooking = () => {
       if (window.showToast) window.showToast('Vui lòng chọn ngày và khung giờ!', 'warning');
       return;
     }
+
+    if (bookingDate) {
+      const selDate = new Date(bookingDate + 'T00:00:00');
+      const minD = new Date(minDateStr + 'T00:00:00');
+      const maxD = new Date(maxDateStr + 'T00:00:00');
+      if (selDate < minD || selDate > maxD) {
+        if (window.showToast) {
+          window.showToast(`Ngày chọn không hợp lệ. Hạng thành viên của bạn chỉ được đặt lịch từ ${minD.toLocaleDateString('vi-VN')} đến ${maxD.toLocaleDateString('vi-VN')}.`, 'warning');
+        }
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
 
     try {
       // Call real backend booking API (do not send final price or points earned)
@@ -306,15 +368,15 @@ export const CustomerBooking = () => {
 
       if (result.success) {
         if (window.showToast) window.showToast(`Đặt lịch thành công cho xe ${selectedVehicle}!`, 'success');
-        setTimeout(() => {
-          navigate('/customer/dashboard');
-        }, 1200);
+        navigate('/customer/dashboard');
       } else {
         if (window.showToast) window.showToast(result.message || 'Đặt lịch thất bại!', 'warning');
+        setIsSubmitting(false);
       }
     } catch (err) {
       console.error(err);
       if (window.showToast) window.showToast('Đặt lịch thất bại. Vui lòng thử lại!', 'warning');
+      setIsSubmitting(false);
     }
   };
 
@@ -466,24 +528,54 @@ export const CustomerBooking = () => {
               <div className="col-md-6">
                 <label className="form-label small fw-bold text-secondary mb-2">KHUNG GIỜ</label>
                 <div className="row g-2" id="time-slots">
-                  {availableTimeSlots.length === 0 ? (
-                    <div className="col-12 text-center text-danger py-2 small fw-bold">
-                      Không còn khung giờ trống cho hôm nay. Vui lòng chọn ngày khác!
+                  {loadingSlots ? (
+                    <div className="col-12 text-center py-4 small text-secondary">
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Đang tải danh sách slot...
+                    </div>
+                  ) : availableTimeSlots.length === 0 ? (
+                    <div className="col-12 text-start">
+                      <div className="text-danger py-3 px-3 bg-danger bg-opacity-10 border border-danger border-opacity-20 rounded-3 small fw-bold mb-2">
+                        <i className="fas fa-exclamation-triangle me-1.5 animate-bounce"></i>
+                        {bookingDate === minDateStr 
+                          ? "Hôm nay đã hết slot. Vui lòng chọn ngày khác." 
+                          : "Tất cả khung giờ ngày này đã được đặt. Vui lòng chọn ngày khác."}
+                      </div>
+                      {earliestAvailableDate && (
+                        <div className="p-3 bg-info bg-opacity-10 border border-info border-opacity-20 rounded-3 small text-secondary">
+                          <i className="fas fa-info-circle text-info me-1.5"></i>
+                          Ngày sớm nhất có slot trống: <strong className="text-dark">{earliestAvailableDate.split('-').reverse().join('/')}</strong>.
+                          <button 
+                            type="button" 
+                            className="btn btn-link p-0 ms-2 text-cyan fw-bold text-decoration-none small align-baseline"
+                            style={{ fontSize: '0.78rem' }}
+                            onClick={() => setBookingDate(earliestAvailableDate)}
+                          >
+                            [Chọn ngày này]
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    availableTimeSlots.map((t) => (
-                      <div key={t} className="col-4">
-                        <div
-                          className={`text-center py-2.5 rounded-3 border fw-bold selectable-card ${
-                            bookingTime === t ? 'selected' : 'bg-light border-light text-muted'
-                          }`}
-                          style={{ cursor: 'pointer', fontSize: '0.8rem' }}
-                          onClick={() => setBookingTime(t)}
-                        >
-                          {t}
+                    availableTimeSlots.map((t) => {
+                      const remaining = slotsStatus[t] ?? 3;
+                      return (
+                        <div key={t} className="col-4">
+                          <div
+                            className={`text-center py-2 rounded-3 border fw-bold selectable-card ${
+                              bookingTime === t ? 'selected' : 'bg-light border-light text-muted'
+                            }`}
+                            style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '2px' }}
+                            onClick={() => setBookingTime(t)}
+                          >
+                            <span style={{ fontSize: '0.82rem' }}>{t}</span>
+                            <span style={{ fontSize: '0.62rem', fontWeight: 'normal', opacity: 0.75 }}>
+                              {remaining > 0 ? `Còn ${remaining} slot` : 'Hết slot'}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -643,19 +735,28 @@ export const CustomerBooking = () => {
 
             <button
               onClick={handleConfirmBooking}
-              disabled={vehicles.length === 0}
+              disabled={vehicles.length === 0 || isSubmitting}
               className="app-btn-primary w-100 border-0 fw-bold"
               style={{
                 borderRadius: '12px',
                 padding: '14px',
                 fontSize: '0.88rem',
                 letterSpacing: '0.5px',
-                opacity: vehicles.length === 0 ? 0.45 : 1,
-                cursor: vehicles.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: (vehicles.length === 0 || isSubmitting) ? 0.45 : 1,
+                cursor: (vehicles.length === 0 || isSubmitting) ? 'not-allowed' : 'pointer',
                 boxShadow: '0 6px 20px rgba(14,165,233,0.28)'
               }}
             >
-              XÁC NHẬN ĐẶT LỊCH <i className="fas fa-arrow-right ms-2"></i>
+              {isSubmitting ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  ĐANG TẠO LỊCH...
+                </>
+              ) : (
+                <>
+                  XÁC NHẬN ĐẶT LỊCH <i className="fas fa-arrow-right ms-2"></i>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -708,6 +809,29 @@ export const CustomerBooking = () => {
             <div className="confirm-modal-footer justify-content-center">
               <button className="confirm-cancel-btn w-50" onClick={() => setVoucherModalOpen(false)}>ĐÓNG</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div 
+          className="confirm-modal-backdrop show" 
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            zIndex: 9999,
+            backgroundColor: 'rgba(15, 23, 42, 0.85)'
+          }}
+        >
+          <div className="text-center p-4 bg-white rounded-4 shadow-lg animate-confirm-in" style={{ maxWidth: '400px', width: '90%' }}>
+            <div className="spinner-border text-info mb-4" role="status" style={{ width: '3.5rem', height: '3.5rem', borderWidth: '4px' }}>
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <h4 className="fw-bold text-dark mb-2">Đang tạo lịch hẹn...</h4>
+            <p className="text-secondary small mb-0">Vui lòng không đóng trình duyệt.</p>
           </div>
         </div>
       )}

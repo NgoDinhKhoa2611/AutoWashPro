@@ -1,405 +1,255 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/history.css';
 
-const STEP_BADGES = ['Đã nhận diện LPR', 'Đang phun rửa vỏ', 'Đang sấy khí áp lực', 'Đã rửa sạch & Check-out'];
-
 export const CustomerHistory = () => {
+  const navigate = useNavigate();
   const [history, setHistory] = useState([]);
-  const [activeBooking, setActiveBooking] = useState(null);
-  const [washStep, setWashStep] = useState(0);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Stats
   const [totalWashes, setTotalWashes] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
-
-  // Survey modal state
-  const [surveyModalOpen, setSurveyModalOpen] = useState(false);
-  const [surveyTargetId, setSurveyTargetId] = useState(null);
-  const [surveyRating, setSurveyRating] = useState(5);
-  const [surveyEmoji, setSurveyEmoji] = useState(5);
-  const [surveyTags, setSurveyTags] = useState([]);
-  const [surveyText, setSurveyText] = useState('');
-  const [surveySuccess, setSurveySuccess] = useState(false);
-  const [submittingSurvey, setSubmittingSurvey] = useState(false);
+  const [avgRating, setAvgRating] = useState(0);
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const response = await customerService.getWashHistory();
-        if (response.success && response.history) {
-          const list = response.history.map(b => ({
-            id: b.id,
-            date: b.bookingDate.split('-').reverse().join('/'),
-            plate: b.vehicle,
-            type: 'Ô tô',
-            service: b.mainService + (b.addons && b.addons.length > 0 ? ` + ${b.addons.join(', ')}` : ''),
-            price: b.price,
-            points: b.points,
-            status: b.status === 'Pending Confirmation' ? 'Chờ xác nhận' :
-                    b.status === 'Confirmed' ? 'Đã xác nhận' :
-                    b.status === 'Checked In' ? 'Đã check-in' :
-                    b.status === 'Completed' ? 'Hoàn tất' :
-                    b.status === 'Cancelled' ? 'Đã hủy' : 'Đang xử lý',
-            surveyStatus: 'pending'
-          }));
-          setHistory(list);
-          setTotalWashes(list.length);
-          setTotalSpent(list.reduce((s, i) => s + i.price, 0));
-          setTotalPoints(list.reduce((s, i) => s + i.points, 0));
-        } else {
-          setHistory([]);
+        // 1. Fetch bookings
+        const bookingRes = await customerService.getWashHistory();
+        let bookingList = [];
+        if (bookingRes.success && bookingRes.history) {
+          // Filter to show only Completed and Cancelled bookings
+          bookingList = bookingRes.history.filter(b => 
+            b.status === 'Completed' || b.status === 'Cancelled'
+          );
+          setHistory(bookingList);
         }
+
+        // 2. Fetch reviews
+        const reviewsRes = await customerService.getCustomerReviews();
+        let reviewsList = [];
+        if (reviewsRes.success && reviewsRes.reviews) {
+          reviewsList = reviewsRes.reviews;
+          setReviews(reviewsList);
+        }
+
+        // 3. Calculate stats based on COMPLETED bookings
+        const completedBookings = bookingList.filter(b => b.status === 'Completed');
+        setTotalWashes(completedBookings.length);
+        setTotalSpent(completedBookings.reduce((s, b) => s + Number(b.price), 0));
+        setTotalPoints(completedBookings.reduce((s, b) => s + Number(b.points), 0));
+
+        // 4. Calculate average rating
+        if (reviewsList.length > 0) {
+          const sum = reviewsList.reduce((s, r) => s + r.rating, 0);
+          setAvgRating((sum / reviewsList.length).toFixed(1));
+        } else {
+          setAvgRating('0.0');
+        }
+
       } catch (err) {
-        console.error(err);
-        setHistory([]);
+        console.error('Error fetching history page data:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    const fetchActive = async () => {
-      try {
-        const response = await customerService.getActiveBooking();
-        if (response.success && response.booking) {
-          setActiveBooking(response.booking);
-          setWashStep(response.washStep || 0);
-        } else {
-          setActiveBooking(null);
-        }
-      } catch (err) {
-        console.error(err);
-        setActiveBooking(null);
-      }
-    };
-
-    fetchHistory();
-    fetchActive();
+    fetchData();
   }, []);
 
-  const handleOpenSurvey = (id) => {
-    setSurveyTargetId(id);
-    setSurveyRating(5);
-    setSurveyEmoji(5);
-    setSurveyTags([]);
-    setSurveyText('');
-    setSurveySuccess(false);
-    setSurveyModalOpen(true);
+  // Find if a booking has an existing review
+  const getBookingReview = (bookingId) => {
+    return reviews.find(r => r.bookingId === parseInt(bookingId, 10));
   };
-
-  const handleToggleTag = (tag) => {
-    if (surveyTags.includes(tag)) {
-      setSurveyTags(surveyTags.filter(t => t !== tag));
-    } else {
-      setSurveyTags([...surveyTags, tag]);
-    }
-  };
-
-  const handleSubmitSurvey = () => {
-    if (!surveyTargetId) return;
-    setSubmittingSurvey(true);
-
-    setTimeout(() => {
-      // Mark history item as rated in local state
-      const updatedHistory = history.map(item => {
-        if (item.id === surveyTargetId) {
-          return { ...item, surveyStatus: 'rated', rating: surveyRating };
-        }
-        return item;
-      });
-      setHistory(updatedHistory);
-
-      setSubmittingSurvey(false);
-      setSurveySuccess(true);
-
-      setTimeout(() => {
-        setSurveyModalOpen(false);
-        setSurveyTargetId(null);
-      }, 2000);
-    }, 1200);
-  };
-
-  const availableTags = ['Rửa sạch bóng', 'Thao tác nhanh', 'Nhân viên thân thiện', 'Giá hợp lý', 'VIP bypass tốt'];
 
   return (
     <div className="container-fluid py-4">
-      {/* Active wash progress tracking header */}
-      {activeBooking && (
-        <div className="app-card border-0 shadow-sm p-4 bg-white mb-4 rounded-4 animate-up" id="history-active-block">
-          <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div className="d-flex align-items-center gap-3 text-start">
-              <div className="rounded-circle d-flex align-items-center justify-content-center bg-cyan-light text-cyan" style={{ width: '48px', height: '48px', flexShrink: 0 }}>
-                <i className="fas fa-satellite-dish"></i>
-              </div>
-              <div>
-                <h6 className="fw-bold mb-0 text-dark" id="active-plate">{activeBooking.vehicle}</h6>
-                <small className="text-secondary" id="active-service">
-                  {activeBooking.mainService}
-                  {activeBooking.addons?.length ? ` + ${activeBooking.addons.join(', ')}` : ''}
-                </small>
-              </div>
-            </div>
-            <div className="text-end">
-              <small className="text-muted" style={{ fontSize: '0.72rem' }}>
-                Giờ hẹn: <strong id="active-time">{activeBooking.bookingTime}</strong> • <span className="badge bg-info bg-opacity-10 text-cyan px-2 py-0.5 rounded" id="active-step-badge">{STEP_BADGES[Math.min(washStep, 3)]}</span>
-              </small>
-            </div>
-          </div>
+      {/* Top Header Section */}
+      <div className="d-flex justify-content-between align-items-center mb-4 text-start">
+        <div>
+          <h4 className="fw-bold text-dark mb-1">Lịch sử & Đánh giá</h4>
+          <p className="text-secondary small mb-0">Xem lại các lịch hẹn đã hoàn tất, đã hủy và lịch sử đánh giá trạm rửa xe của bạn.</p>
         </div>
-      )}
-
-      {/* Stats row */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-4">
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
-            <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-secondary" style={{ width: '46px', height: '46px', flexShrink: 0 }}>
-              <i className="fas fa-hands-wash"></i>
-            </div>
-            <div className="text-start">
-              <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>TỔNG SỐ LẦN RỬA</small>
-              <h5 className="fw-bold text-dark mb-0" id="stat-wash-count">{totalWashes} lần</h5>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
-            <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-cyan" style={{ width: '46px', height: '46px', flexShrink: 0 }}>
-              <i className="fas fa-wallet"></i>
-            </div>
-            <div className="text-start">
-              <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>TỔNG CHI TIÊU TÍCH LŨY</small>
-              <h5 className="fw-bold text-cyan mb-0" id="stat-total-spent">{totalSpent.toLocaleString()}đ</h5>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
-            <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-warning" style={{ width: '46px', height: '46px', flexShrink: 0 }}>
-              <i className="fas fa-coins"></i>
-            </div>
-            <div className="text-start">
-              <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>ĐIỂM THƯỞNG NHẬN ĐƯỢC</small>
-              <h5 className="fw-bold text-warning mb-0" id="stat-total-pts">+{totalPoints} PTS</h5>
-            </div>
-          </div>
-        </div>
+        <button 
+          className="btn btn-outline-cyan px-4 py-2 fw-bold text-cyan"
+          style={{ borderRadius: '12px', border: '1.5px solid var(--cyan-electric)' }}
+          onClick={() => navigate('/customer/bookings')}
+        >
+          <i className="fas fa-calendar-check me-1.5"></i> Quản lý lịch hẹn
+        </button>
       </div>
 
-      {/* History Grid */}
-      <div className="row">
-        <div className="col-12 text-start">
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              LỊCH SỬ CHĂM SÓC XE CỦA BẠN (<span id="history-count">{history.length}</span>)
-            </h5>
-
-            <div className="d-flex flex-column gap-3" id="history-list">
-              {history.length === 0 ? (
-                <div className="empty-state-container text-center py-5 text-muted">
-                  <div className="empty-state-icon mb-3"><i className="fas fa-history fa-2x"></i></div>
-                  <h5 className="fw-bold mb-2">Bạn chưa có lịch sử sử dụng dịch vụ</h5>
-                  <p className="small mb-0">Sau khi hoàn tất dịch vụ, lịch sử sẽ tự động xuất hiện tại đây.</p>
+      {/* Loading state */}
+      {loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-info mb-2" role="status">
+            <span className="visually-hidden">Đang tải...</span>
+          </div>
+          <p className="text-secondary small">Đang tải lịch sử giao dịch...</p>
+        </div>
+      ) : (
+        <>
+          {/* Stats Row */}
+          <div className="row g-3 mb-4 text-start">
+            {/* Total Washes */}
+            <div className="col-6 col-md-3">
+              <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
+                <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-cyan" style={{ width: '46px', height: '46px', flexShrink: 0 }}>
+                  <i className="fas fa-hands-wash"></i>
                 </div>
-              ) : (
-                history.map((item) => (
-                  <div key={item.id} className="app-card border border-light p-4 bg-white rounded-4 shadow-sm" id={`hist-card-${item.id}`}>
-                    <div className="d-flex flex-wrap justify-content-between align-items-start border-bottom pb-3 mb-3 gap-2">
-                      <div>
-                        <div className="fw-bold fs-6" style={{ color: 'var(--navy-dark)' }}>{item.plate}</div>
-                        <small className="text-muted" style={{ fontSize: '0.75rem' }}>{item.date} • {item.type}</small>
-                      </div>
-                      <span className={`badge px-3 py-2 rounded-pill small fw-bold ${
-                        item.status === 'Hoàn tất' ? 'bg-success bg-opacity-10 text-success' :
-                        item.status === 'Đã hủy' ? 'bg-danger bg-opacity-10 text-danger' :
-                        item.status === 'Chờ xác nhận' ? 'bg-warning bg-opacity-15 text-warning' :
-                        item.status === 'Đã xác nhận' ? 'bg-primary bg-opacity-10 text-primary' :
-                        'bg-info bg-opacity-10 text-info'
-                      }`}>
-                        <i className={`fas me-1 ${
-                          item.status === 'Hoàn tất' ? 'fa-check-circle' :
-                          item.status === 'Đã hủy' ? 'fa-times-circle' :
-                          item.status === 'Chờ xác nhận' ? 'fa-hourglass-start' :
-                          item.status === 'Đã xác nhận' ? 'fa-calendar-check' :
-                          'fa-sign-in-alt'
-                        }`}></i>{item.status}
-                      </span>
-                    </div>
+                <div>
+                  <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>TỔNG LẦN RỬA</small>
+                  <h5 className="fw-bold text-dark mb-0">{totalWashes} lần</h5>
+                </div>
+              </div>
+            </div>
 
-                    <div className="row g-3 mb-3">
-                      <div className="col-6">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Gói dịch vụ</small>
-                        <span className="fw-bold" style={{ color: 'var(--navy-dark)', fontSize: '0.85rem' }}>{item.service}</span>
-                      </div>
-                      <div className="col-6 text-end">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Chi phí</small>
-                        <span className="fw-bold text-cyan" style={{ fontSize: '1rem' }}>{Number(item.price).toLocaleString()}đ</span>
-                      </div>
-                    </div>
+            {/* Total Spent */}
+            <div className="col-6 col-md-3">
+              <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
+                <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-success" style={{ width: '46px', height: '46px', flexShrink: 0 }}>
+                  <i className="fas fa-wallet"></i>
+                </div>
+                <div>
+                  <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>TỔNG CHI TIÊU</small>
+                  <h5 className="fw-bold text-success mb-0">{totalSpent.toLocaleString()}đ</h5>
+                </div>
+              </div>
+            </div>
 
-                    <div className="d-flex flex-wrap align-items-center justify-content-between pt-3 border-top gap-2">
-                      <span className="text-muted small" style={{ fontSize: '0.78rem' }}>
-                        Điểm nhận được: <strong className="text-warning">+{item.points} PTS</strong>
-                      </span>
+            {/* Total Points */}
+            <div className="col-6 col-md-3">
+              <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
+                <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-warning" style={{ width: '46px', height: '46px', flexShrink: 0 }}>
+                  <i className="fas fa-coins"></i>
+                </div>
+                <div>
+                  <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>ĐIỂM ĐÃ NHẬN</small>
+                  <h5 className="fw-bold text-warning mb-0">+{totalPoints} PTS</h5>
+                </div>
+              </div>
+            </div>
 
-                      {item.status === 'Hoàn tất' && item.surveyStatus === 'pending' ? (
-                        <button
-                          className="app-btn-primary py-2 px-3 shadow-none border-0"
-                          style={{ fontSize: '0.78rem', borderRadius: '10px' }}
-                          onClick={() => handleOpenSurvey(item.id)}
-                        >
-                          <i className="fas fa-comment-alt me-1"></i> ĐÁNH GIÁ
-                        </button>
-                      ) : (
-                        <div className="d-flex align-items-center gap-1 text-warning" style={{ fontSize: '0.82rem' }}>
-                          <span className="text-muted me-1">Đánh giá:</span>
-                          {[1, 2, 3, 4, 5].map(s => (
-                            <i key={s} className={`${s <= (item.rating || 5) ? 'fas' : 'far'} fa-star`} style={{ color: '#ffcf33', fontSize: '0.82rem' }}></i>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
+            {/* Average Rating */}
+            <div className="col-6 col-md-3">
+              <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
+                <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-danger" style={{ width: '46px', height: '46px', flexShrink: 0 }}>
+                  <i className="fas fa-star" style={{ color: '#ffcf33' }}></i>
+                </div>
+                <div>
+                  <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>ĐÁNH GIÁ TRUNG BÌNH</small>
+                  <h5 className="fw-bold text-dark mb-0">{avgRating} / 5.0</h5>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Survey Modal */}
-      {surveyModalOpen && (
-        <div id="survey-modal-backdrop" className="confirm-modal-backdrop show" style={{ display: 'flex' }}>
-          <div className="confirm-modal-card animate-confirm-in" style={{ maxWidth: '440px', width: '100%' }}>
-            <div className="confirm-modal-header">
-              <h5 className="confirm-modal-title">Khảo sát & Đánh giá dịch vụ</h5>
-              <button type="button" className="confirm-modal-close-btn" onClick={() => setSurveyModalOpen(false)}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
+          {/* History & Review List */}
+          <div className="row text-start">
+            <div className="col-12">
+              <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4">
+                <h5 className="fw-bold mb-4 text-dark" style={{ fontSize: '0.95rem' }}>
+                  <i className="fas fa-list-ul text-cyan me-2"></i>DANH SÁCH LỊCH SỬ CHĂM SÓC XE ({history.length})
+                </h5>
 
-            {surveySuccess ? (
-              <div className="confirm-modal-body text-center py-5" id="survey-success-view">
-                <i className="fas fa-check-circle fa-4x text-success mb-3 animate-pulse"></i>
-                <h5 className="fw-bold text-success">GỬI PHẢN HỒI THÀNH CÔNG!</h5>
-                <p className="text-muted small mb-0 mt-2">Cảm ơn bạn đã chia sẻ trải nghiệm dịch vụ.</p>
-              </div>
-            ) : (
-              <div className="confirm-modal-body" id="survey-form-view">
-                {/* Emojis selection */}
-                <div className="d-flex justify-content-around mb-4">
-                  {[1, 2, 3, 4, 5].map(val => {
-                    const emojis = ['', '😢', '😐', '🙂', '😊', '😍'];
-                    const labels = ['', 'Tệ', 'Kém', 'Bình thường', 'Hài lòng', 'Tuyệt vời'];
-                    return (
-                      <div
-                        key={val}
-                        className="survey-emoji-item text-center"
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => {
-                          setSurveyEmoji(val);
-                          setSurveyRating(val);
-                        }}
-                      >
-                        <div
-                          className="survey-emoji"
-                          style={{
-                            fontSize: '2rem',
-                            transition: 'all 0.2s',
-                            transform: val === surveyEmoji ? 'scale(1.25)' : 'scale(1)',
-                            filter: val === surveyEmoji ? 'none' : 'grayscale(60%)'
-                          }}
-                        >
-                          {emojis[val]}
-                        </div>
-                        <small
-                          className="survey-emoji-label d-block mt-1"
-                          style={{
-                            fontSize: '0.65rem',
-                            color: val === surveyEmoji ? 'var(--cyan-electric)' : '#94a3b8',
-                            fontWeight: val === surveyEmoji ? '700' : '400'
-                          }}
-                        >
-                          {labels[val]}
-                        </small>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Stars */}
-                <div className="text-center mb-3">
-                  {[1, 2, 3, 4, 5].map(val => (
-                    <i
-                      key={val}
-                      className="survey-star fas fa-star fa-2x mx-1"
-                      style={{
-                        cursor: 'pointer',
-                        color: val <= surveyRating ? '#ffcf33' : '#cbd5e1',
-                        textShadow: val <= surveyRating ? '0 0 12px rgba(255,207,51,0.4)' : 'none'
-                      }}
-                      onClick={() => setSurveyRating(val)}
-                    ></i>
-                  ))}
-                </div>
-
-                {/* Quick tags */}
-                <div className="mb-3 text-start">
-                  <label className="form-label small fw-bold text-muted mb-2">ĐÁNH GIÁ NHANH</label>
-                  <div className="d-flex flex-wrap gap-1.5">
-                    {availableTags.map((tag, idx) => {
-                      const isSelected = surveyTags.includes(tag);
+                <div className="d-flex flex-column gap-3">
+                  {history.length === 0 ? (
+                    <div className="text-center py-5 text-muted">
+                      <div className="empty-state-icon mb-3"><i className="fas fa-history fa-2x"></i></div>
+                      <h5 className="fw-bold mb-2">Bạn chưa có giao dịch hoàn thành nào</h5>
+                      <p className="small mb-0">Sau khi rửa xe xong hoặc hủy lịch hẹn, thông tin sẽ xuất hiện tại đây.</p>
+                    </div>
+                  ) : (
+                    history.map((b) => {
+                      const hasReviewObj = getBookingReview(b.id);
                       return (
-                        <span
-                          key={idx}
-                          className="survey-tag badge border py-2 px-3 font-semibold"
-                          style={{
-                            cursor: 'pointer',
-                            fontSize: '0.72rem',
-                            borderRadius: '20px',
-                            background: isSelected ? 'var(--navy-dark)' : '#f8fafc',
-                            color: isSelected ? 'var(--cyan-electric)' : '#64748b',
-                            borderColor: isSelected ? 'var(--cyan-electric)' : '#e2e8f0',
-                            boxShadow: isSelected ? 'var(--cyan-glow)' : 'none'
-                          }}
-                          onClick={() => handleToggleTag(tag)}
-                        >
-                          {tag}
-                        </span>
+                        <div key={b.id} className="app-card border border-light p-4 bg-white rounded-4 shadow-sm hover-shadow transition-all">
+                          <div className="d-flex flex-wrap justify-content-between align-items-start border-bottom pb-3 mb-3 gap-2">
+                            <div>
+                              <div className="fw-bold fs-6 text-dark font-monospace">{b.vehicle}</div>
+                              <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                Ngày đặt: {b.bookingDate.split('-').reverse().join('/')} • Giờ: {b.bookingTime} • Mã: #{b.id}
+                              </small>
+                            </div>
+                            <span className={`badge px-3 py-2 rounded-pill small fw-bold ${
+                              b.status === 'Completed' || b.status === 'Completed' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'
+                            }`}>
+                              <i className={`fas me-1 ${
+                                b.status === 'Completed' || b.status === 'Completed' ? 'fa-check-circle' : 'fa-times-circle'
+                              }`}></i>
+                              {b.status === 'Completed' || b.status === 'Completed' ? 'Hoàn thành' : 'Đã hủy'}
+                            </span>
+                          </div>
+
+                          <div className="row g-3 mb-3">
+                            <div className="col-6">
+                              <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Gói dịch vụ</small>
+                              <span className="fw-bold text-dark" style={{ fontSize: '0.85rem' }}>
+                                {b.mainService}
+                                {b.addons && b.addons.length > 0 ? ` + ${b.addons.join(', ')}` : ''}
+                              </span>
+                            </div>
+                            <div className="col-6 text-end">
+                              <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Chi phí</small>
+                              <span className="fw-bold text-cyan" style={{ fontSize: '1rem' }}>{Number(b.price).toLocaleString()}đ</span>
+                            </div>
+                          </div>
+
+                          {/* Review block */}
+                          <div className="d-flex flex-wrap align-items-center justify-content-between pt-3 border-top gap-2">
+                            <span className="text-muted small" style={{ fontSize: '0.78rem' }}>
+                              Điểm thưởng: <strong className="text-warning">+{b.status === 'Completed' ? b.points : 0} PTS</strong>
+                            </span>
+
+                            {b.status === 'Completed' ? (
+                              hasReviewObj ? (
+                                <div className="p-3 bg-light rounded-4 w-100 mt-2 border border-light">
+                                  <div className="d-flex justify-content-between align-items-center mb-1.5">
+                                    <div className="text-warning">
+                                      {[1, 2, 3, 4, 5].map(s => (
+                                        <i key={s} className={`${s <= hasReviewObj.rating ? 'fas' : 'far'} fa-star`} style={{ fontSize: '0.75rem' }}></i>
+                                      ))}
+                                    </div>
+                                    <small className="text-muted" style={{ fontSize: '0.65rem' }}>
+                                      Đánh giá ngày: {new Date(hasReviewObj.createdAt).toLocaleDateString('vi-VN')}
+                                    </small>
+                                  </div>
+                                  <p className="text-dark small mb-0 italic" style={{ fontSize: '0.78rem', wordBreak: 'break-word' }}>
+                                    "{hasReviewObj.comment || 'Không có bình luận.'}"
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="d-flex align-items-center gap-2">
+                                  <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Chưa có đánh giá</span>
+                                  <button
+                                    className="btn btn-sm btn-outline-cyan px-3 py-1 fw-bold small"
+                                    style={{ borderRadius: '8px', fontSize: '0.72rem' }}
+                                    onClick={() => navigate('/customer/bookings')}
+                                  >
+                                    Đánh giá ngay
+                                  </button>
+                                </div>
+                              )
+                            ) : null}
+                          </div>
+                        </div>
                       );
-                    })}
-                  </div>
-                </div>
-
-                {/* Comment box */}
-                <div className="mb-3 text-start">
-                  <label className="form-label small fw-bold text-muted">Ý KIẾN KHÁC (TÙY CHỌN)</label>
-                  <textarea
-                    id="survey-review-text"
-                    className="form-control bg-light border-0 py-2.5 rounded-3"
-                    rows="3"
-                    placeholder="Gợi ý cải tiến chất lượng dịch vụ..."
-                    value={surveyText}
-                    onChange={(e) => setSurveyText(e.target.value)}
-                  ></textarea>
-                </div>
-
-                <div className="d-flex gap-2">
-                  <button className="app-btn-secondary w-50 py-2.5" onClick={() => setSurveyModalOpen(false)}>HỦY BỎ</button>
-                  <button
-                    className="app-btn-primary w-50 py-2.5 text-dark fw-bold"
-                    id="survey-submit-btn"
-                    disabled={submittingSurvey}
-                    onClick={handleSubmitSurvey}
-                  >
-                    {submittingSurvey ? 'ĐANG GỬI...' : 'GỬI ĐÁNH GIÁ'}
-                  </button>
+                    })
+                  )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
 };
+
 export default CustomerHistory;

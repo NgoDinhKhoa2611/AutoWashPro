@@ -18,6 +18,7 @@ const STAFF_LIST = ['Nguyễn Văn A', 'Trần Văn B', 'Lê Văn C', 'Phạm H�
 export const AdminQueue = () => {
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submittingIds, setSubmittingIds] = useState(new Set());
 
   // Form check-in walk-in
   const [walkInPlate, setWalkInPlate] = useState('');
@@ -131,6 +132,12 @@ export const AdminQueue = () => {
 
   // Move vehicle to next Kanban column
   const handleAdvanceColumn = async (queueId) => {
+    if (submittingIds.has(queueId)) return;
+    setSubmittingIds(prev => {
+      const next = new Set(prev);
+      next.add(queueId);
+      return next;
+    });
     try {
       if (typeof queueId === 'number' || !isNaN(queueId)) {
         const response = await adminService.advanceQueue(queueId);
@@ -145,12 +152,19 @@ export const AdminQueue = () => {
       console.error(err);
       const errMsg = err.response?.data?.message || 'Lỗi kết nối khi cập nhật hàng đợi!';
       if (window.showToast) window.showToast(errMsg, 'error');
+    } finally {
+      setSubmittingIds(prev => {
+        const next = new Set(prev);
+        next.delete(queueId);
+        return next;
+      });
     }
   };
 
   // Complete a specific step in the detail list
   const handleToggleStepCompleted = async (stepIdx) => {
     if (!selectedVehicle) return;
+    if (submittingIds.has(selectedVehicle.queueId)) return;
 
     const updatedServices = selectedVehicle.services.map((s, idx) => {
       if (idx === stepIdx) return { ...s, status: 'Completed' };
@@ -160,13 +174,20 @@ export const AdminQueue = () => {
 
     let nextStepIndex = stepIdx + 1;
     let newStatus = selectedVehicle.status;
+    const addonsCount = selectedVehicle.addons?.length || 0;
 
     // Map column status based on the current completed step
-    if (nextStepIndex === 1) newStatus = 'LPR_Scan';
-    else if (nextStepIndex === 2) newStatus = 'Washing';
-    else if (nextStepIndex >= 3 && nextStepIndex < updatedServices.length - 2) newStatus = 'Addon_Processing';
-    else if (nextStepIndex === updatedServices.length - 2) newStatus = 'Drying';
-    else if (nextStepIndex === updatedServices.length - 1) newStatus = 'Completed';
+    if (nextStepIndex === 1) {
+      newStatus = 'LPR_Scan';
+    } else if (nextStepIndex === 2) {
+      newStatus = addonsCount > 0 ? 'Washing' : 'Drying';
+    } else if (nextStepIndex >= 3 && nextStepIndex < updatedServices.length - 2) {
+      newStatus = 'Addon_Processing';
+    } else if (nextStepIndex === updatedServices.length - 2) {
+      newStatus = 'Drying';
+    } else if (nextStepIndex === updatedServices.length - 1) {
+      newStatus = 'Completed';
+    }
 
     const totalSteps = updatedServices.length;
     const progressPct = Math.min(100, Math.round((nextStepIndex / (totalSteps - 1)) * 100));
@@ -181,6 +202,13 @@ export const AdminQueue = () => {
 
     setSelectedVehicle(updatedItem);
     setQueue(prevQueue => prevQueue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q));
+
+    const queueId = selectedVehicle.queueId;
+    setSubmittingIds(prev => {
+      const next = new Set(prev);
+      next.add(queueId);
+      return next;
+    });
 
     // Call API to save to database
     try {
@@ -206,12 +234,24 @@ export const AdminQueue = () => {
       console.error('Lỗi khi gọi API UpdateQueue:', err);
       const errMsg = err.response?.data?.message || 'Lỗi kết nối khi cập nhật công đoạn!';
       if (window.showToast) window.showToast(errMsg, 'error');
+    } finally {
+      setSubmittingIds(prev => {
+        const next = new Set(prev);
+        next.delete(queueId);
+        return next;
+      });
     }
   };
 
   // Checkout and clean out queue
   const handleCheckoutVehicle = (queueId, plate) => {
+    if (submittingIds.has(queueId)) return;
     const checkout = async () => {
+      setSubmittingIds(prev => {
+        const next = new Set(prev);
+        next.add(queueId);
+        return next;
+      });
       try {
         if (typeof queueId === 'number' || !isNaN(queueId)) {
           const response = await adminService.checkoutQueue(queueId);
@@ -226,7 +266,18 @@ export const AdminQueue = () => {
       } catch (err) {
         console.error(err);
         const errMsg = err.response?.data?.message || 'Lỗi kết nối khi checkout!';
-        if (window.showToast) window.showToast(errMsg, 'error');
+        if (errMsg.includes('thanh toán và checkout trước đó')) {
+          setSelectedVehicle(null);
+          fetchQueue();
+        } else {
+          if (window.showToast) window.showToast(errMsg, 'error');
+        }
+      } finally {
+        setSubmittingIds(prev => {
+          const next = new Set(prev);
+          next.delete(queueId);
+          return next;
+        });
       }
     };
 
@@ -416,6 +467,7 @@ export const AdminQueue = () => {
                           <button
                             className="btn btn-sm btn-cyan py-0.5 px-2 text-dark font-bold border-0"
                             style={{ fontSize: '0.6rem', borderRadius: '5px', background: 'rgba(14,165,233,0.12)' }}
+                            disabled={submittingIds.has(item.queueId)}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (item.status === 'Completed') {
@@ -425,7 +477,13 @@ export const AdminQueue = () => {
                               }
                             }}
                           >
-                            {item.status === 'Completed' ? 'CHECKOUT' : 'TIẾP THEO'}
+                            {submittingIds.has(item.queueId) ? (
+                              <i className="fas fa-spinner fa-spin"></i>
+                            ) : item.status === 'Completed' ? (
+                              'CHECKOUT'
+                            ) : (
+                              'TIẾP THEO'
+                            )}
                           </button>
                         </div>
                       </div>
@@ -507,7 +565,7 @@ export const AdminQueue = () => {
               <div className="d-flex flex-column gap-2 mb-3">
                 {selectedVehicle.services.map((step, idx) => {
                   const isCompleted = step.status === 'Completed' || idx < selectedVehicle.washStep;
-                  const isActive = step.status === 'In Progress' || idx === selectedVehicle.washStep;
+                  const isActive = (step.status === 'In Progress' || idx === selectedVehicle.washStep) && step.status !== 'Completed';
 
                   return (
                     <div
@@ -535,6 +593,7 @@ export const AdminQueue = () => {
                         <button
                           className="btn btn-sm btn-success py-1 px-2 fw-bold"
                           style={{ fontSize: '0.62rem', borderRadius: '6px' }}
+                          disabled={submittingIds.has(selectedVehicle.queueId)}
                           onClick={() => handleToggleStepCompleted(idx)}
                         >
                           Xong bước
@@ -572,9 +631,16 @@ export const AdminQueue = () => {
                 <button
                   className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-dark"
                   style={{ background: 'var(--cyan-electric)' }}
+                  disabled={submittingIds.has(selectedVehicle.queueId)}
                   onClick={() => handleCheckoutVehicle(selectedVehicle.queueId, selectedVehicle.licensePlate)}
                 >
-                  THANH TOÁN
+                  {submittingIds.has(selectedVehicle.queueId) ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin me-1"></i> THANH TOÁN
+                    </>
+                  ) : (
+                    'THANH TOÁN'
+                  )}
                 </button>
               )}
             </div>

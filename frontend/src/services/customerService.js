@@ -76,6 +76,47 @@ export const customerService = {
     return response.data;
   },
 
+  getBookingDetail: async (id) => {
+    const response = await api.get(`/Customer/GetBookingDetail/${id}`);
+    return response.data;
+  },
+
+  cancelBooking: async (id, reason) => {
+    const response = await api.post(`/Customer/CancelBooking/${id}`, {
+      Reason: reason
+    });
+    return response.data;
+  },
+
+  createReview: async (bookingId, rating, comment) => {
+    const response = await api.post('/api/reviews', {
+      bookingId,
+      rating,
+      comment
+    });
+    return response.data;
+  },
+
+  getCustomerReviews: async () => {
+    const response = await api.get('/api/reviews/customer');
+    return response.data;
+  },
+
+  getPendingReviews: async () => {
+    const response = await api.get('/api/reviews/pending');
+    return response.data;
+  },
+
+  getOccupiedSlots: async (date) => {
+    const response = await api.get(`/Customer/GetOccupiedSlots?date=${date}`);
+    return response.data;
+  },
+
+  getEarliestAvailableDate: async (startDate, windowDays) => {
+    const response = await api.get(`/Customer/GetEarliestAvailableDate?startDate=${startDate}&windowDays=${windowDays}`);
+    return response.data;
+  },
+
   getWashHistory: async () => {
     const response = await api.get('/Customer/GetWashHistory');
     return response.data;

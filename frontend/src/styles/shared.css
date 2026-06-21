@@ -683,12 +683,12 @@ h1, h2, h3, h4, h5, h6,
 
 .confirm-modal-card {
     background: #ffffff;
-    border: 1.5px solid rgba(14, 165, 233, 0.2);
+    border: 1px solid rgba(15, 23, 42, 0.08);
     border-radius: 24px;
     padding: 24px;
     width: 90%;
     max-width: 450px;
-    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
     color: #334155;
 }
 
