@@ -92,7 +92,7 @@ export const CustomerDashboard = () => {
         const response = await customerService.getWashHistory();
         if (response && response.success && response.history) {
           setBookings(response.history);
-          setWashHistoryCount(response.history.length);
+          setWashHistoryCount(response.history.filter(b => b.status === 'Completed').length);
         }
       } catch (err) {
         console.error(err);
@@ -269,10 +269,10 @@ export const CustomerDashboard = () => {
       return { icon: 'fa-ticket-alt text-warning', bg: 'rgba(255, 193, 7, 0.08)' };
     } else if (t.includes('check-in') || t.includes('checkin') || t.includes('quét biển số') || t.includes('quét lpr')) {
       return { icon: 'fa-qrcode text-info', bg: 'rgba(23, 162, 184, 0.08)' };
-    } else if (t.includes('rửa ngoại thất')) {
+    } else if (t.includes('rửa ngoại thất') || t.includes('rửa xe')) {
       return { icon: 'fa-soap text-primary', bg: 'rgba(0, 123, 255, 0.08)' };
-    } else if (t.includes('vệ sinh nội thất')) {
-      return { icon: 'fa-broom text-primary', bg: 'rgba(0, 123, 255, 0.08)' };
+    } else if (t.includes('vệ sinh nội thất') || t.includes('sấy khô')) {
+      return { icon: 'fa-wind text-primary', bg: 'rgba(0, 123, 255, 0.08)' };
     } else if (t.includes('kiểm tra cuối')) {
       return { icon: 'fa-search text-cyan', bg: 'rgba(6, 182, 212, 0.08)' };
     } else if (t.includes('hoàn tất') || t.includes('tích điểm') || t.includes('điểm')) {
@@ -417,12 +417,13 @@ export const CustomerDashboard = () => {
                   <div className="col-6 col-sm-3">
                     <small className="text-secondary d-block mb-1" style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.5px' }}>CÔNG ĐOẠN HIỆN TẠI</small>
                     <strong className="text-cyan" style={{ fontSize: '0.85rem' }}>
-                      {activeBooking.progressTracking?.currentStage === 'CheckIn' ? 'Check-in' :
-                       activeBooking.progressTracking?.currentStage === 'ExteriorWash' ? 'Rửa ngoại thất' :
-                       activeBooking.progressTracking?.currentStage === 'InteriorCleaning' ? 'Vệ sinh nội thất' :
-                       activeBooking.progressTracking?.currentStage === 'FinalInspection' ? 'Kiểm tra cuối' :
-                       activeBooking.progressTracking?.currentStage === 'Completed' ? 'Hoàn tất' :
-                       activeBooking.progressTracking?.currentStage || 'Đang chuẩn bị'}
+                       {activeBooking.progressTracking?.currentStage === 'CheckIn' ? 'Check-in' :
+                        activeBooking.progressTracking?.currentStage === 'Washing' ? 'Rửa xe' :
+                        activeBooking.progressTracking?.currentStage === 'Drying' ? 'Sấy khô' :
+                        activeBooking.progressTracking?.currentStage === 'FinalInspection' ? 'Kiểm tra cuối' :
+                        activeBooking.progressTracking?.currentStage === 'Completed' ? 'Hoàn tất' :
+                        activeBooking.progressTracking?.currentStage === 'Checkout' ? 'Đã giao xe' :
+                        activeBooking.progressTracking?.currentStage || 'Đang chuẩn bị'}
                     </strong>
                   </div>
                   <div className="col-6 col-sm-3">

@@ -1,6 +1,5 @@
 export const queueStatusMapper = {
   getLabel: (status, addons = []) => {
-    const addonNames = Array.isArray(addons) ? addons : [];
     switch (status) {
       case 'Waiting':
       case 'WaitingCheckIn':
@@ -10,21 +9,13 @@ export const queueStatusMapper = {
         return 'Đã quét LPR';
       case 'Washing':
       case 'FoamWashing':
-        return 'Đang rửa bọt tuyết';
-      case 'Addon_Processing':
-      case 'AddonProcessing':
-        if (addonNames.length === 0) {
-          return 'Đang xử lý dịch vụ đi kèm';
-        }
-        if (addonNames.length === 1) {
-          return `${addonNames[0]} đang thực hiện`;
-        }
-        return `Đang xử lý ${addonNames.length} dịch vụ đi kèm`;
+        return 'Đang rửa xe';
       case 'Drying':
         return 'Đang sấy khô';
       case 'Completed':
-      case 'Archived':
         return 'Hoàn tất';
+      case 'Archived':
+        return 'Đã giao xe';
       default:
         return 'Chờ check-in';
     }
@@ -40,13 +31,12 @@ export const queueStatusMapper = {
         return 'bg-info bg-opacity-10 text-cyan';
       case 'Washing':
       case 'FoamWashing':
-      case 'Addon_Processing':
-      case 'AddonProcessing':
       case 'Drying':
         return 'bg-primary bg-opacity-10 text-primary';
       case 'Completed':
-      case 'Archived':
         return 'bg-success bg-opacity-10 text-success';
+      case 'Archived':
+        return 'bg-success bg-opacity-15 text-success fw-bold';
       default:
         return 'bg-secondary bg-opacity-10 text-muted';
     }
@@ -63,14 +53,12 @@ export const queueStatusMapper = {
       case 'Washing':
       case 'FoamWashing':
         return 'fa-soap';
-      case 'Addon_Processing':
-      case 'AddonProcessing':
-        return 'fa-plus-circle';
       case 'Drying':
         return 'fa-wind';
       case 'Completed':
-      case 'Archived':
         return 'fa-check-circle';
+      case 'Archived':
+        return 'fa-car-side';
       default:
         return 'fa-hourglass-start';
     }
@@ -79,23 +67,26 @@ export const queueStatusMapper = {
   getTimelineSteps: (bookingStatus, queueStatus, currentStage) => {
     const steps = [
       { id: 'CheckIn', name: 'Check-in' },
-      { id: 'ExteriorWash', name: 'Rửa ngoại thất' },
-      { id: 'InteriorCleaning', name: 'Vệ sinh nội thất' },
+      { id: 'Washing', name: 'Rửa xe' },
+      { id: 'Drying', name: 'Sấy khô' },
       { id: 'FinalInspection', name: 'Kiểm tra cuối' },
-      { id: 'Completed', name: 'Hoàn tất' }
+      { id: 'Completed', name: 'Hoàn tất' },
+      { id: 'Checkout', name: 'Đã giao xe' }
     ];
 
     let activeIndex = -1;
     
-    if (bookingStatus === 'Completed' || queueStatus === 'Completed' || queueStatus === 'Archived' || currentStage === 'Completed') {
+    if (bookingStatus === 'Checkout' || queueStatus === 'Archived' || currentStage === 'Checkout') {
+      activeIndex = 6;
+    } else if (bookingStatus === 'Completed' || queueStatus === 'Completed' || currentStage === 'Completed') {
       activeIndex = 5;
     } else if (queueStatus === 'Waiting' || queueStatus === 'LPR_Scan' || bookingStatus === 'CheckedIn' || currentStage) {
       const stage = currentStage || 'CheckIn';
       if (stage === 'CheckIn') {
         activeIndex = 0;
-      } else if (stage === 'ExteriorWash' || stage === 'Exterior') {
+      } else if (stage === 'Washing') {
         activeIndex = 1;
-      } else if (stage === 'InteriorCleaning' || stage === 'Interior') {
+      } else if (stage === 'Drying') {
         activeIndex = 2;
       } else if (stage === 'FinalInspection') {
         activeIndex = 3;

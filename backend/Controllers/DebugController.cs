@@ -62,6 +62,36 @@ namespace Auto_Wash.Controllers
 
             return Ok(new { success = true });
         }
+
+        [HttpGet("Bookings")]
+        public IActionResult GetBookings([FromServices] Auto_Wash.Data.AutoWashDbContext context)
+        {
+            try
+            {
+                var bookings = context.Bookings
+                    .Select(b => new
+                    {
+                        b.BookingId,
+                        b.CustomerId,
+                        b.VehicleId,
+                        LicensePlate = b.Vehicle.LicensePlate,
+                        b.ScheduledAt,
+                        Status = b.Status.ToString(),
+                        b.FinalPrice,
+                        b.RedemptionId,
+                        b.PaidAt,
+                        b.CreatedAt
+                    })
+                    .OrderByDescending(b => b.CreatedAt)
+                    .Take(25)
+                    .ToList();
+                return Ok(bookings);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 
     public class LogPayload

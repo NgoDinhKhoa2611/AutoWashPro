@@ -322,25 +322,32 @@ export const CustomerBookings = () => {
   // Filtering bookings based on tab
   // Active states: Pending Confirmation, Confirmed, Checked In
   const activeBookings = bookings.filter(b => 
-    b.status === 'Pending' || 
-    b.status === 'Pending Confirmation' ||
-    b.status === 'Confirmed' || 
-    b.status === 'CheckedIn' ||
-    b.status === 'Checked In' ||
-    b.status === 'InProgress' ||
-    b.status === 'In Progress'
+    (b.status === 'Pending' || 
+     b.status === 'Pending Confirmation' ||
+     b.status === 'Confirmed' || 
+     b.status === 'CheckedIn' ||
+     b.status === 'Checked In' ||
+     b.status === 'Washing' ||
+     b.status === 'InProgress' ||
+     b.status === 'In Progress' ||
+     b.status === 'Completed') && 
+     b.status !== 'Cancelled' &&
+     b.status !== 'NoShow' &&
+     b.status !== 'No Show' &&
+     !b.checkedOutAt
   );
 
-  // History states: Completed, Cancelled
   const historyBookings = bookings.filter(b => 
-    b.status === 'Completed' || 
-    b.status === 'Cancelled'
+    b.status === 'Cancelled' || 
+    b.status === 'NoShow' || 
+    b.status === 'No Show' ||
+    (b.status === 'Completed' && b.checkedOutAt)
   );
 
   // Filtered & Searched history bookings
   const filteredHistory = historyBookings.filter(b => {
     if (historyFilter === 'completed' && b.status !== 'Completed') return false;
-    if (historyFilter === 'cancelled' && b.status !== 'Cancelled') return false;
+    if (historyFilter === 'cancelled' && b.status !== 'Cancelled' && b.status !== 'NoShow' && b.status !== 'No Show') return false;
 
     if (historySearch.trim()) {
       const q = historySearch.toLowerCase().trim();
@@ -372,9 +379,37 @@ export const CustomerBookings = () => {
         return { label: 'Hoàn tất', badgeClass: 'bg-success bg-opacity-10 text-success', icon: 'fa-check-circle' };
       case 'Cancelled':
         return { label: 'Đã hủy', badgeClass: 'bg-danger bg-opacity-10 text-danger', icon: 'fa-times-circle' };
+      case 'NoShow':
+      case 'No Show':
+        return { label: 'Khách không đến', badgeClass: 'bg-danger bg-opacity-15 text-danger fw-bold', icon: 'fa-user-slash' };
       default:
         return { label: 'Đang xử lý', badgeClass: 'bg-secondary bg-opacity-10 text-secondary', icon: 'fa-cog fa-spin' };
     }
+  };
+
+  const getDetailTimelineStages = (booking) => {
+    if (booking.status === 'Cancelled') {
+      return [
+        { displayName: 'Đã đặt lịch', isCompleted: true, isActive: false },
+        { displayName: 'Đã hủy', isCompleted: false, isActive: true }
+      ];
+    }
+    if (booking.status === 'NoShow' || booking.status === 'No Show') {
+      return [
+        { displayName: 'Đã đặt lịch', isCompleted: true, isActive: false },
+        { displayName: 'Đã xác nhận', isCompleted: true, isActive: false },
+        { displayName: 'Khách không đến (No-Show)', isCompleted: false, isActive: true }
+      ];
+    }
+    return queueStatusMapper.getTimelineSteps(
+      booking.status,
+      booking.queueStatus,
+      booking.progressTracking?.currentStage
+    ).map(s => ({
+      displayName: s.name,
+      isCompleted: s.isCompleted,
+      isActive: s.isActive
+    }));
   };
 
   return (
@@ -913,80 +948,69 @@ export const CustomerBookings = () => {
                           </div>
                         </div>
 
-                        {detailModalBooking.status !== 'Cancelled' && (
-                          <div className="border-top pt-2.5 mt-2.5">
-                            <small className="text-secondary d-block mb-2 fw-bold" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>
-                              {detailModalBooking.queueStatus === 'Waiting' || detailModalBooking.queueStatus === 'WaitingCheckIn'
-                                ? 'LỊCH SẮP DIỄN RA'
-                                : 'TIẾN ĐỘ RỬA XE THỰC TẾ'}
-                            </small>
+                        {/* Section 3.5: Timeline / Progress */}
+                        <div className="border-top pt-2.5 mt-2.5">
+                          <small className="text-secondary d-block mb-2 fw-bold" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>
+                            {detailModalBooking.status === 'Cancelled'
+                              ? 'LỊCH HẸN ĐÃ HỦY'
+                              : detailModalBooking.status === 'NoShow'
+                                ? 'LỊCH HẸN QUÁ HẠN (NO-SHOW)'
+                                : detailModalBooking.queueStatus === 'Waiting' || detailModalBooking.queueStatus === 'WaitingCheckIn'
+                                  ? 'LỊCH SẮP DIỄN RA'
+                                  : 'TIẾN ĐỘ RỬA XE THỰC TẾ'}
+                          </small>
 
-                            {/* Live Progress Bar & Info */}
-                            {detailModalBooking.progressTracking && detailModalBooking.progressTracking.progress !== undefined && (
-                              <div className="mb-3 p-3 rounded-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                                <div className="d-flex justify-content-between align-items-center mb-1">
-                                  <span className="small text-secondary fw-bold" style={{ fontSize: '0.7rem' }}>Tiến độ: {detailModalBooking.progressTracking.progress}%</span>
-                                  {detailModalBooking.progressTracking.remainingSeconds !== undefined && detailModalBooking.progressTracking.remainingSeconds > 0 && (
-                                    <span className="small text-cyan fw-bold font-monospace" style={{ fontSize: '0.7rem' }}>Còn lại: {detailModalBooking.progressTracking.remainingSeconds}s</span>
-                                  )}
-                                </div>
-                                <div className="progress" style={{ height: '6px', background: '#e2e8f0', borderRadius: '10px' }}>
-                                  <div className="progress-bar" style={{ width: `${detailModalBooking.progressTracking.progress}%`, background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)', borderRadius: '10px' }}></div>
-                                </div>
+                          {/* Live Progress Bar & Info (Only show for active, non-terminal states) */}
+                          {detailModalBooking.progressTracking && 
+                           detailModalBooking.progressTracking.progress !== undefined && 
+                           detailModalBooking.status !== 'Cancelled' && 
+                           detailModalBooking.status !== 'NoShow' && 
+                           !detailModalBooking.checkedOutAt && (
+                            <div className="mb-3 p-3 rounded-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                              <div className="d-flex justify-content-between align-items-center mb-1">
+                                <span className="small text-secondary fw-bold" style={{ fontSize: '0.7rem' }}>Tiến độ: {detailModalBooking.progressTracking.progress}%</span>
+                                {detailModalBooking.progressTracking.remainingSeconds !== undefined && detailModalBooking.progressTracking.remainingSeconds > 0 && (
+                                  <span className="small text-cyan fw-bold font-monospace" style={{ fontSize: '0.7rem' }}>Còn lại: {detailModalBooking.progressTracking.remainingSeconds}s</span>
+                                )}
                               </div>
-                            )}
-
-                            {/* Stages Checklist with Timestamps */}
-                            <div className="position-relative d-flex flex-column gap-2 py-0.5">
-                              {(() => {
-                                const stages = detailModalBooking.progressTracking?.stages?.length
-                                  ? detailModalBooking.progressTracking.stages
-                                  : [
-                                      { displayName: 'Check-in', isCompleted: detailModalBooking.status === 'CheckedIn' || detailModalBooking.status === 'Washing' || detailModalBooking.status === 'Completed', isActive: detailModalBooking.status === 'CheckedIn' },
-                                      { displayName: 'Rửa ngoại thất', isCompleted: detailModalBooking.status === 'Completed', isActive: detailModalBooking.status === 'Washing' },
-                                      { displayName: 'Vệ sinh nội thất', isCompleted: detailModalBooking.status === 'Completed', isActive: false },
-                                      { displayName: 'Kiểm tra cuối', isCompleted: detailModalBooking.status === 'Completed', isActive: false },
-                                      { displayName: 'Hoàn tất', isCompleted: detailModalBooking.status === 'Completed', isActive: false }
-                                    ];
-
-                                return stages.map((step, idx) => (
-                                  <div key={idx} className="d-flex align-items-center justify-content-between p-2 rounded-3 border bg-white" style={{
-                                    borderColor: step.isActive ? 'rgba(14, 165, 233, 0.3)' : '#e2e8f0',
-                                    background: step.isActive ? 'rgba(14, 165, 233, 0.02)' : 'none'
-                                  }}>
-                                    <div className="d-flex align-items-center gap-2">
-                                      {step.isCompleted ? (
-                                        <i className="fas fa-check-circle text-success" style={{ fontSize: '0.78rem' }}></i>
-                                      ) : step.isActive ? (
-                                        <i className="fas fa-spinner fa-spin text-cyan" style={{ fontSize: '0.78rem' }}></i>
-                                      ) : (
-                                        <i className="far fa-circle text-muted" style={{ fontSize: '0.72rem' }}></i>
-                                      )}
-                                      <div className="d-flex flex-column">
-                                        <span className={`${step.isCompleted ? 'text-secondary text-decoration-line-through' : step.isActive ? 'text-dark fw-bold' : 'text-muted'}`} style={{ fontSize: '0.76rem' }}>
-                                          {step.displayName}
-                                        </span>
-                                        {step.completedAt && (
-                                          <span className="text-muted" style={{ fontSize: '0.62rem' }}>
-                                            Xong lúc: {new Date(step.completedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                          </span>
-                                        )}
-                                        {step.isActive && step.startedAt && (
-                                          <span className="text-cyan" style={{ fontSize: '0.62rem' }}>
-                                            Bắt đầu: {new Date(step.startedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {step.isCompleted && <span className="badge bg-success bg-opacity-10 text-success" style={{ fontSize: '0.55rem' }}>Xong</span>}
-                                    {step.isActive && <span className="badge bg-info bg-opacity-10 text-cyan animate-pulse" style={{ fontSize: '0.55rem' }}>Đang chạy</span>}
-                                    {!step.isCompleted && !step.isActive && <span className="badge bg-light text-muted" style={{ fontSize: '0.55rem' }}>Chờ</span>}
-                                  </div>
-                                ));
-                              })()}
+                              <div className="progress" style={{ height: '6px', background: '#e2e8f0', borderRadius: '10px' }}>
+                                <div className="progress-bar" style={{ width: `${detailModalBooking.progressTracking.progress}%`, background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)', borderRadius: '10px' }}></div>
+                              </div>
                             </div>
+                          )}
+
+                          {/* Stages Checklist / Timeline */}
+                          <div className="position-relative d-flex flex-column gap-2 py-0.5">
+                            {(() => {
+                              const stages = getDetailTimelineStages(detailModalBooking);
+
+                              return stages.map((step, idx) => (
+                                <div key={idx} className="d-flex align-items-center justify-content-between p-2 rounded-3 border bg-white" style={{
+                                  borderColor: step.isActive ? 'rgba(14, 165, 233, 0.3)' : '#e2e8f0',
+                                  background: step.isActive ? 'rgba(14, 165, 233, 0.02)' : 'none'
+                                }}>
+                                  <div className="d-flex align-items-center gap-2">
+                                    {step.isCompleted ? (
+                                      <i className="fas fa-check-circle text-success" style={{ fontSize: '0.78rem' }}></i>
+                                    ) : step.isActive ? (
+                                      <i className="fas fa-spinner fa-spin text-cyan" style={{ fontSize: '0.78rem' }}></i>
+                                    ) : (
+                                      <i className="far fa-circle text-muted" style={{ fontSize: '0.72rem' }}></i>
+                                    )}
+                                    <div className="d-flex flex-column">
+                                      <span className={`${step.isCompleted ? 'text-secondary text-decoration-line-through' : step.isActive ? 'text-dark fw-bold' : 'text-muted'}`} style={{ fontSize: '0.76rem' }}>
+                                        {step.displayName}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {step.isCompleted && <span className="badge bg-success bg-opacity-10 text-success" style={{ fontSize: '0.55rem' }}>Xong</span>}
+                                  {step.isActive && <span className="badge bg-info bg-opacity-10 text-cyan animate-pulse" style={{ fontSize: '0.55rem' }}>Đang chạy</span>}
+                                  {!step.isCompleted && !step.isActive && <span className="badge bg-light text-muted" style={{ fontSize: '0.55rem' }}>Chờ</span>}
+                                </div>
+                              ));
+                            })()}
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
                   </div>

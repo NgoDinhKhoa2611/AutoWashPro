@@ -190,7 +190,7 @@ namespace Auto_Wash.Data
             builder.Entity<Booking>()
                 .HasIndex(b => new { b.VehicleId, b.ScheduledAt })
                 .IsUnique()
-                .HasFilter("status != 5")
+                .HasFilter("status != 4 AND status != 5 AND status != 7")
                 .HasDatabaseName("uq_bookings_vehicle_scheduledat_active");
 
             builder.Entity<Booking>()

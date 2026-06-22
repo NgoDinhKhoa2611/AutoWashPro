@@ -328,6 +328,7 @@ export const AdminQueue = () => {
       progress: 0,
       etaCompletion: 'N/A',
       bookingTime: new Date(b.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      noShowTime: b.noShowAt ? new Date(b.noShowAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : new Date(b.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       customerName: b.customerName,
       phone: b.phone,
       tierName: 'Member'
@@ -395,13 +396,45 @@ export const AdminQueue = () => {
 
   // ── Compact Queue Card (Waiting / Processing / NoShow) ──
   const renderCompactCard = (item) => {
+    const isNoShow = item.statusGroup === 'NoShow';
+    if (isNoShow) {
+      return (
+        <div key={item.queueId} className="queue-card-compact status-noshow">
+          <div className="queue-card-header">
+            <span className="queue-card-id">#BK-{item.bookingId}</span>
+            <span className="queue-status-badge" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+              NO SHOW
+            </span>
+          </div>
+          <div className="queue-card-plate">{item.licensePlate}</div>
+          <div className="stage-badge" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+            <span className="stage-dot" style={{ background: '#ef4444' }}></span>
+            Khách không đến
+          </div>
+          <div className="queue-card-info-grid">
+            <div className="queue-info-row">
+              <span className="queue-info-label">Giờ quá hạn</span>
+              <span className="queue-info-value font-monospace">{item.noShowTime || '—'}</span>
+            </div>
+          </div>
+          <div className="queue-card-actions">
+            <button
+              className="queue-btn queue-btn-detail w-100"
+              onClick={() => setSelectedVehicle(item)}
+            >
+              CHI TIẾT
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     const stageLabel = getCurrentStageLabel(item);
     const stageColor = STAGE_COLOR_MAP[stageLabel] || '#94a3b8';
     const isWaiting = item.statusGroup === 'Waiting';
-    const isNoShow = item.statusGroup === 'NoShow';
-    const statusText = isWaiting ? 'CHỜ' : isNoShow ? 'NO SHOW' : 'ĐANG XỬ LÝ';
-    const statusColor = isWaiting ? '#f59e0b' : isNoShow ? '#ef4444' : '#3b82f6';
-    const statusBg = isWaiting ? 'rgba(245,158,11,0.1)' : isNoShow ? 'rgba(239,68,68,0.1)' : 'rgba(59,130,246,0.1)';
+    const statusText = isWaiting ? 'CHỜ' : 'ĐANG XỬ LÝ';
+    const statusColor = isWaiting ? '#f59e0b' : '#3b82f6';
+    const statusBg = isWaiting ? 'rgba(245,158,11,0.1)' : 'rgba(59,130,246,0.1)';
 
     return (
       <div
@@ -429,23 +462,13 @@ export const AdminQueue = () => {
         </div>
 
         {/* Current stage badge */}
-        {!isNoShow ? (
-          <div className="stage-badge" style={{
-            background: `${stageColor}15`,
-            color: stageColor
-          }}>
-            <span className="stage-dot" style={{ background: stageColor }}></span>
-            {stageLabel}
-          </div>
-        ) : (
-          <div className="stage-badge" style={{
-            background: 'rgba(239,68,68,0.1)',
-            color: '#ef4444'
-          }}>
-            <span className="stage-dot" style={{ background: '#ef4444' }}></span>
-            Khách không đến
-          </div>
-        )}
+        <div className="stage-badge" style={{
+          background: `${stageColor}15`,
+          color: stageColor
+        }}>
+          <span className="stage-dot" style={{ background: stageColor }}></span>
+          {stageLabel}
+        </div>
 
         {/* Info rows */}
         <div className="queue-card-info-grid">
@@ -454,7 +477,7 @@ export const AdminQueue = () => {
             <span className="queue-info-value font-monospace">{item.checkInTime || item.bookingTime || '—'}</span>
           </div>
 
-          {!isNoShow && !isWaiting && (
+          {!isWaiting && (
             <>
               <div className="queue-info-row">
                 <span className="queue-info-label">Còn lại</span>
@@ -734,100 +757,125 @@ export const AdminQueue = () => {
               </button>
             </div>
             <div className="confirm-modal-body text-start py-3" style={{ maxHeight: '420px', overflowY: 'auto' }}>
-              
-              <div className="bg-light p-3 rounded-4 mb-3" style={{ border: '1px solid #e2e8f0' }}>
-                <div className="row g-2" style={{ fontSize: '0.78rem' }}>
-                  <div className="col-6">
-                    <span className="text-muted d-block small">GÓI DỊCH VỤ</span>
-                    <strong className="text-dark">{selectedVehicle.mainService}</strong>
-                  </div>
-                  <div className="col-6 text-end">
-                    <span className="text-muted d-block small">ETA HOÀN THÀNH</span>
-                    <strong className="text-cyan">{selectedVehicle.etaCompletion}</strong>
-                  </div>
-                  <div className="col-6 mt-2">
-                    <span className="text-muted d-block small">TIẾN ĐỘ THỜI GIAN</span>
-                    <strong className="text-dark">{selectedVehicle.progress}%</strong>
-                  </div>
-                  <div className="col-6 text-end mt-2">
-                    <span className="text-muted d-block small">CÒN LẠI</span>
-                    <strong className="text-cyan">{selectedVehicle.remainingSeconds} giây</strong>
-                  </div>
-                </div>
-              </div>
-
-              {selectedVehicle.statusGroup !== 'NoShow' && (
-                <div className="mb-3">
-                  <label className="form-label small fw-bold text-muted mb-1">GÁN NHÂN VIÊN PHỤ TRÁCH</label>
-                  <select
-                    className="form-select bg-light border-0 py-2 text-dark fw-bold"
-                    value={selectedVehicle.staffName || "Chưa gán"}
-                    onChange={(e) => handleAssignStaff(e.target.value)}
-                  >
-                    <option value="Chưa gán">-- Chọn nhân viên --</option>
-                    {STAFF_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              )}
-
-              <label className="form-label small fw-bold text-muted mb-2">QUY TRÌNH THỰC HIỆN DỰ KIẾN</label>
-              <div className="d-flex flex-column gap-2 mb-3">
-                {getModalStages(selectedVehicle).map((step, idx) => {
-                  return (
-                    <div
-                      key={idx}
-                      className="d-flex align-items-center justify-content-between p-2.5 rounded-3 border bg-white"
-                      style={{
-                        borderColor: step.isActive ? 'rgba(14, 165, 233, 0.3)' : '#e2e8f0',
-                        background: step.isActive ? 'rgba(14, 165, 233, 0.02)' : 'none'
-                      }}
-                    >
-                      <div className="d-flex align-items-center gap-2">
-                        {step.isCompleted ? (
-                          <i className="fas fa-check-circle text-success fs-6"></i>
-                        ) : step.isActive ? (
-                          <i className="fas fa-spinner fa-spin text-cyan fs-6"></i>
-                        ) : (
-                          <i className="far fa-circle text-muted fs-6"></i>
-                        )}
-                        <div className="d-flex flex-column">
-                          <span className={`small ${step.isCompleted ? 'text-muted text-decoration-line-through' : 'text-dark fw-bold'}`} style={{ fontSize: '0.8rem' }}>
-                            {step.name}
-                          </span>
-                          {step.completedAt && (
-                            <span className="text-muted" style={{ fontSize: '0.62rem' }}>
-                              {new Date(step.completedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          )}
-                          {step.isActive && step.startedAt && (
-                            <span className="text-cyan" style={{ fontSize: '0.62rem' }}>
-                              Bắt đầu: {new Date(step.startedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {step.isCompleted && <span className="badge bg-success bg-opacity-10 text-success" style={{ fontSize: '0.6rem' }}>Xong</span>}
-                      {step.isActive && <span className="badge bg-info bg-opacity-10 text-cyan animate-pulse" style={{ fontSize: '0.6rem' }}>Đang chạy</span>}
-                      {!step.isCompleted && !step.isActive && <span className="badge bg-light text-muted" style={{ fontSize: '0.6rem' }}>Chờ</span>}
+              {selectedVehicle.statusGroup === 'NoShow' ? (
+                <div className="bg-light p-3 rounded-4 mb-3" style={{ border: '1px solid #e2e8f0' }}>
+                  <div className="row g-3" style={{ fontSize: '0.85rem' }}>
+                    <div className="col-12">
+                      <span className="text-muted d-block small fw-bold">MÃ ĐẶT LỊCH</span>
+                      <strong className="text-dark">#BK-{selectedVehicle.bookingId}</strong>
                     </div>
-                  );
-                })}
-              </div>
-
-              {selectedVehicle.statusGroup !== 'NoShow' && (
-                <div className="mb-0">
-                  <label className="form-label small fw-bold text-muted mb-1">GHI CHÚ DỊCH VỤ / TÌNH TRẠNG XE</label>
-                  <textarea
-                    className="form-control bg-light border-0 py-2 rounded-3"
-                    rows="3"
-                    placeholder="Lưu ý vết xước của xe..."
-                    value={selectedVehicle.staffNote || ''}
-                    onChange={(e) => handleSaveStaffNotes(e.target.value)}
-                    onBlur={handleBlurStaffNotes}
-                  ></textarea>
+                    <div className="col-12">
+                      <span className="text-muted d-block small fw-bold">BIỂN SỐ XE</span>
+                      <strong className="text-dark font-monospace">{selectedVehicle.licensePlate}</strong>
+                    </div>
+                    <div className="col-12">
+                      <span className="text-muted d-block small fw-bold">TRẠNG THÁI</span>
+                      <div>
+                        <span className="badge bg-danger bg-opacity-10 text-danger fw-bold rounded-pill px-2.5 py-1" style={{ fontSize: '0.75rem' }}>
+                          Khách không đến (No-Show)
+                        </span>
+                      </div>
+                    </div>
+                    <div className="col-12">
+                      <span className="text-muted d-block small fw-bold">THỜI GIAN QUÁ HẠN</span>
+                      <strong className="text-dark font-monospace">{selectedVehicle.noShowTime || '—'}</strong>
+                    </div>
+                  </div>
                 </div>
-              )}
+              ) : (
+                <>
+                  <div className="bg-light p-3 rounded-4 mb-3" style={{ border: '1px solid #e2e8f0' }}>
+                    <div className="row g-2" style={{ fontSize: '0.78rem' }}>
+                      <div className="col-6">
+                        <span className="text-muted d-block small">GÓI DỊCH VỤ</span>
+                        <strong className="text-dark">{selectedVehicle.mainService}</strong>
+                      </div>
+                      <div className="col-6 text-end">
+                        <span className="text-muted d-block small">ETA HOÀN THÀNH</span>
+                        <strong className="text-cyan">{selectedVehicle.etaCompletion}</strong>
+                      </div>
+                      <div className="col-6 mt-2">
+                        <span className="text-muted d-block small">TIẾN ĐỘ THỜI GIAN</span>
+                        <strong className="text-dark">{selectedVehicle.progress}%</strong>
+                      </div>
+                      <div className="col-6 text-end mt-2">
+                        <span className="text-muted d-block small">CÒN LẠI</span>
+                        <strong className="text-cyan">{selectedVehicle.remainingSeconds} giây</strong>
+                      </div>
+                    </div>
+                  </div>
 
+                  {selectedVehicle.statusGroup !== 'NoShow' && (
+                    <div className="mb-3">
+                      <label className="form-label small fw-bold text-muted mb-1">GÁN NHÂN VIÊN PHỤ TRÁCH</label>
+                      <select
+                        className="form-select bg-light border-0 py-2 text-dark fw-bold"
+                        value={selectedVehicle.staffName || "Chưa gán"}
+                        onChange={(e) => handleAssignStaff(e.target.value)}
+                      >
+                        <option value="Chưa gán">-- Chọn nhân viên --</option>
+                        {STAFF_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  <label className="form-label small fw-bold text-muted mb-2">QUY TRÌNH THỰC HIỆN DỰ KIẾN</label>
+                  <div className="d-flex flex-column gap-2 mb-3">
+                    {getModalStages(selectedVehicle).map((step, idx) => {
+                      return (
+                        <div
+                          key={idx}
+                          className="d-flex align-items-center justify-content-between p-2.5 rounded-3 border bg-white"
+                          style={{
+                            borderColor: step.isActive ? 'rgba(14, 165, 233, 0.3)' : '#e2e8f0',
+                            background: step.isActive ? 'rgba(14, 165, 233, 0.02)' : 'none'
+                          }}
+                        >
+                          <div className="d-flex align-items-center gap-2">
+                            {step.isCompleted ? (
+                              <i className="fas fa-check-circle text-success fs-6"></i>
+                            ) : step.isActive ? (
+                              <i className="fas fa-spinner fa-spin text-cyan fs-6"></i>
+                            ) : (
+                              <i className="far fa-circle text-muted fs-6"></i>
+                            )}
+                            <div className="d-flex flex-column">
+                              <span className={`small ${step.isCompleted ? 'text-muted text-decoration-line-through' : 'text-dark fw-bold'}`} style={{ fontSize: '0.8rem' }}>
+                                {step.name}
+                              </span>
+                              {step.completedAt && (
+                                <span className="text-muted" style={{ fontSize: '0.62rem' }}>
+                                  {new Date(step.completedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              )}
+                              {step.isActive && step.startedAt && (
+                                <span className="text-cyan" style={{ fontSize: '0.62rem' }}>
+                                  Bắt đầu: {new Date(step.startedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {step.isCompleted && <span className="badge bg-success bg-opacity-10 text-success" style={{ fontSize: '0.6rem' }}>Xong</span>}
+                          {step.isActive && <span className="badge bg-info bg-opacity-10 text-cyan animate-pulse" style={{ fontSize: '0.6rem' }}>Đang chạy</span>}
+                          {!step.isCompleted && !step.isActive && <span className="badge bg-light text-muted" style={{ fontSize: '0.6rem' }}>Chờ</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mb-0">
+                    <label className="form-label small fw-bold text-muted mb-1">GHI CHÚ DỊCH VỤ / TÌNH TRẠNG XE</label>
+                    <textarea
+                      className="form-control bg-light border-0 py-2 rounded-3"
+                      rows="3"
+                      placeholder="Lưu ý vết xước của xe..."
+                      value={selectedVehicle.staffNote || ''}
+                      onChange={(e) => handleSaveStaffNotes(e.target.value)}
+                      onBlur={handleBlurStaffNotes}
+                    ></textarea>
+                  </div>
+                </>
+              )}
             </div>
             <div className="confirm-modal-footer">
               {selectedVehicle.statusGroup === 'NoShow' ? (
@@ -835,15 +883,25 @@ export const AdminQueue = () => {
               ) : (
                 <>
                   <button className="confirm-cancel-btn w-50" onClick={() => setSelectedVehicle(null)}>ĐÓNG</button>
-                  {(selectedVehicle.status === 'Completed' || selectedVehicle.progress >= 100 || selectedVehicle.statusGroup === 'Completed') ? (
-                    <button
-                      className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-dark"
-                      style={{ background: 'var(--cyan-electric)' }}
-                      disabled={submittingIds.has(selectedVehicle.queueId)}
-                      onClick={() => handleCheckoutVehicle(selectedVehicle.queueId, selectedVehicle.licensePlate)}
-                    >
-                      THANH TOÁN & CHECKOUT
-                    </button>
+                  {(selectedVehicle.status === 'Completed' || selectedVehicle.progress >= 100 || selectedVehicle.statusGroup === 'Completed' || selectedVehicle.status === 'Archived') ? (
+                    selectedVehicle.status === 'Archived' ? (
+                      <button
+                        className="confirm-ok-btn w-50 fw-bold border-0 text-muted"
+                        style={{ background: '#e2e8f0', cursor: 'not-allowed' }}
+                        disabled={true}
+                      >
+                        ĐÃ CHECKOUT
+                      </button>
+                    ) : (
+                      <button
+                        className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-dark"
+                        style={{ background: 'var(--cyan-electric)' }}
+                        disabled={submittingIds.has(selectedVehicle.queueId)}
+                        onClick={() => handleCheckoutVehicle(selectedVehicle.queueId, selectedVehicle.licensePlate)}
+                      >
+                        THANH TOÁN & CHECKOUT
+                      </button>
+                    )
                   ) : selectedVehicle.statusGroup === 'Processing' ? (
                     <button
                       className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-muted"

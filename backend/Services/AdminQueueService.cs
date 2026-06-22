@@ -355,7 +355,8 @@ namespace Auto_Wash.Services
                                 Status = QueueStatus.Waiting,
                                 Position = lastPos + 1,
                                 CheckInAt = DateTime.Now,
-                                StaffNote = staffNote ?? booking.Notes ?? string.Empty
+                                StaffNote = staffNote ?? booking.Notes ?? string.Empty,
+                                CurrentStage = "CheckIn"
                             };
                             booking.Status = BookingStatus.CheckedIn; // CheckedIn / InProgress
                             _context.Queues.Add(q);
@@ -366,6 +367,18 @@ namespace Auto_Wash.Services
                             if (parsedStatus.HasValue) q.Status = parsedStatus.Value;
                             if (staffNote != null) q.StaffNote = staffNote;
                             if (q.StartedAt == null && q.Status != QueueStatus.Waiting) q.StartedAt = DateTime.Now;
+
+                            // Sync current stage
+                            if (q.Status == QueueStatus.Waiting || q.Status == QueueStatus.LPR_Scan)
+                                q.CurrentStage = "CheckIn";
+                            else if (q.Status == QueueStatus.Washing)
+                                q.CurrentStage = "Washing";
+                            else if (q.Status == QueueStatus.Drying)
+                                q.CurrentStage = "Drying";
+                            else if (q.Status == QueueStatus.Completed)
+                                q.CurrentStage = "Completed";
+                            else if (q.Status == QueueStatus.Archived)
+                                q.CurrentStage = "Checkout";
 
                             if (parsedStatus.HasValue && oldStatus != parsedStatus.Value)
                             {
@@ -407,13 +420,13 @@ namespace Auto_Wash.Services
                 if (q.Status == QueueStatus.Waiting || q.Status == QueueStatus.LPR_Scan)
                     q.CurrentStage = "CheckIn";
                 else if (q.Status == QueueStatus.Washing)
-                    q.CurrentStage = "ExteriorWash";
-                else if (q.Status == QueueStatus.Addon_Processing)
-                    q.CurrentStage = "InteriorCleaning";
+                    q.CurrentStage = "Washing";
                 else if (q.Status == QueueStatus.Drying)
-                    q.CurrentStage = "FinalInspection";
+                    q.CurrentStage = "Drying";
                 else if (q.Status == QueueStatus.Completed)
                     q.CurrentStage = "Completed";
+                else if (q.Status == QueueStatus.Archived)
+                    q.CurrentStage = "Checkout";
 
                 // Sync booking status and timestamps
                 if (q.Booking != null && parsedStatus.HasValue && oldStatus != parsedStatus.Value)
@@ -427,7 +440,7 @@ namespace Auto_Wash.Services
                         {
                             BookingId = q.BookingId!.Value,
                             Action = "WashingStarted",
-                            Description = "Bắt đầu công đoạn rửa xe (Ngoại thất).",
+                            Description = "Bắt đầu công đoạn rửa xe.",
                             PerformedBy = "Staff",
                             CreatedAt = DateTime.Now
                         });
@@ -436,7 +449,6 @@ namespace Auto_Wash.Services
                     {
                         q.Booking.Status = BookingStatus.Completed;
                         q.Booking.CompletedAt ??= DateTime.Now;
-                        q.Booking.PaidAt ??= DateTime.Now;
 
                         _context.BookingAuditLogs.Add(new BookingAuditLog
                         {
@@ -518,7 +530,7 @@ namespace Auto_Wash.Services
             }
         }
 
-        public async Task<(bool success, string message, int finalPrice, int pointsEarned)> CheckoutQueueAsync(int id)
+        public async Task<(bool success, string message, int finalPrice, int pointsEarned)> CheckoutQueueAsync(int id, string? performerName = null)
         {
             if (id < 0)
             {
@@ -536,7 +548,7 @@ namespace Auto_Wash.Services
                 return (false, "Không tìm thấy xe trong hàng đợi!", 0, 0);
             }
 
-            if (q.Status == QueueStatus.Archived || (q.Booking != null && q.Booking.Status == BookingStatus.Completed))
+            if (q.Status == QueueStatus.Archived || (q.Booking != null && q.Booking.CheckedOutAt != null))
             {
                 return (false, "Xe này đã được thanh toán và checkout trước đó!", 0, 0);
             }
@@ -553,18 +565,21 @@ namespace Auto_Wash.Services
                 finalPrice = q.Booking.FinalPrice;
                 pointsEarned = q.Booking.PointsEarned;
 
-                 if (q.Booking.Status != BookingStatus.Completed)
+                q.Booking.CheckedOutAt = now;
+                q.Booking.CheckedOutBy = performerName ?? "Staff";
+                q.Booking.Status = BookingStatus.Completed;
+
+                if (q.Booking.PaidAt == null)
                 {
-                    q.Booking.Status = BookingStatus.Completed; // Completed
-                    q.Booking.PaidAt ??= now;
+                    q.Booking.PaidAt = now;
                     q.Booking.CompletedAt ??= now;
 
                     _context.BookingAuditLogs.Add(new BookingAuditLog
                     {
                         BookingId = q.Booking.BookingId,
                         Action = "Completed",
-                        Description = "Thanh toán thành công và hoàn thành dịch vụ.",
-                        PerformedBy = "Staff",
+                        Description = $"Thanh toán thành công và checkout xe (Thực hiện bởi: {performerName ?? "Staff"}).",
+                        PerformedBy = performerName ?? "Staff",
                         CreatedAt = now
                     });
 
@@ -592,10 +607,21 @@ namespace Auto_Wash.Services
                     _context.Notifications.Add(new Notification
                     {
                         CustomerId = q.Booking.CustomerId,
-                        Title = $"Lịch hẹn #{q.BookingId} đã hoàn tất.",
-                        Message = $"Xe của bạn đã hoàn tất dịch vụ. Bạn nhận +{q.Booking.PointsEarned} điểm!",
+                        Title = $"Lịch hẹn #{q.BookingId} đã được checkout thành công.",
+                        Message = $"Xe của bạn đã hoàn tất thanh toán & checkout. Bạn nhận +{q.Booking.PointsEarned} điểm!",
                         Type = "points",
                         IsRead = false,
+                        CreatedAt = now
+                    });
+                }
+                else
+                {
+                    _context.BookingAuditLogs.Add(new BookingAuditLog
+                    {
+                        BookingId = q.Booking.BookingId,
+                        Action = "Checkout",
+                        Description = $"Giao xe và hoàn tất thủ tục checkout (Thực hiện bởi: {performerName ?? "Staff"}).",
+                        PerformedBy = performerName ?? "Staff",
                         CreatedAt = now
                     });
                 }

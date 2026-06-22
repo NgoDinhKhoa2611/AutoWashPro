@@ -92,7 +92,7 @@ namespace Auto_Wash.Services
                 {
                     if (q.Status == QueueStatus.Waiting || q.Status == QueueStatus.LPR_Scan || q.Status == QueueStatus.Washing)
                     {
-                        q.CurrentStage = "ExteriorWash";
+                        q.CurrentStage = "Washing";
                         if (q.Status != QueueStatus.Washing)
                         {
                             q.Status = QueueStatus.Washing;
@@ -108,7 +108,7 @@ namespace Auto_Wash.Services
                                 {
                                     BookingId = q.BookingId!.Value,
                                     Action = "WashingStarted",
-                                    Description = "Tự động bắt đầu công đoạn rửa xe (Rửa ngoại thất).",
+                                    Description = "Tự động bắt đầu công đoạn rửa xe.",
                                     PerformedBy = "System",
                                     CreatedAt = now
                                 });
@@ -121,21 +121,9 @@ namespace Auto_Wash.Services
                 }
                 else if (elapsedSeconds < 40)
                 {
-                    if (q.Status == QueueStatus.Washing || q.Status == QueueStatus.Addon_Processing)
+                    if (q.Status == QueueStatus.Washing || q.Status == QueueStatus.Drying)
                     {
-                        q.CurrentStage = "InteriorCleaning";
-                        if (q.Status != QueueStatus.Addon_Processing)
-                        {
-                            q.Status = QueueStatus.Addon_Processing;
-                            changed = true;
-                        }
-                    }
-                }
-                else if (elapsedSeconds < 50)
-                {
-                    if (q.Status == QueueStatus.Addon_Processing || q.Status == QueueStatus.Drying)
-                    {
-                        q.CurrentStage = "FinalInspection";
+                        q.CurrentStage = "Drying";
                         if (q.Status != QueueStatus.Drying)
                         {
                             q.Status = QueueStatus.Drying;
@@ -143,12 +131,19 @@ namespace Auto_Wash.Services
                         }
                     }
                 }
+                else if (elapsedSeconds < 50)
+                {
+                    if (q.Status == QueueStatus.Drying)
+                    {
+                        q.CurrentStage = "FinalInspection";
+                    }
+                }
                 else // elapsedSeconds >= 50
                 {
                     q.CurrentStage = "Completed";
-                    if (q.Status != QueueStatus.Archived)
+                    if (q.Status != QueueStatus.Completed && q.Status != QueueStatus.Archived)
                     {
-                        q.Status = QueueStatus.Archived;
+                        q.Status = QueueStatus.Completed;
                         q.CompletedAt ??= now;
                         changed = true;
 
@@ -156,7 +151,6 @@ namespace Auto_Wash.Services
                         {
                             q.Booking.Status = BookingStatus.Completed;
                             q.Booking.CompletedAt ??= now;
-                            q.Booking.PaidAt ??= now;
 
                             context.BookingAuditLogs.Add(new BookingAuditLog
                             {

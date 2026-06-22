@@ -56,6 +56,9 @@ namespace Auto_Wash.Services
                     .ThenInclude(bs => bs.Service)
                 .Include(b => b.Queues)
                 .Where(b => b.CustomerId == customerId 
+                    && b.CheckedOutAt == null
+                    && b.Status != BookingStatus.Cancelled
+                    && b.Status != BookingStatus.NoShow
                     && (b.Status == BookingStatus.Pending 
                         || b.Status == BookingStatus.Confirmed 
                         || b.Status == BookingStatus.CheckedIn

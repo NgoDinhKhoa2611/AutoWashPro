@@ -90,6 +90,11 @@ namespace Auto_Wash.Data.Entities
         public bool Reminder2Sent { get; set; } = false;
         public bool NoShowEmailSent { get; set; } = false;
 
+        public DateTime? CheckedOutAt { get; set; }
+
+        [MaxLength(100)]
+        public string? CheckedOutBy { get; set; }
+
         // Navigation properties
         [ForeignKey("CustomerId")]
         public virtual Customer Customer { get; set; } = null!;

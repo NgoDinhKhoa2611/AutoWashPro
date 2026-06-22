@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { customerService } from '../services/customerService';
+import { queueStatusMapper } from '../utils/queueStatusMapper';
 import '../styles/shared.css';
 import '../styles/customer/history.css';
 
@@ -24,9 +25,9 @@ export const CustomerHistory = () => {
         const bookingRes = await customerService.getWashHistory();
         let bookingList = [];
         if (bookingRes.success && bookingRes.history) {
-          // Filter to show only Completed and Cancelled bookings
+          // Filter to show Completed, Cancelled and NoShow bookings
           bookingList = bookingRes.history.filter(b => 
-            b.status === 'Completed' || b.status === 'Cancelled'
+            b.status === 'Completed' || b.status === 'Cancelled' || b.status === 'NoShow'
           );
           setHistory(bookingList);
         }
@@ -178,12 +179,18 @@ export const CustomerHistory = () => {
                               </small>
                             </div>
                             <span className={`badge px-3 py-2 rounded-pill small fw-bold ${
-                              b.status === 'Completed' || b.status === 'Completed' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'
+                              b.status === 'Completed' ? 'bg-success bg-opacity-10 text-success' :
+                              b.status === 'NoShow' ? 'bg-danger bg-opacity-10 text-danger' :
+                              'bg-danger bg-opacity-10 text-danger'
                             }`}>
                               <i className={`fas me-1 ${
-                                b.status === 'Completed' || b.status === 'Completed' ? 'fa-check-circle' : 'fa-times-circle'
+                                b.status === 'Completed' ? 'fa-check-circle' :
+                                b.status === 'NoShow' ? 'fa-user-slash' :
+                                'fa-times-circle'
                               }`}></i>
-                              {b.status === 'Completed' || b.status === 'Completed' ? 'Hoàn thành' : 'Đã hủy'}
+                              {b.status === 'Completed' ? 'Hoàn thành' :
+                               b.status === 'NoShow' ? 'Khách không đến' :
+                               'Đã hủy'}
                             </span>
                           </div>
 
@@ -199,6 +206,20 @@ export const CustomerHistory = () => {
                               <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Chi phí</small>
                               <span className="fw-bold text-cyan" style={{ fontSize: '1rem' }}>{Number(b.price).toLocaleString()}đ</span>
                             </div>
+
+                            {b.progressTracking?.stages && b.status === 'Completed' && (
+                              <div className="col-12 mt-2 pt-2 border-top">
+                                <small className="text-muted fw-bold d-block mb-1.5" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>TIẾN TRÌNH CHI TIẾT</small>
+                                <div className="d-flex flex-wrap gap-2">
+                                  {b.progressTracking.stages.map((stage, sIdx) => (
+                                    <div key={sIdx} className="text-success small d-flex align-items-center gap-1.5" style={{ fontSize: '0.72rem', fontWeight: 500 }}>
+                                      <i className="fas fa-check-circle text-success" style={{ fontSize: '0.75rem' }}></i>
+                                      <span>{stage.displayName}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           {/* Review block */}
