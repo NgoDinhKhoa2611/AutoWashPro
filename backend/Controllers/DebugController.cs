@@ -12,7 +12,7 @@ namespace Auto_Wash.Controllers
         private readonly string _feLogPath;
         private static readonly object _lock = new();
 
-```
+
     public DebugController(IWebHostEnvironment env)
         {
             _feLogPath = Path.Combine(env.ContentRootPath, "debug_fe.log");
@@ -71,6 +71,6 @@ namespace Auto_Wash.Controllers
         public string? Timestamp { get; set; }
         public string? Stack { get; set; }
     }
-```
+
 
 }
