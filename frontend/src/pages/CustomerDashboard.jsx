@@ -111,10 +111,10 @@ export const CustomerDashboard = () => {
 
     loadDashboardData();
 
-    // dynamic polling for active booking status every 5 seconds
+    // dynamic polling for active booking status every 2 seconds
     const interval = setInterval(() => {
       fetchActiveBooking();
-    }, 5000);
+    }, 2000);
 
     return () => {
       clearInterval(interval);
@@ -227,7 +227,7 @@ export const CustomerDashboard = () => {
     ? queueStatusMapper.getTimelineSteps(
         activeBooking.status,
         activeBooking.queueStatus,
-        activeBooking.addons || []
+        activeBooking.currentStage
       )
     : [];
 
@@ -267,15 +267,15 @@ export const CustomerDashboard = () => {
       return { icon: 'fa-times-circle text-danger', bg: 'rgba(220, 53, 69, 0.08)' };
     } else if (t.includes('đổi') || t.includes('voucher') || t.includes('phần thưởng')) {
       return { icon: 'fa-ticket-alt text-warning', bg: 'rgba(255, 193, 7, 0.08)' };
-    } else if (t.includes('quét biển số') || t.includes('quét lpr')) {
+    } else if (t.includes('check-in') || t.includes('checkin') || t.includes('quét biển số') || t.includes('quét lpr')) {
       return { icon: 'fa-qrcode text-info', bg: 'rgba(23, 162, 184, 0.08)' };
-    } else if (t.includes('bắt đầu được rửa') || t.includes('rửa bọt tuyết')) {
+    } else if (t.includes('rửa ngoại thất')) {
       return { icon: 'fa-soap text-primary', bg: 'rgba(0, 123, 255, 0.08)' };
-    } else if (t.includes('dịch vụ') && (t.includes('đang thực hiện') || t.includes('addon'))) {
-      return { icon: 'fa-plus-circle text-primary', bg: 'rgba(0, 123, 255, 0.08)' };
-    } else if (t.includes('sấy khô') || t.includes('kiểm tra cuối')) {
-      return { icon: 'fa-wind text-cyan', bg: 'rgba(6, 182, 212, 0.08)' };
-    } else if (t.includes('rửa xe hoàn tất') || t.includes('hoàn tất') || t.includes('tích điểm') || t.includes('điểm')) {
+    } else if (t.includes('vệ sinh nội thất')) {
+      return { icon: 'fa-broom text-primary', bg: 'rgba(0, 123, 255, 0.08)' };
+    } else if (t.includes('kiểm tra cuối')) {
+      return { icon: 'fa-search text-cyan', bg: 'rgba(6, 182, 212, 0.08)' };
+    } else if (t.includes('hoàn tất') || t.includes('tích điểm') || t.includes('điểm')) {
       return { icon: 'fa-check-circle text-success', bg: 'rgba(40, 167, 69, 0.08)' };
     }
     return { icon: 'fa-bell text-secondary', bg: 'rgba(108, 117, 125, 0.08)' };
@@ -371,12 +371,7 @@ export const CustomerDashboard = () => {
                   <i className="fas fa-check-circle text-success fs-6"></i>
                   <span className="small text-secondary">Dịch vụ chính:</span> <strong className="text-dark small">{activeBooking.mainService}</strong>
                 </div>
-                {activeBooking.addons && activeBooking.addons.length > 0 && (
-                  <div className="mb-2.5 d-flex align-items-center gap-2">
-                    <i className="fas fa-check-circle text-success fs-6"></i>
-                    <span className="small text-secondary">Dịch vụ đi kèm:</span> <strong className="text-dark small">{activeBooking.addons.join(', ')}</strong>
-                  </div>
-                )}
+                {/* Addons display removed */}
                 {activeBooking.paidAt && (
                   <div className="text-secondary small d-flex align-items-center gap-2">
                     <i className="far fa-clock text-muted fs-6"></i>
@@ -397,94 +392,116 @@ export const CustomerDashboard = () => {
 
           {activeBooking && activeBooking.hasQueue && activeBooking.queueStatus !== 'Completed' && (
             <div className="app-card border-0 p-4 mb-4 text-start" style={{ 
-              borderLeft: activeBooking.queueStatus === 'Waiting' || activeBooking.queueStatus === 'WaitingCheckIn' 
-                ? '4px solid #94a3b8' 
-                : '4px solid #0ea5e9' 
+              borderLeft: '4px solid #0ea5e9',
+              background: '#ffffff'
             }}>
               <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
                 <div className="d-flex align-items-center gap-2">
-                  {activeBooking.queueStatus !== 'Waiting' && activeBooking.queueStatus !== 'WaitingCheckIn' && (
-                    <div className="pulse-dot-washing"></div>
-                  )}
+                  <div className="pulse-dot-washing"></div>
                   <h5 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
-                    {activeBooking.queueStatus === 'Waiting' || activeBooking.queueStatus === 'WaitingCheckIn'
-                      ? 'LỊCH SẮP DIỄN RA'
-                      : 'TIẾN ĐỘ RỬA XE TRỰC TIẾP'}
+                    TIẾN ĐỘ RỬA XE TRỰC TIẾP
                   </h5>
                 </div>
                 <span className="badge bg-info bg-opacity-10 text-cyan px-2.5 py-1 rounded-pill small fw-bold">
-                  Làn LPR
+                  {activeBooking.mainService || 'Dịch vụ chính'}
                 </span>
               </div>
 
-              <div className="p-3 rounded-4 mb-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              {/* Progress Bar & Stats */}
+              <div className="p-3.5 rounded-4 mb-4" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', border: '1px solid #e2e8f0' }}>
                 <div className="row g-3">
                   <div className="col-6 col-sm-3">
-                    <small className="text-secondary d-block" style={{ fontSize: '0.65rem', fontWeight: 600 }}>
-                      {activeBooking.queueStatus === 'Waiting' || activeBooking.queueStatus === 'WaitingCheckIn' ? 'BIỂN SỐ XE' : 'XE ĐANG RỬA'}
-                    </small>
+                    <small className="text-secondary d-block mb-1" style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.5px' }}>XE ĐANG RỬA</small>
                     <strong className="text-dark font-monospace" style={{ fontSize: '0.88rem' }}>{activeBooking.vehicle}</strong>
                   </div>
                   <div className="col-6 col-sm-3">
-                    <small className="text-secondary d-block" style={{ fontSize: '0.65rem', fontWeight: 600 }}>GÓI DỊCH VỤ</small>
-                    <strong className="text-dark" style={{ fontSize: '0.85rem' }}>{activeBooking.mainService}</strong>
+                    <small className="text-secondary d-block mb-1" style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.5px' }}>CÔNG ĐOẠN HIỆN TẠI</small>
+                    <strong className="text-cyan" style={{ fontSize: '0.85rem' }}>
+                      {activeBooking.progressTracking?.currentStage === 'CheckIn' ? 'Check-in' :
+                       activeBooking.progressTracking?.currentStage === 'ExteriorWash' ? 'Rửa ngoại thất' :
+                       activeBooking.progressTracking?.currentStage === 'InteriorCleaning' ? 'Vệ sinh nội thất' :
+                       activeBooking.progressTracking?.currentStage === 'FinalInspection' ? 'Kiểm tra cuối' :
+                       activeBooking.progressTracking?.currentStage === 'Completed' ? 'Hoàn tất' :
+                       activeBooking.progressTracking?.currentStage || 'Đang chuẩn bị'}
+                    </strong>
                   </div>
                   <div className="col-6 col-sm-3">
-                    <small className="text-secondary d-block" style={{ fontSize: '0.65rem', fontWeight: 600 }}>CÔNG ĐOẠN HIỆN TẠI</small>
-                    <div>
-                      <span className={`badge px-2 py-1 rounded small fw-bold ${queueStatusMapper.getBadgeClass(activeBooking.queueStatus)}`} style={{ fontSize: '0.72rem' }}>
-                        {queueStatusMapper.getLabel(activeBooking.queueStatus, activeBooking.addons)}
-                      </span>
-                    </div>
+                    <small className="text-secondary d-block mb-1" style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.5px' }}>THỜI GIAN CÒN LẠI</small>
+                    <strong className="text-dark" style={{ fontSize: '0.85rem' }}>
+                      <i className="far fa-clock me-1 text-muted"></i>
+                      {activeBooking.progressTracking?.remainingSeconds ?? 0} giây
+                    </strong>
                   </div>
                   <div className="col-6 col-sm-3">
-                    <small className="text-secondary d-block" style={{ fontSize: '0.65rem', fontWeight: 600 }}>TIẾN ĐỘ THỰC TẾ</small>
-                    <strong className="text-primary d-block" style={{ fontSize: '0.85rem' }}>{progressText}</strong>
+                    <small className="text-secondary d-block mb-1" style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.5px' }}>GIỜ HOÀN THÀNH (ETA)</small>
+                    <strong className="text-success" style={{ fontSize: '0.85rem' }}>
+                      <i className="far fa-check-circle me-1 text-success"></i>
+                      {activeBooking.eta || '—'}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="mt-3">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <span className="small text-secondary" style={{ fontSize: '0.72rem' }}>Tiến trình rửa</span>
+                    <span className="small fw-bold text-dark" style={{ fontSize: '0.72rem' }}>{activeBooking.progressTracking?.progress ?? 0}%</span>
+                  </div>
+                  <div className="progress" style={{ height: '8px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                    <div 
+                      className="progress-bar" 
+                      role="progressbar" 
+                      style={{ 
+                        width: `${activeBooking.progressTracking?.progress ?? 0}%`, 
+                        borderRadius: '10px',
+                        background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)'
+                      }}
+                    ></div>
                   </div>
                 </div>
               </div>
 
-              {/* Steps timeline */}
+              {/* Dynamic Stages checklist */}
               <div className="d-flex flex-column gap-2">
-                {timelineSteps.map((step, i) => {
-                  const isCompleted = step.isCompleted;
-                  const isActive = step.isActive;
-                  
-                  const iconElement = isCompleted
-                    ? <i className="fas fa-check-circle text-success me-2 fs-6"></i>
-                    : isActive
-                      ? <i className="fas fa-spinner fa-spin text-primary me-2 fs-6"></i>
-                      : <i className="far fa-circle text-muted me-2 fs-6"></i>;
+                {(activeBooking.progressTracking?.stages || []).map((stage, idx) => {
+                  const isCompleted = stage.isCompleted;
+                  const isActive = stage.isActive;
 
-                  let itemBg = 'rgba(15, 23, 42, 0.01)';
-                  let itemBorder = 'rgba(15, 23, 42, 0.03)';
+                  let stepBg = 'rgba(15, 23, 42, 0.01)';
+                  let stepBorder = 'rgba(15, 23, 42, 0.03)';
                   let labelClass = 'text-muted';
                   let badgeText = 'Chờ';
                   let badgeClass = 'bg-secondary bg-opacity-10 text-muted';
 
                   if (isCompleted) {
                     labelClass = 'text-secondary text-decoration-line-through';
-                    badgeText = 'Xong';
+                    badgeText = 'Đã xong';
                     badgeClass = 'bg-success bg-opacity-10 text-success';
                   } else if (isActive) {
-                    itemBg = 'rgba(14, 165, 233, 0.03)';
-                    itemBorder = 'rgba(14, 165, 233, 0.2)';
+                    stepBg = 'rgba(14, 165, 233, 0.03)';
+                    stepBorder = 'rgba(14, 165, 233, 0.2)';
                     labelClass = 'text-dark fw-bold';
-                    badgeText = 'Đang chạy';
+                    badgeText = 'Đang làm';
                     badgeClass = 'bg-info bg-opacity-10 text-cyan';
                   }
 
                   return (
                     <div
-                      key={i}
+                      key={idx}
                       className="d-flex align-items-center justify-content-between p-2.5 rounded-3"
-                      style={{ background: itemBg, border: `1px solid ${itemBorder}` }}
+                      style={{ background: stepBg, border: `1px solid ${stepBorder}` }}
                     >
                       <div className="d-flex align-items-center">
-                        {iconElement}
-                        <span className={`small ${labelClass}`} style={{ fontSize: '0.8rem' }}>{step.name}</span>
+                        {isCompleted ? (
+                          <i className="fas fa-check-circle text-success me-2.5"></i>
+                        ) : isActive ? (
+                          <i className="fas fa-spinner fa-spin text-cyan me-2.5"></i>
+                        ) : (
+                          <i className="far fa-circle text-muted me-2.5"></i>
+                        )}
+                        <span className={`small ${labelClass}`} style={{ fontSize: '0.8rem' }}>{stage.displayName}</span>
                       </div>
-                      <span className={`badge ${badgeClass} px-2.5 py-1 fw-bold`} style={{ fontSize: '0.6rem', borderRadius: '5px' }}>{badgeText}</span>
+                      <span className={`badge ${badgeClass} px-2.5 py-1 fw-bold`} style={{ fontSize: '0.62rem', borderRadius: '5px' }}>{badgeText}</span>
                     </div>
                   );
                 })}
@@ -536,12 +553,10 @@ export const CustomerDashboard = () => {
           <div className="app-card border-0 p-4 mb-4 text-start" id="upcoming-appointment-widget">
             <h5 className="fw-bold mb-3 text-dark" style={{ fontSize: '0.9rem' }}>
               <i className="fas fa-calendar-alt text-cyan me-2"></i>
-              {activeBooking && activeBooking.hasQueue && activeBooking.queueStatus !== 'Completed' && activeBooking.queueStatus !== 'Cancelled'
-                ? 'LỊCH ĐANG THỰC HIỆN'
-                : 'LỊCH HẸN TIẾP THEO'}
+              LỊCH HẸN TIẾP THEO
             </h5>
 
-            {activeBooking ? (
+            {activeBooking && !(activeBooking.hasQueue && activeBooking.queueStatus !== 'Completed' && activeBooking.queueStatus !== 'Cancelled') ? (
               <div className="p-3 rounded-4 border bg-light bg-opacity-50">
                 <div className="d-flex align-items-start gap-2.5 mb-3">
                   <div className="appointment-badge-icon">
@@ -573,7 +588,7 @@ export const CustomerDashboard = () => {
                   <div className="text-secondary">
                     <i className="fas fa-info-circle me-2 text-muted"></i>
                     Trạng thái: <strong className="text-cyan">
-                      {activeBooking.queueStatus ? queueStatusMapper.getLabel(activeBooking.queueStatus, activeBooking.addons) : (
+                      {activeBooking.queueStatus ? queueStatusMapper.getLabel(activeBooking.queueStatus) : (
                        activeBooking.status === 'Pending Confirmation' ? 'Chờ xác nhận' :
                        activeBooking.status === 'Confirmed' ? 'Đã xác nhận' :
                        activeBooking.status === 'Checked In' ? 'Đã check-in' : activeBooking.status
@@ -594,7 +609,7 @@ export const CustomerDashboard = () => {
               <div className="text-center py-4 rounded-4 border bg-light bg-opacity-50">
                 <i className="far fa-calendar-minus text-muted opacity-40 fa-2x mb-2"></i>
                 <h6 className="fw-bold text-dark small mb-1">Bạn chưa có lịch hẹn nào</h6>
-                <p className="text-secondary small mb-3 px-3" style={{ fontSize: '0.7rem' }}>Lên lịch rửa ngay để trải nghiệm quy trình nhận diện LPR cực nhanh.</p>
+                <p className="text-secondary small mb-3 px-3" style={{ fontSize: '0.7rem' }}>Lên lịch rửa xe ngay để trải nghiệm dịch vụ chăm sóc tốt nhất.</p>
                 <Link
                   to="/customer/booking"
                   className="app-btn-primary text-dark fw-bold text-decoration-none d-inline-block"

@@ -180,6 +180,14 @@ export const adminService = {
     return response.data;
   },
 
+  rescheduleBooking: async (id, scheduledAt, reason) => {
+    const response = await api.put(`/api/admin/bookings/${id}/reschedule`, {
+      ScheduledAt: scheduledAt,
+      Reason: reason
+    });
+    return response.data;
+  },
+
   getAdminReviews: async () => {
     const response = await api.get('/api/reviews/admin');
     return response.data;

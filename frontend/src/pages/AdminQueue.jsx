@@ -1,127 +1,80 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../services/adminService';
 import '../styles/shared.css';
+import '../styles/admin/bookings.css';
 import '../styles/admin/queue.css';
-
-// Column definitions for Kanban board
-const KANBAN_COLUMNS = [
-  { id: 'Waiting', name: 'Chờ check-in', color: 'border-secondary' },
-  { id: 'LPR_Scan', name: 'Đã quét LPR', color: 'border-warning' },
-  { id: 'Washing', name: 'Đang rửa bọt tuyết', color: 'border-info' },
-  { id: 'Addon_Processing', name: 'Xử lý dịch vụ đi kèm', color: 'border-primary' },
-  { id: 'Drying', name: 'Sấy khô / K.tra cuối', color: 'border-cyan' },
-  { id: 'Completed', name: 'Hoàn tất', color: 'border-success' }
-];
 
 const STAFF_LIST = ['Nguyễn Văn A', 'Trần Văn B', 'Lê Văn C', 'Phạm Hồng D'];
 
+const STAGE_LABEL_MAP = {
+  CheckIn: 'Check-in',
+  ExteriorWash: 'Rửa ngoại thất',
+  Exterior: 'Rửa ngoại thất',
+  InteriorCleaning: 'Vệ sinh nội thất',
+  Interior: 'Vệ sinh nội thất',
+  FinalInspection: 'Kiểm tra cuối',
+  Completed: 'Hoàn tất',
+};
+
+const STAGE_COLOR_MAP = {
+  'Check-in': '#f59e0b',
+  'Rửa ngoại thất': '#3b82f6',
+  'Vệ sinh nội thất': '#8b5cf6',
+  'Kiểm tra cuối': '#0ea5e9',
+  'Hoàn tất': '#22c55e',
+  'Chờ check-in': '#94a3b8',
+};
+
 export const AdminQueue = () => {
-  const [queue, setQueue] = useState([]);
+  const getStageLabel = (stage) => STAGE_LABEL_MAP[stage] || stage || 'Chờ check-in';
+
+  const [queue, setQueue] = useState({ waitingForCheckIn: [], currentlyProcessing: [], completedToday: [] });
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submittingIds, setSubmittingIds] = useState(new Set());
-
-  // Form check-in walk-in
-  const [walkInPlate, setWalkInPlate] = useState('');
-  const [walkInName, setWalkInName] = useState('');
-  const [walkInPhone, setWalkInPhone] = useState('');
-  const [walkInMainSvc, setWalkInMainSvc] = useState('Combo chăm sóc ô tô cao cấp');
-  const [walkInAddons, setWalkInAddons] = useState([]);
-  const [walkInPriority, setWalkInPriority] = useState('Standard Loyalty');
-  const [walkInNote, setWalkInNote] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   
   // Modals state
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [showCheckInModal, setShowCheckInModal] = useState(false);
-
-  // Static services list for walk-in form
-  const mainServicesList = [
-    'Rửa ô tô tiêu chuẩn',
-    'Combo chăm sóc ô tô cao cấp',
-    'Rửa ô tô siêu nhanh'
-  ];
-
-  const addonServicesList = [
-    'Hút bụi khoang nội thất',
-    'Wax nano',
-    'Vệ sinh kính lái',
-    'Dưỡng bóng lốp xe',
-    'Xịt rửa gầm xe'
-  ];
-
-  useEffect(() => {
-    fetchQueue();
-  }, []);
 
   const fetchQueue = async () => {
     setLoading(true);
     try {
-      const response = await adminService.getQueue();
-      if (response) {
-        const mapped = response.map(item => {
-          const mainService = item.services[0]?.name || 'Rửa xe phổ thông';
-          const addonsOnly = item.services.filter(s => s.name !== mainService).map(s => s.name);
-
-          const servicesList = [
-            { name: 'Nhận diện LPR', status: item.status === 'Waiting' ? 'In Progress' : 'Completed' },
-            { name: 'Rửa bọt tuyết', status: item.status === 'Waiting' ? 'Pending' : (item.status === 'LPR_Scan' ? 'In Progress' : 'Completed') }
-          ];
-          
-          addonsOnly.forEach(a => {
-            servicesList.push({ 
-              name: a, 
-              status: (item.status === 'Waiting' || item.status === 'LPR_Scan') ? 'Pending' 
-                     : (item.status === 'Washing' || item.status === 'Addon_Processing' ? 'In Progress' : 'Completed') 
-            });
-          });
-          
-          servicesList.push({ 
-            name: 'Sấy khô', 
-            status: item.status === 'Completed' ? 'Completed' 
-                   : (item.status === 'Drying' ? 'In Progress' : 'Pending') 
-          });
-          
-          servicesList.push({ 
-            name: 'Hoàn tất', 
-            status: item.status === 'Completed' ? 'Completed' : 'Pending' 
-          });
-
-          const totalS = servicesList.length;
-          let washStep = 0;
-          const addonsCount = addonsOnly.length;
-          if (item.status === 'Waiting') washStep = 0;
-          else if (item.status === 'LPR_Scan') washStep = 1;
-          else if (item.status === 'Washing') washStep = 2;
-          else if (item.status === 'Addon_Processing') washStep = 2 + (addonsCount > 0 ? 1 : 0);
-          else if (item.status === 'Drying') washStep = 2 + addonsCount;
-          else if (item.status === 'Completed') washStep = 3 + addonsCount;
-
-          const progressPct = totalS > 1 ? Math.round((washStep / (totalS - 1)) * 100) : 100;
-
-          return {
-            queueId: item.queueId,
-            licensePlate: item.licensePlate,
-            customerName: item.customerName,
-            phone: item.phone || '—',
-            email: item.email || '—',
-            tierName: item.tierName,
-            tierId: item.tierId,
-            status: item.status,
-            bookingDate: new Date(item.checkInAt).toISOString().split('T')[0],
-            bookingTime: new Date(item.checkInAt).toTimeString().substring(0, 5),
-            mainService: mainService,
-            addons: addonsOnly,
-            staffName: item.staffNote || 'Chưa gán',
-            progress: progressPct,
-            washStep: washStep,
-            checkInAt: item.checkInAt,
-            eta: item.status === 'Completed' ? 'Đã xong' : '15 phút',
-            price: item.finalPrice,
-            points: item.pointsEarned,
-            staffNote: item.staffNote || '',
-            services: servicesList
-          };
+      const [queueRes, bookingsRes] = await Promise.all([
+        adminService.getQueue(),
+        adminService.getBookings()
+      ]);
+      if (queueRes) {
+        setQueue({
+          waitingForCheckIn: queueRes.waitingForCheckIn || [],
+          currentlyProcessing: queueRes.currentlyProcessing || [],
+          completedToday: queueRes.completedToday || []
         });
-        setQueue(mapped);
+
+        // Sync selectedVehicle to avoid stale service data
+        setSelectedVehicle(prev => {
+          if (!prev) return null;
+          const allItems = [
+            ...(queueRes.waitingForCheckIn || []),
+            ...(queueRes.currentlyProcessing || []),
+            ...(queueRes.completedToday || [])
+          ];
+          const updated = allItems.find(item => item.queueId === prev.queueId);
+          if (updated) {
+            const statusGroup = (queueRes.waitingForCheckIn || []).some(x => x.queueId === updated.queueId) ? 'Waiting'
+                              : (queueRes.currentlyProcessing || []).some(x => x.queueId === updated.queueId) ? 'Processing'
+                              : 'Completed';
+            return {
+              ...updated,
+              statusGroup,
+              mainService: updated.services?.[0]?.name || 'Standard Car Wash'
+            };
+          }
+          return prev;
+        });
+      }
+      if (bookingsRes && bookingsRes.success) {
+        setBookings(bookingsRes.bookings);
       }
     } catch (err) {
       console.error('Lỗi khi tải hàng đợi từ API:', err);
@@ -130,7 +83,52 @@ export const AdminQueue = () => {
     }
   };
 
-  // Move vehicle to next Kanban column
+  useEffect(() => {
+    fetchQueue();
+    // 30s Polling
+    const interval = setInterval(() => {
+      Promise.all([
+        adminService.getQueue(),
+        adminService.getBookings()
+      ]).then(([res, bookingsRes]) => {
+        if (res) {
+          setQueue({
+            waitingForCheckIn: res.waitingForCheckIn || [],
+            currentlyProcessing: res.currentlyProcessing || [],
+            completedToday: res.completedToday || []
+          });
+
+          // Sync selectedVehicle during polling
+          setSelectedVehicle(prev => {
+            if (!prev) return null;
+            const allItems = [
+              ...(res.waitingForCheckIn || []),
+              ...(res.currentlyProcessing || []),
+              ...(res.completedToday || [])
+            ];
+            const updated = allItems.find(item => item.queueId === prev.queueId);
+            if (updated) {
+              const statusGroup = (res.waitingForCheckIn || []).some(x => x.queueId === updated.queueId) ? 'Waiting'
+                                : (res.currentlyProcessing || []).some(x => x.queueId === updated.queueId) ? 'Processing'
+                                : 'Completed';
+              return {
+                ...updated,
+                statusGroup,
+                mainService: updated.services?.[0]?.name || 'Standard Car Wash'
+              };
+            }
+            return prev;
+          });
+        }
+        if (bookingsRes && bookingsRes.success) {
+          setBookings(bookingsRes.bookings);
+        }
+      }).catch(err => console.error(err));
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Move vehicle to next stage
   const handleAdvanceColumn = async (queueId) => {
     if (submittingIds.has(queueId)) return;
     setSubmittingIds(prev => {
@@ -139,100 +137,19 @@ export const AdminQueue = () => {
       return next;
     });
     try {
-      if (typeof queueId === 'number' || !isNaN(queueId)) {
-        const response = await adminService.advanceQueue(queueId);
-        if (response.success) {
-          if (window.showToast) window.showToast('Đã chuyển xe sang công đoạn tiếp theo!', 'success');
-          fetchQueue();
-        } else {
-          if (window.showToast) window.showToast(response.message || 'Lỗi khi cập nhật hàng đợi!', 'error');
+      const response = await adminService.advanceQueue(queueId);
+      if (response.success) {
+        if (window.showToast) window.showToast('Đã chuyển xe sang công đoạn tiếp theo!', 'success');
+        fetchQueue();
+        if (selectedVehicle && selectedVehicle.queueId === queueId) {
+          setSelectedVehicle(null);
         }
+      } else {
+        if (window.showToast) window.showToast(response.message || 'Lỗi khi cập nhật hàng đợi!', 'error');
       }
     } catch (err) {
       console.error(err);
       const errMsg = err.response?.data?.message || 'Lỗi kết nối khi cập nhật hàng đợi!';
-      if (window.showToast) window.showToast(errMsg, 'error');
-    } finally {
-      setSubmittingIds(prev => {
-        const next = new Set(prev);
-        next.delete(queueId);
-        return next;
-      });
-    }
-  };
-
-  // Complete a specific step in the detail list
-  const handleToggleStepCompleted = async (stepIdx) => {
-    if (!selectedVehicle) return;
-    if (submittingIds.has(selectedVehicle.queueId)) return;
-
-    const updatedServices = selectedVehicle.services.map((s, idx) => {
-      if (idx === stepIdx) return { ...s, status: 'Completed' };
-      if (idx === stepIdx + 1) return { ...s, status: 'In Progress' };
-      return s;
-    });
-
-    let nextStepIndex = stepIdx + 1;
-    let newStatus = selectedVehicle.status;
-    const addonsCount = selectedVehicle.addons?.length || 0;
-
-    // Map column status based on the current completed step
-    if (nextStepIndex === 1) {
-      newStatus = 'LPR_Scan';
-    } else if (nextStepIndex === 2) {
-      newStatus = addonsCount > 0 ? 'Washing' : 'Drying';
-    } else if (nextStepIndex >= 3 && nextStepIndex < updatedServices.length - 2) {
-      newStatus = 'Addon_Processing';
-    } else if (nextStepIndex === updatedServices.length - 2) {
-      newStatus = 'Drying';
-    } else if (nextStepIndex === updatedServices.length - 1) {
-      newStatus = 'Completed';
-    }
-
-    const totalSteps = updatedServices.length;
-    const progressPct = Math.min(100, Math.round((nextStepIndex / (totalSteps - 1)) * 100));
-
-    const updatedItem = {
-      ...selectedVehicle,
-      services: updatedServices,
-      washStep: nextStepIndex,
-      status: newStatus,
-      progress: progressPct
-    };
-
-    setSelectedVehicle(updatedItem);
-    setQueue(prevQueue => prevQueue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q));
-
-    const queueId = selectedVehicle.queueId;
-    setSubmittingIds(prev => {
-      const next = new Set(prev);
-      next.add(queueId);
-      return next;
-    });
-
-    // Call API to save to database
-    try {
-      if (typeof selectedVehicle.queueId === 'number' || !isNaN(selectedVehicle.queueId)) {
-        const response = await adminService.updateQueue(selectedVehicle.queueId, newStatus, selectedVehicle.staffNote);
-        if (response.success) {
-          if (window.showToast) window.showToast('Đã cập nhật công đoạn rửa xe!', 'success');
-          
-          // Cập nhật ID thực tế từ backend nếu nó thay đổi (từ âm sang dương)
-          if (response.queueId && response.queueId !== selectedVehicle.queueId) {
-            const finalQueueId = response.queueId;
-            const updatedWithNewId = { ...updatedItem, queueId: finalQueueId };
-            setSelectedVehicle(updatedWithNewId);
-            setQueue(prevQueue => prevQueue.map(q => q.queueId === selectedVehicle.queueId ? updatedWithNewId : q));
-          }
-          
-          fetchQueue();
-        } else {
-          if (window.showToast) window.showToast(response.message || 'Lỗi khi cập nhật công đoạn!', 'error');
-        }
-      }
-    } catch (err) {
-      console.error('Lỗi khi gọi API UpdateQueue:', err);
-      const errMsg = err.response?.data?.message || 'Lỗi kết nối khi cập nhật công đoạn!';
       if (window.showToast) window.showToast(errMsg, 'error');
     } finally {
       setSubmittingIds(prev => {
@@ -253,15 +170,13 @@ export const AdminQueue = () => {
         return next;
       });
       try {
-        if (typeof queueId === 'number' || !isNaN(queueId)) {
-          const response = await adminService.checkoutQueue(queueId);
-          if (response.success) {
-            if (window.showToast) window.showToast(`Check-out thành công cho xe ${plate}! Đã cộng +${response.pointsEarned} điểm Loyalty cho khách.`, 'success');
-            setSelectedVehicle(null);
-            fetchQueue();
-          } else {
-            if (window.showToast) window.showToast(response.message || 'Lỗi khi checkout!', 'error');
-          }
+        const response = await adminService.checkoutQueue(queueId);
+        if (response.success) {
+          if (window.showToast) window.showToast(`Check-out thành công cho xe ${plate}! Đã cộng +${response.pointsEarned} điểm Loyalty cho khách.`, 'success');
+          setSelectedVehicle(null);
+          fetchQueue();
+        } else {
+          if (window.showToast) window.showToast(response.message || 'Lỗi khi checkout!', 'error');
         }
       } catch (err) {
         console.error(err);
@@ -288,72 +203,19 @@ export const AdminQueue = () => {
     }
   };
 
-  const normalizePlate = (plate) =>
-    plate.trim().toUpperCase().replace(/[\s\-.]/g, '');
-
-  const isValidVietnamesePlate = (plate) => {
-    const clean = normalizePlate(plate);
-    if (!/^\d{2}[A-Z]{1,2}\d{4,5}$/.test(clean)) return false;
-    const province = clean.slice(0, 2);
-    const validProvinces = new Set(['11','12','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','40','41','43','47','48','49','50','51','52','53','54','55','56','57','58','59','60','61','62','63','64','65','66','67','68','69','70','71','72','73','74','75','76','77','78','79','80','81','82','83','84','85','86','88','89','90','92','93','94','95','97','98','99']);
-    return validProvinces.has(province);
-  };
-
-  // Add Walk-in Check-in
-  const handleAddWalkIn = async (e) => {
-    e.preventDefault();
-    if (!walkInPlate.trim()) {
-      if (window.showToast) window.showToast('Vui lòng điền biển số xe!', 'warning');
-      return;
-    }
-    if (!isValidVietnamesePlate(walkInPlate)) {
-      if (window.showToast) window.showToast('Biển số xe không hợp lệ! Ví dụ hợp lệ: 51A-123.45, 30F-678.90', 'warning');
-      return;
-    }
-
-    try {
-      const response = await adminService.addWalkIn(walkInPlate.trim(), walkInName.trim());
-      if (response.success) {
-        if (window.showToast) window.showToast(`Check-in thành công xe ${walkInPlate}!`, 'success');
-        setShowCheckInModal(false);
-        setWalkInPlate('');
-        setWalkInName('');
-        setWalkInPhone('');
-        setWalkInAddons([]);
-        setWalkInNote('');
-        fetchQueue();
-      } else {
-        if (window.showToast) window.showToast(response.message || 'Lỗi check-in xe!', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      const errMsg = err.response?.data?.message || 'Lỗi kết nối khi check-in xe!';
-      if (window.showToast) window.showToast(errMsg, 'error');
-    }
-  };
-
-  const handleToggleAddonCheck = (addon) => {
-    if (walkInAddons.includes(addon)) {
-      setWalkInAddons(walkInAddons.filter(a => a !== addon));
-    } else {
-      setWalkInAddons([...walkInAddons, addon]);
-    }
-  };
-
   const handleAssignStaff = async (staff) => {
     if (!selectedVehicle) return;
     const updatedItem = { ...selectedVehicle, staffName: staff, staffNote: staff };
     setSelectedVehicle(updatedItem);
-    setQueue(prevQueue => prevQueue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q));
+    setQueue(prev => ({
+      ...prev,
+      currentlyProcessing: prev.currentlyProcessing.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q)
+    }));
 
     try {
-      if (typeof selectedVehicle.queueId === 'number' || !isNaN(selectedVehicle.queueId)) {
-        const response = await adminService.updateQueue(selectedVehicle.queueId, selectedVehicle.status, staff);
-        if (response.success) {
-          if (window.showToast) window.showToast('Đã gán nhân viên phụ trách!', 'success');
-          fetchQueue();
-        }
-      }
+      await adminService.updateQueue(selectedVehicle.queueId, selectedVehicle.status, staff);
+      if (window.showToast) window.showToast('Đã gán nhân viên phụ trách!', 'success');
+      fetchQueue();
     } catch (err) {
       console.error(err);
     }
@@ -363,41 +225,445 @@ export const AdminQueue = () => {
     if (!selectedVehicle) return;
     const updatedItem = { ...selectedVehicle, staffNote: note };
     setSelectedVehicle(updatedItem);
-    setQueue(prevQueue => prevQueue.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q));
+    setQueue(prev => ({
+      ...prev,
+      currentlyProcessing: prev.currentlyProcessing.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q)
+    }));
   };
 
   const handleBlurStaffNotes = async () => {
     if (!selectedVehicle) return;
     try {
-      if (typeof selectedVehicle.queueId === 'number' || !isNaN(selectedVehicle.queueId)) {
-        await adminService.updateQueue(selectedVehicle.queueId, selectedVehicle.status, selectedVehicle.staffNote);
-        if (window.showToast) window.showToast('Đã lưu ghi chú dịch vụ!', 'success');
-        fetchQueue();
-      }
+      await adminService.updateQueue(selectedVehicle.queueId, selectedVehicle.status, selectedVehicle.staffNote);
+      if (window.showToast) window.showToast('Đã lưu ghi chú dịch vụ!', 'success');
+      fetchQueue();
     } catch (err) {
       console.error(err);
     }
   };
 
-  return (
-    <div className="container-fluid py-0 text-start d-flex flex-column h-100">
-      {/* Page Header */}
-      <div className="d-flex justify-content-between align-items-center flex-wrap mb-3 gap-2 border-bottom pb-3">
-        <div>
-          <h4 className="fw-bold mb-1 text-dark" style={{ letterSpacing: '-0.5px' }}>HÀNG ĐỢI XE TRONG NGÀY ({queue.length})</h4>
-          <p className="text-secondary small mb-0">Hệ thống quản lý, phân bổ làn và giám sát các xe đang thực hiện dịch vụ</p>
+  // Dynamic Service Stages
+  const getServiceStages = (serviceName) => {
+    return ['Check-in', 'Rửa ngoại thất', 'Vệ sinh nội thất', 'Kiểm tra cuối', 'Hoàn tất'];
+  };
+
+  const getActiveStageIndex = (item, stages) => {
+    if (item.statusGroup === 'Waiting') return 0;
+    if (item.statusGroup === 'Completed') return stages.length - 1;
+    if (item.statusGroup === 'NoShow') return stages.length - 1;
+    
+    const backendStage = item.currentStage;
+    if (backendStage === 'CheckIn') return 0;
+    if (backendStage === 'ExteriorWash' || backendStage === 'Exterior') return 1;
+    if (backendStage === 'InteriorCleaning' || backendStage === 'Interior') return 2;
+    if (backendStage === 'FinalInspection') return 3;
+    if (backendStage === 'Completed') return 4;
+    return 0;
+  };
+
+  const getModalStages = (item) => {
+    if (item.progressTracking && item.progressTracking.stages && item.progressTracking.stages.length > 0) {
+      return item.progressTracking.stages.map(stage => ({
+        name: stage.displayName,
+        isCompleted: stage.isCompleted,
+        isActive: stage.isActive,
+        completedAt: stage.completedAt || null,
+        startedAt: stage.startedAt || null,
+      }));
+    }
+    const stages = getServiceStages(item.mainService || 'Standard Car Wash');
+    const activeIndex = getActiveStageIndex(item, stages);
+    return stages.map((stage, idx) => ({
+      name: stage,
+      isCompleted: idx < activeIndex,
+      isActive: idx === activeIndex,
+      completedAt: null,
+      startedAt: null,
+    }));
+  };
+
+  const getCurrentStageLabel = (item) => {
+    // Try progressTracking stages first for active stage displayName
+    if (item.progressTracking?.stages?.length) {
+      const active = item.progressTracking.stages.find(s => s.isActive);
+      if (active) return active.displayName;
+    }
+    // Fallback to currentStage mapping
+    return getStageLabel(item.progressTracking?.currentStage || item.currentStage);
+  };
+
+  const todayStr = useMemo(() => {
+    return new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
+  }, []);
+
+  const waitingItems = useMemo(() => (queue.waitingForCheckIn || []).map(item => ({
+    ...item,
+    statusGroup: 'Waiting',
+    bookingId: Math.abs(item.bookingId || item.queueId),
+    mainService: item.services?.[0]?.name || 'Standard Car Wash'
+  })), [queue.waitingForCheckIn]);
+
+  const processingItems = useMemo(() => (queue.currentlyProcessing || []).map(item => ({
+    ...item,
+    statusGroup: 'Processing',
+    mainService: item.services?.[0]?.name || 'Standard Car Wash'
+  })), [queue.currentlyProcessing]);
+
+  const completedItems = useMemo(() => (queue.completedToday || []).map(item => ({
+    ...item,
+    statusGroup: 'Completed',
+    mainService: item.services?.[0]?.name || 'Standard Car Wash'
+  })), [queue.completedToday]);
+
+  const noShowItems = useMemo(() => bookings
+    .filter(b => b.status === 'NoShow' && b.scheduledAt.split('T')[0] === todayStr)
+    .map(b => ({
+      queueId: `noshow-${b.bookingId}`,
+      bookingId: b.bookingId,
+      licensePlate: b.licensePlate,
+      mainService: b.mainService?.serviceName || 'Standard Car Wash',
+      status: b.status,
+      statusGroup: 'NoShow',
+      remainingSeconds: 0,
+      progress: 0,
+      etaCompletion: 'N/A',
+      bookingTime: new Date(b.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      customerName: b.customerName,
+      phone: b.phone,
+      tierName: 'Member'
+    })), [bookings, todayStr]);
+
+  const stats = useMemo(() => {
+    return {
+      waitingCheckIn: waitingItems.length,
+      processing: processingItems.length,
+      completedToday: completedItems.length,
+      noShow: noShowItems.length,
+      todaysRevenue: completedItems.reduce((sum, item) => sum + (Number(item.finalPrice) || 0), 0)
+    };
+  }, [waitingItems, processingItems, completedItems, noShowItems]);
+
+  // Filtered sections
+  const filteredWaiting = useMemo(() => {
+    if (statusFilter === 'ALL' || statusFilter === 'WAITING_CHECKIN') return waitingItems;
+    return [];
+  }, [waitingItems, statusFilter]);
+
+  const filteredProcessing = useMemo(() => {
+    if (statusFilter === 'ALL' || statusFilter === 'PROCESSING') return processingItems;
+    return [];
+  }, [processingItems, statusFilter]);
+
+  const filteredCompleted = useMemo(() => {
+    if (statusFilter === 'ALL' || statusFilter === 'COMPLETED_TODAY') return completedItems;
+    return [];
+  }, [completedItems, statusFilter]);
+
+  const filteredNoShow = useMemo(() => {
+    if (statusFilter === 'ALL' || statusFilter === 'NoShow') return noShowItems;
+    return [];
+  }, [noShowItems, statusFilter]);
+
+  const hasAnyItems = filteredWaiting.length > 0 || filteredProcessing.length > 0 || filteredCompleted.length > 0 || filteredNoShow.length > 0;
+
+  // Get status class for card border
+  const getStatusClass = (item) => {
+    if (item.statusGroup === 'Waiting') return 'status-waiting';
+    if (item.statusGroup === 'NoShow') return 'status-noshow';
+    if (item.statusGroup === 'Completed') return 'status-completed';
+    // Processing substates
+    const s = item.status;
+    if (s === 'Cancelled') return 'status-cancelled';
+    return 'status-processing';
+  };
+
+  // Get progress bar color
+  const getProgressColor = (item) => {
+    if (item.statusGroup === 'Waiting') return '#f59e0b';
+    if (item.statusGroup === 'Completed') return '#22c55e';
+    if (item.statusGroup === 'NoShow') return '#ef4444';
+    return '#3b82f6';
+  };
+
+  // Format remaining seconds to mm:ss
+  const formatRemaining = (seconds) => {
+    if (!seconds || seconds <= 0) return '—';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+
+  // ── Compact Queue Card (Waiting / Processing / NoShow) ──
+  const renderCompactCard = (item) => {
+    const stageLabel = getCurrentStageLabel(item);
+    const stageColor = STAGE_COLOR_MAP[stageLabel] || '#94a3b8';
+    const isWaiting = item.statusGroup === 'Waiting';
+    const isNoShow = item.statusGroup === 'NoShow';
+    const statusText = isWaiting ? 'CHỜ' : isNoShow ? 'NO SHOW' : 'ĐANG XỬ LÝ';
+    const statusColor = isWaiting ? '#f59e0b' : isNoShow ? '#ef4444' : '#3b82f6';
+    const statusBg = isWaiting ? 'rgba(245,158,11,0.1)' : isNoShow ? 'rgba(239,68,68,0.1)' : 'rgba(59,130,246,0.1)';
+
+    return (
+      <div
+        key={item.queueId}
+        className={`queue-card-compact ${getStatusClass(item)}`}
+      >
+        {/* Header row: ID + Status badge */}
+        <div className="queue-card-header">
+          <span className="queue-card-id">#BK-{item.bookingId}</span>
+          <span className="queue-status-badge" style={{
+            background: statusBg,
+            color: statusColor
+          }}>
+            {statusText}
+          </span>
         </div>
-        <div className="d-flex gap-2">
-          <button className="btn btn-dark btn-sm py-2 px-3 fw-bold rounded-3" onClick={() => setShowCheckInModal(true)}>
-            <i className="fas fa-plus-circle me-1"></i> CHECK-IN XE VÃNG LAI
-          </button>
-          <button className="btn btn-light btn-sm py-2 px-3 fw-bold rounded-3 shadow-sm border" onClick={fetchQueue}>
-            <i className="fas fa-sync-alt me-1"></i> LÀM MỚI
+
+        {/* License plate */}
+        <div className="queue-card-plate">{item.licensePlate}</div>
+
+        {/* Service Name */}
+        <div className="queue-card-service text-truncate small fw-bold text-secondary">
+          <i className="fas fa-concierge-bell me-1.5" style={{ fontSize: '0.7rem' }}></i>
+          {item.mainService}
+        </div>
+
+        {/* Current stage badge */}
+        {!isNoShow ? (
+          <div className="stage-badge" style={{
+            background: `${stageColor}15`,
+            color: stageColor
+          }}>
+            <span className="stage-dot" style={{ background: stageColor }}></span>
+            {stageLabel}
+          </div>
+        ) : (
+          <div className="stage-badge" style={{
+            background: 'rgba(239,68,68,0.1)',
+            color: '#ef4444'
+          }}>
+            <span className="stage-dot" style={{ background: '#ef4444' }}></span>
+            Khách không đến
+          </div>
+        )}
+
+        {/* Info rows */}
+        <div className="queue-card-info-grid">
+          <div className="queue-info-row">
+            <span className="queue-info-label">{isWaiting ? 'Hẹn lúc' : 'Check-in'}</span>
+            <span className="queue-info-value font-monospace">{item.checkInTime || item.bookingTime || '—'}</span>
+          </div>
+
+          {!isNoShow && !isWaiting && (
+            <>
+              <div className="queue-info-row">
+                <span className="queue-info-label">Còn lại</span>
+                <span className="queue-info-value font-monospace">{formatRemaining(item.remainingSeconds)}</span>
+              </div>
+              <div className="queue-info-row">
+                <span className="queue-info-label">ETA</span>
+                <span className="queue-info-value font-monospace">{item.etaCompletion || '—'}</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="queue-card-actions">
+          {isWaiting ? (
+            <>
+              <button
+                className="queue-btn queue-btn-checkin"
+                disabled={submittingIds.has(item.queueId)}
+                onClick={() => handleAdvanceColumn(item.queueId)}
+              >
+                {submittingIds.has(item.queueId) && <span className="spinner-border spinner-border-sm me-1" role="status"></span>}
+                CHECK-IN
+              </button>
+              <button
+                className="queue-btn queue-btn-detail"
+                onClick={() => setSelectedVehicle(item)}
+              >
+                <i className="fas fa-eye"></i>
+              </button>
+            </>
+          ) : (
+            <button
+              className="queue-btn queue-btn-detail w-100"
+              onClick={() => setSelectedVehicle(item)}
+            >
+              CHI TIẾT
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Completed Card (even more compact) ──
+  const renderCompletedCard = (item) => {
+    return (
+      <div
+        key={item.queueId}
+        className="queue-card-compact queue-card-completed status-completed"
+      >
+        <div className="queue-card-header">
+          <span className="queue-card-id">#BK-{item.bookingId}</span>
+          <span className="queue-status-badge" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
+            XONG
+          </span>
+        </div>
+        <div className="queue-card-plate" style={{ fontSize: '0.95rem' }}>{item.licensePlate}</div>
+        
+        <div className="queue-card-service text-truncate small fw-bold text-secondary" style={{ fontSize: '0.68rem' }}>
+          <i className="fas fa-concierge-bell me-1.5" style={{ fontSize: '0.65rem' }}></i>
+          {item.mainService}
+        </div>
+
+        <div className="stage-badge" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontSize: '0.65rem', padding: '1px 6px' }}>
+          <span className="stage-dot" style={{ background: '#22c55e' }}></span>
+          Hoàn tất
+        </div>
+
+        <div className="queue-card-info-grid">
+          <div className="queue-info-row">
+            <span className="queue-info-label">Check-in</span>
+            <span className="queue-info-value font-monospace" style={{ fontSize: '0.68rem' }}>{item.checkInTime || item.bookingTime || '—'}</span>
+          </div>
+          <div className="queue-info-row">
+            <span className="queue-info-label">Hoàn thành</span>
+            <span className="queue-info-value font-monospace text-success" style={{ fontSize: '0.68rem' }}>{item.completedTime || '—'}</span>
+          </div>
+        </div>
+        <div className="queue-card-actions">
+          <button
+            className="queue-btn queue-btn-detail w-100"
+            style={{ padding: '3px 10px', fontSize: '0.62rem' }}
+            onClick={() => setSelectedVehicle(item)}
+          >
+            CHI TIẾT
           </button>
         </div>
       </div>
+    );
+  };
 
-      {/* KANBAN BOARD LAYOUT */}
+  // ── Section header ──
+  const renderSectionHeader = (icon, label, count, color) => (
+    <div className="queue-section-header">
+      <div className="queue-section-label">
+        <i className={icon} style={{ color }}></i>
+        <span>{label}</span>
+      </div>
+      <span className="queue-section-count" style={{ background: `${color}15`, color }}>{count}</span>
+    </div>
+  );
+
+  return (
+    <div className="container-fluid py-2 text-start d-flex flex-column h-100">
+      {/* Page Header */}
+      <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+          <h2 className="fw-black mb-1 text-dark" style={{ letterSpacing: '-0.5px' }}>TIẾN ĐỘ DỊCH VỤ HÔM NAY</h2>
+          <p className="text-secondary small mb-0">Theo dõi tiến độ xử lý xe trong ngày</p>
+        </div>
+      </div>
+
+      {/* 2. SUMMARY DASHBOARD CARDS */}
+      <div className="row g-3 mb-4 text-start">
+        {/* Waiting Check-In */}
+        <div className="col-12 col-sm-6 col-lg">
+          <div 
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-pending ${statusFilter === 'WAITING_CHECKIN' ? 'active' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'WAITING_CHECKIN' ? 'ALL' : 'WAITING_CHECKIN')}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#FA8C16' }}>{stats.waitingCheckIn}</h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>CHỜ CHECK-IN</small>
+              </div>
+              <div className="stat-icon-wrapper" style={{ background: '#FFF7E6', color: '#FA8C16' }}>
+                <i className="fas fa-clock fa-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Processing */}
+        <div className="col-12 col-sm-6 col-lg">
+          <div 
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-checkedin ${statusFilter === 'PROCESSING' ? 'active' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'PROCESSING' ? 'ALL' : 'PROCESSING')}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#722ED1' }}>{stats.processing}</h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>ĐANG THỰC HIỆN</small>
+              </div>
+              <div className="stat-icon-wrapper" style={{ background: '#F9F0FF', color: '#722ED1' }}>
+                <i className="fas fa-sync-alt fa-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Completed Today */}
+        <div className="col-12 col-sm-6 col-lg">
+          <div 
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-completed ${statusFilter === 'COMPLETED_TODAY' ? 'active' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'COMPLETED_TODAY' ? 'ALL' : 'COMPLETED_TODAY')}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#52C41A' }}>{stats.completedToday}</h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>HOÀN THÀNH HÔM NAY</small>
+              </div>
+              <div className="stat-icon-wrapper" style={{ background: '#F6FFED', color: '#52C41A' }}>
+                <i className="fas fa-check-circle fa-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* No Show */}
+        <div className="col-12 col-sm-6 col-lg">
+          <div 
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-cancelled ${statusFilter === 'NoShow' ? 'active' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'NoShow' ? 'ALL' : 'NoShow')}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#64748b' }}>{stats.noShow}</h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>KHÁCH KHÔNG ĐẾN</small>
+              </div>
+              <div className="stat-icon-wrapper" style={{ background: '#F1F5F9', color: '#64748b' }}>
+                <i className="fas fa-user-slash fa-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Today's Revenue */}
+        <div className="col-12 col-sm-6 col-lg">
+          <div 
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-all`}
+            style={{ cursor: 'default' }}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#0ea5e9' }}>
+                  {stats.todaysRevenue.toLocaleString()}đ
+                </h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>DOANH THU HÔM NAY</small>
+              </div>
+              <div className="stat-icon-wrapper" style={{ background: '#E0F2FE', color: '#0ea5e9' }}>
+                <i className="fas fa-dollar-sign fa-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <div className="d-flex justify-content-center align-items-center py-5">
           <div className="spinner-border text-info" role="status">
@@ -405,96 +671,56 @@ export const AdminQueue = () => {
           </div>
         </div>
       ) : (
-      <div className="kanban-board-container d-flex gap-3">
-        {KANBAN_COLUMNS.map(col => {
-          const colItems = queue.filter(item => item.status === col.id);
-
-          return (
-            <div key={col.id} className="kanban-column-wrapper flex-shrink-0" style={{ width: '270px' }}>
-              <div className={`kanban-column-header bg-white border-top border-4 ${col.color} p-3 rounded-4 shadow-sm mb-3 text-start`}>
-                <div className="d-flex justify-content-between align-items-center">
-                  <span className="fw-bold text-dark" style={{ fontSize: '0.88rem' }}>{col.name}</span>
-                  <span className="badge bg-light text-secondary border px-2 py-1" style={{ fontSize: '0.65rem' }}>{colItems.length}</span>
-                </div>
-              </div>
-
-              {/* Kanban Column Cards List */}
-              <div className="kanban-cards-list d-flex flex-column gap-2">
-                {colItems.length === 0 ? (
-                  <div className="text-center py-5 text-muted small bg-light bg-opacity-40 rounded-4 border border-dashed" style={{ borderStyle: 'dashed' }}>
-                    Trống
-                  </div>
-                ) : (
-                  colItems.map(item => {
-                    const tierColors = {
-                      'Platinum Loyalty': 'bg-primary bg-opacity-10 text-primary',
-                      'Gold Loyalty': 'bg-warning bg-opacity-10 text-warning',
-                      'Silver Loyalty': 'bg-secondary bg-opacity-20 text-secondary',
-                      'Standard Loyalty': 'bg-dark bg-opacity-10 text-dark'
-                    };
-
-                    return (
-                      <div
-                        key={item.queueId}
-                        className="kanban-card app-card p-3 bg-white text-start shadow-sm border"
-                        style={{ cursor: 'pointer', borderRadius: '14px' }}
-                        onClick={() => setSelectedVehicle(item)}
-                      >
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <span className="font-monospace fw-bold text-dark bg-light border px-2 py-0.5 rounded" style={{ fontSize: '0.8rem' }}>
-                            {item.licensePlate}
-                          </span>
-                          <span className={`badge ${tierColors[item.tierName] || 'bg-light text-muted'} text-truncate`} style={{ fontSize: '0.58rem', maxWidth: '90px' }}>
-                            {item.tierName.replace(' Loyalty', '')}
-                          </span>
-                        </div>
-
-                        <div className="mb-2 text-dark fw-bold" style={{ fontSize: '0.82rem' }}>{item.customerName}</div>
-                        
-                        <div className="mb-2.5 small text-secondary" style={{ fontSize: '0.72rem', lineHeight: '1.3' }}>
-                          <div>Gói chính: <strong className="text-dark">{item.mainService}</strong></div>
-                          {item.addons && item.addons.length > 0 && (
-                            <div className="text-truncate">Addons: <strong className="text-dark">{item.addons.join(', ')}</strong></div>
-                          )}
-                        </div>
-
-                        <div className="progress mb-2" style={{ height: '4px', borderRadius: '10px' }}>
-                          <div className="progress-bar bg-info" role="progressbar" style={{ width: `${item.progress}%`, background: 'var(--cyan-electric)' }}></div>
-                        </div>
-
-                        <div className="d-flex justify-content-between align-items-center mt-2.5 pt-2 border-top" style={{ fontSize: '0.68rem', borderColor: '#f1f5f9' }}>
-                          <span className="text-muted"><i className="far fa-user me-1"></i>{item.staffName.split(' ').pop()}</span>
-                          <button
-                            className="btn btn-sm btn-cyan py-0.5 px-2 text-dark font-bold border-0"
-                            style={{ fontSize: '0.6rem', borderRadius: '5px', background: 'rgba(14,165,233,0.12)' }}
-                            disabled={submittingIds.has(item.queueId)}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (item.status === 'Completed') {
-                                handleCheckoutVehicle(item.queueId, item.licensePlate);
-                              } else {
-                                handleAdvanceColumn(item.queueId);
-                              }
-                            }}
-                          >
-                            {submittingIds.has(item.queueId) ? (
-                              <i className="fas fa-spinner fa-spin"></i>
-                            ) : item.status === 'Completed' ? (
-                              'CHECKOUT'
-                            ) : (
-                              'TIẾP THEO'
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+        <div className="flex-grow-1">
+          {!hasAnyItems ? (
+            <div className="text-center py-5 text-muted small bg-light bg-opacity-40 rounded-4 border border-dashed">
+              Chưa có phương tiện nào trong danh sách hôm nay.
             </div>
-          );
-        })}
-      </div>
+          ) : (
+            <div className="d-flex flex-column gap-4 mb-4">
+
+              {/* Section: Chờ Check-in */}
+              {filteredWaiting.length > 0 && (
+                <div>
+                  {renderSectionHeader('fas fa-clock', 'Chờ Check-in', filteredWaiting.length, '#f59e0b')}
+                  <div className="queue-grid">
+                    {filteredWaiting.map(item => renderCompactCard(item))}
+                  </div>
+                </div>
+              )}
+
+              {/* Section: Đang xử lý */}
+              {filteredProcessing.length > 0 && (
+                <div>
+                  {renderSectionHeader('fas fa-sync-alt', 'Đang xử lý', filteredProcessing.length, '#3b82f6')}
+                  <div className="queue-grid">
+                    {filteredProcessing.map(item => renderCompactCard(item))}
+                  </div>
+                </div>
+              )}
+
+              {/* Section: Khách không đến */}
+              {filteredNoShow.length > 0 && (
+                <div>
+                  {renderSectionHeader('fas fa-user-slash', 'Khách không đến', filteredNoShow.length, '#ef4444')}
+                  <div className="queue-grid">
+                    {filteredNoShow.map(item => renderCompactCard(item))}
+                  </div>
+                </div>
+              )}
+
+              {/* Section: Hoàn tất hôm nay */}
+              {filteredCompleted.length > 0 && (
+                <div>
+                  {renderSectionHeader('fas fa-check-circle', 'Hoàn tất hôm nay', filteredCompleted.length, '#22c55e')}
+                  <div className="queue-grid">
+                    {filteredCompleted.map(item => renderCompletedCard(item))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* DETAIL SERVICE WORKFLOW MODAL */}
@@ -509,260 +735,139 @@ export const AdminQueue = () => {
             </div>
             <div className="confirm-modal-body text-start py-3" style={{ maxHeight: '420px', overflowY: 'auto' }}>
               
-              {/* Meta brief stats */}
               <div className="bg-light p-3 rounded-4 mb-3" style={{ border: '1px solid #e2e8f0' }}>
                 <div className="row g-2" style={{ fontSize: '0.78rem' }}>
                   <div className="col-6">
-                    <span className="text-muted d-block small">GÓI CHÍNH</span>
+                    <span className="text-muted d-block small">GÓI DỊCH VỤ</span>
                     <strong className="text-dark">{selectedVehicle.mainService}</strong>
                   </div>
                   <div className="col-6 text-end">
-                    <span className="text-muted d-block small">LOẠI KHÁCH HÀNG</span>
-                    <strong className="text-warning">{selectedVehicle.tierName}</strong>
+                    <span className="text-muted d-block small">ETA HOÀN THÀNH</span>
+                    <strong className="text-cyan">{selectedVehicle.etaCompletion}</strong>
                   </div>
                   <div className="col-6 mt-2">
-                    <span className="text-muted d-block small">ETA HOÀN THÀNH</span>
-                    <strong className="text-cyan">{selectedVehicle.status === 'Completed' ? 'Đã xong' : `${(selectedVehicle.services.length - 1 - selectedVehicle.washStep) * 5} phút`}</strong>
-                  </div>
-                  <div className="col-6 text-end mt-2">
-                    <span className="text-muted d-block small">TIẾN ĐỘ</span>
+                    <span className="text-muted d-block small">TIẾN ĐỘ THỜI GIAN</span>
                     <strong className="text-dark">{selectedVehicle.progress}%</strong>
                   </div>
-                </div>
-              </div>
-
-              {/* Customer Contact Details */}
-              <div className="bg-light p-3 rounded-4 mb-3" style={{ border: '1px solid #e2e8f0' }}>
-                <h6 className="fw-bold mb-2 text-dark" style={{ fontSize: '0.82rem' }}><i className="fas fa-user-circle me-1 text-cyan"></i>Thông tin liên hệ</h6>
-                <div className="row g-2" style={{ fontSize: '0.78rem' }}>
-                  <div className="col-12">
-                    <span className="text-muted">Khách hàng:</span> <strong className="text-dark ms-1">{selectedVehicle.customerName}</strong>
-                  </div>
-                  <div className="col-12 mt-1">
-                    <span className="text-muted">Số điện thoại:</span> <strong className="text-dark ms-1">{selectedVehicle.phone}</strong>
-                  </div>
-                  <div className="col-12 mt-1">
-                    <span className="text-muted">Email:</span> <strong className="text-dark ms-1">{selectedVehicle.email}</strong>
+                  <div className="col-6 text-end mt-2">
+                    <span className="text-muted d-block small">CÒN LẠI</span>
+                    <strong className="text-cyan">{selectedVehicle.remainingSeconds} giây</strong>
                   </div>
                 </div>
               </div>
 
-              {/* Staff Assignment */}
-              <div className="mb-3">
-                <label className="form-label small fw-bold text-muted mb-1">GÁN NHÂN VIÊN PHỤ TRÁCH</label>
-                <select
-                  className="form-select bg-light border-0 py-2 text-dark fw-bold"
-                  value={selectedVehicle.staffName}
-                  onChange={(e) => handleAssignStaff(e.target.value)}
-                >
-                  <option value="Chưa gán">-- Chọn nhân viên --</option>
-                  {STAFF_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
+              {selectedVehicle.statusGroup !== 'NoShow' && (
+                <div className="mb-3">
+                  <label className="form-label small fw-bold text-muted mb-1">GÁN NHÂN VIÊN PHỤ TRÁCH</label>
+                  <select
+                    className="form-select bg-light border-0 py-2 text-dark fw-bold"
+                    value={selectedVehicle.staffName || "Chưa gán"}
+                    onChange={(e) => handleAssignStaff(e.target.value)}
+                  >
+                    <option value="Chưa gán">-- Chọn nhân viên --</option>
+                    {STAFF_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
 
-              {/* Dynamic Step Checklist */}
-              <label className="form-label small fw-bold text-muted mb-2">DANH SÁCH BƯỚC THỰC HIỆN ĐỘNG</label>
+              <label className="form-label small fw-bold text-muted mb-2">QUY TRÌNH THỰC HIỆN DỰ KIẾN</label>
               <div className="d-flex flex-column gap-2 mb-3">
-                {selectedVehicle.services.map((step, idx) => {
-                  const isCompleted = step.status === 'Completed' || idx < selectedVehicle.washStep;
-                  const isActive = (step.status === 'In Progress' || idx === selectedVehicle.washStep) && step.status !== 'Completed';
-
+                {getModalStages(selectedVehicle).map((step, idx) => {
                   return (
                     <div
                       key={idx}
-                      className="d-flex align-items-center justify-content-between p-2 rounded-3 border bg-white"
+                      className="d-flex align-items-center justify-content-between p-2.5 rounded-3 border bg-white"
                       style={{
-                        borderColor: isActive ? 'rgba(14, 165, 233, 0.3)' : '#e2e8f0',
-                        background: isActive ? 'rgba(14, 165, 233, 0.02)' : 'none'
+                        borderColor: step.isActive ? 'rgba(14, 165, 233, 0.3)' : '#e2e8f0',
+                        background: step.isActive ? 'rgba(14, 165, 233, 0.02)' : 'none'
                       }}
                     >
                       <div className="d-flex align-items-center gap-2">
-                        {isCompleted ? (
+                        {step.isCompleted ? (
                           <i className="fas fa-check-circle text-success fs-6"></i>
-                        ) : isActive ? (
-                          <i className="fas fa-spinner fa-spin text-primary fs-6"></i>
+                        ) : step.isActive ? (
+                          <i className="fas fa-spinner fa-spin text-cyan fs-6"></i>
                         ) : (
                           <i className="far fa-circle text-muted fs-6"></i>
                         )}
-                        <span className={`small ${isCompleted ? 'text-muted text-decoration-line-through' : 'text-dark fw-bold'}`} style={{ fontSize: '0.8rem' }}>
-                          {step.name}
-                        </span>
+                        <div className="d-flex flex-column">
+                          <span className={`small ${step.isCompleted ? 'text-muted text-decoration-line-through' : 'text-dark fw-bold'}`} style={{ fontSize: '0.8rem' }}>
+                            {step.name}
+                          </span>
+                          {step.completedAt && (
+                            <span className="text-muted" style={{ fontSize: '0.62rem' }}>
+                              {new Date(step.completedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                          {step.isActive && step.startedAt && (
+                            <span className="text-cyan" style={{ fontSize: '0.62rem' }}>
+                              Bắt đầu: {new Date(step.startedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      
-                      {isActive && (
-                        <button
-                          className="btn btn-sm btn-success py-1 px-2 fw-bold"
-                          style={{ fontSize: '0.62rem', borderRadius: '6px' }}
-                          disabled={submittingIds.has(selectedVehicle.queueId)}
-                          onClick={() => handleToggleStepCompleted(idx)}
-                        >
-                          Xong bước
-                        </button>
-                      )}
-                      
-                      {!isActive && !isCompleted && (
-                        <span className="badge bg-secondary bg-opacity-10 text-muted" style={{ fontSize: '0.6rem' }}>Chờ</span>
-                      )}
-                      {isCompleted && (
-                        <span className="badge bg-success bg-opacity-10 text-success" style={{ fontSize: '0.6rem' }}>Xong</span>
-                      )}
+                      {step.isCompleted && <span className="badge bg-success bg-opacity-10 text-success" style={{ fontSize: '0.6rem' }}>Xong</span>}
+                      {step.isActive && <span className="badge bg-info bg-opacity-10 text-cyan animate-pulse" style={{ fontSize: '0.6rem' }}>Đang chạy</span>}
+                      {!step.isCompleted && !step.isActive && <span className="badge bg-light text-muted" style={{ fontSize: '0.6rem' }}>Chờ</span>}
                     </div>
                   );
                 })}
               </div>
 
-              {/* Staff Notes */}
-              <div className="mb-0">
-                <label className="form-label small fw-bold text-muted mb-1">GHI CHÚ DỊCH VỤ / TÌNH TRẠNG XE</label>
-                <textarea
-                  className="form-control bg-light border-0 py-2 rounded-3"
-                  rows="3"
-                  placeholder="Điền ghi chú tình trạng xe, vết xước sẵn có..."
-                  value={selectedVehicle.staffNote || ''}
-                  onChange={(e) => handleSaveStaffNotes(e.target.value)}
-                  onBlur={handleBlurStaffNotes}
-                ></textarea>
-              </div>
+              {selectedVehicle.statusGroup !== 'NoShow' && (
+                <div className="mb-0">
+                  <label className="form-label small fw-bold text-muted mb-1">GHI CHÚ DỊCH VỤ / TÌNH TRẠNG XE</label>
+                  <textarea
+                    className="form-control bg-light border-0 py-2 rounded-3"
+                    rows="3"
+                    placeholder="Lưu ý vết xước của xe..."
+                    value={selectedVehicle.staffNote || ''}
+                    onChange={(e) => handleSaveStaffNotes(e.target.value)}
+                    onBlur={handleBlurStaffNotes}
+                  ></textarea>
+                </div>
+              )}
 
             </div>
             <div className="confirm-modal-footer">
-              <button className="confirm-cancel-btn w-50" onClick={() => setSelectedVehicle(null)}>ĐÓNG</button>
-              {selectedVehicle.status === 'Completed' && (
-                <button
-                  className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-dark"
-                  style={{ background: 'var(--cyan-electric)' }}
-                  disabled={submittingIds.has(selectedVehicle.queueId)}
-                  onClick={() => handleCheckoutVehicle(selectedVehicle.queueId, selectedVehicle.licensePlate)}
-                >
-                  {submittingIds.has(selectedVehicle.queueId) ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin me-1"></i> THANH TOÁN
-                    </>
+              {selectedVehicle.statusGroup === 'NoShow' ? (
+                <button className="confirm-cancel-btn w-100 py-2.5 fw-bold" style={{ borderRadius: '12px' }} onClick={() => setSelectedVehicle(null)}>ĐÓNG</button>
+              ) : (
+                <>
+                  <button className="confirm-cancel-btn w-50" onClick={() => setSelectedVehicle(null)}>ĐÓNG</button>
+                  {(selectedVehicle.status === 'Completed' || selectedVehicle.progress >= 100 || selectedVehicle.statusGroup === 'Completed') ? (
+                    <button
+                      className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-dark"
+                      style={{ background: 'var(--cyan-electric)' }}
+                      disabled={submittingIds.has(selectedVehicle.queueId)}
+                      onClick={() => handleCheckoutVehicle(selectedVehicle.queueId, selectedVehicle.licensePlate)}
+                    >
+                      THANH TOÁN & CHECKOUT
+                    </button>
+                  ) : selectedVehicle.statusGroup === 'Processing' ? (
+                    <button
+                      className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-muted"
+                      style={{ background: '#e2e8f0', cursor: 'not-allowed' }}
+                      disabled={true}
+                    >
+                      TỰ ĐỘNG CHUYỂN TIẾP (DEMO)
+                    </button>
                   ) : (
-                    'THANH TOÁN'
+                    <button
+                      className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-dark"
+                      style={{ background: 'var(--cyan-electric)' }}
+                      disabled={submittingIds.has(selectedVehicle.queueId)}
+                      onClick={() => handleAdvanceColumn(selectedVehicle.queueId)}
+                    >
+                      TIẾP TỤC VÀO LÀN RỬA
+                    </button>
                   )}
-                </button>
+                </>
               )}
             </div>
           </div>
         </div>
       )}
-
-      {/* WALK-IN CHECK-IN MODAL FORM */}
-      {showCheckInModal && (
-        <div className="confirm-modal-backdrop show" style={{ display: 'flex', zIndex: 1060 }}>
-          <div className="confirm-modal-card animate-confirm-in" style={{ maxWidth: '500px', width: '100%', borderRadius: '24px' }}>
-            <div className="confirm-modal-header border-bottom pb-2">
-              <h5 className="confirm-modal-title text-dark fw-bold"><i className="fas fa-sign-in-alt text-cyan me-2"></i>Check-in xe tại quầy</h5>
-              <button type="button" className="confirm-modal-close-btn" onClick={() => setShowCheckInModal(false)}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <form onSubmit={handleAddWalkIn}>
-              <div className="confirm-modal-body text-start py-3" style={{ maxHeight: '430px', overflowY: 'auto' }}>
-                
-                <div className="row g-2 mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label small fw-bold text-muted">BIỂN SỐ XE</label>
-                    <input
-                      type="text"
-                      className="form-control bg-light border-0 py-2.5 font-monospace fw-bold uppercase"
-                      placeholder="VÍ DỤ: 51G - 123.45"
-                      value={walkInPlate}
-                      onChange={(e) => setWalkInPlate(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label small fw-bold text-muted">HẠNG LOYALTY ƯU TIÊN</label>
-                    <select
-                      className="form-select bg-light border-0 py-2.5 text-dark fw-bold"
-                      value={walkInPriority}
-                      onChange={(e) => setWalkInPriority(e.target.value)}
-                    >
-                      <option value="Standard Loyalty">Standard Loyalty (Thường)</option>
-                      <option value="Silver Loyalty">Silver Loyalty</option>
-                      <option value="Gold Loyalty">Gold Loyalty (Ưu tiên LPR)</option>
-                      <option value="Platinum Loyalty">Platinum Loyalty (Vip pass)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="row g-2 mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label small fw-bold text-muted">TÊN KHÁCH HÀNG</label>
-                    <input
-                      type="text"
-                      className="form-control bg-light border-0 py-2.5"
-                      placeholder="Nguyễn Văn A"
-                      value={walkInName}
-                      onChange={(e) => setWalkInName(e.target.value)}
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label small fw-bold text-muted">SỐ ĐIỆN THOẠI</label>
-                    <input
-                      type="text"
-                      className="form-control bg-light border-0 py-2.5 font-monospace"
-                      placeholder="0901234567"
-                      value={walkInPhone}
-                      onChange={(e) => setWalkInPhone(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label small fw-bold text-muted">GÓI DỊCH VỤ CHÍNH</label>
-                  <select
-                    className="form-select bg-light border-0 py-2.5 text-dark fw-bold"
-                    value={walkInMainSvc}
-                    onChange={(e) => setWalkInMainSvc(e.target.value)}
-                  >
-                    {mainServicesList.map(svc => <option key={svc} value={svc}>{svc}</option>)}
-                  </select>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label small fw-bold text-muted mb-2">CHỌN DỊCH VỤ ĐI KÈM (ADD-ONS)</label>
-                  <div className="row g-2">
-                    {addonServicesList.map(addon => {
-                      const isChecked = walkInAddons.includes(addon);
-                      return (
-                        <div key={addon} className="col-6">
-                          <div
-                            className={`p-2 rounded-3 border text-center small fw-bold ${isChecked ? 'bg-info bg-opacity-10 border-info text-cyan' : 'bg-light border-light text-muted'}`}
-                            style={{ cursor: 'pointer', fontSize: '0.72rem' }}
-                            onClick={() => handleToggleAddonCheck(addon)}
-                          >
-                            {addon}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="mb-0">
-                  <label className="form-label small fw-bold text-muted">GHI CHÚ HÀNG CHỜ</label>
-                  <textarea
-                    className="form-control bg-light border-0 py-2 rounded-3"
-                    rows="2"
-                    placeholder="Lưu ý vết xước trước rửa, đồ để trên xe..."
-                    value={walkInNote}
-                    onChange={(e) => setWalkInNote(e.target.value)}
-                  ></textarea>
-                </div>
-
-              </div>
-              <div className="confirm-modal-footer">
-                <button type="button" className="confirm-cancel-btn w-50" onClick={() => setShowCheckInModal(false)}>HỦY</button>
-                <button type="submit" className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-dark" style={{ background: 'var(--cyan-electric)' }}> CHECK-IN </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };

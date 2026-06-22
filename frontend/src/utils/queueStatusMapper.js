@@ -76,50 +76,35 @@ export const queueStatusMapper = {
     }
   },
 
-  getTimelineSteps: (bookingStatus, queueStatus, addons = []) => {
-    const addonNames = Array.isArray(addons) ? addons : [];
-    const hasQueue = !!queueStatus;
-
+  getTimelineSteps: (bookingStatus, queueStatus, currentStage) => {
     const steps = [
-      { id: 'lpr', name: 'Nhận diện LPR' },
-      { id: 'washing', name: 'Rửa bọt tuyết' }
+      { id: 'CheckIn', name: 'Check-in' },
+      { id: 'ExteriorWash', name: 'Rửa ngoại thất' },
+      { id: 'InteriorCleaning', name: 'Vệ sinh nội thất' },
+      { id: 'FinalInspection', name: 'Kiểm tra cuối' },
+      { id: 'Completed', name: 'Hoàn tất' }
     ];
 
-    if (addonNames.length > 0) {
-      const addonLabel = addonNames.length === 1 ? addonNames[0] : 'Dịch vụ đi kèm';
-      steps.push({ id: 'addon', name: addonLabel });
-    }
-
-    steps.push({ id: 'drying', name: 'Sấy khô / Kiểm tra' });
-    steps.push({ id: 'completed', name: 'Hoàn tất' });
-
-    // Determine current active index based on queueStatus
-    let activeIndex = -1; // Default to all pending (not in wash process yet)
+    let activeIndex = -1;
     
-    if (bookingStatus === 'Completed' || queueStatus === 'Completed' || queueStatus === 'Archived') {
-      activeIndex = steps.length; // All completed
-    } else if (hasQueue) {
-      const status = queueStatus.toLowerCase();
-      if (status === 'waiting' || status === 'waitingcheckin') {
-        activeIndex = -1; // WaitingCheckin: all steps remain pending, progress 0/N
-      } else if (status === 'lpr_scan' || status === 'lprscanned') {
-        activeIndex = 0; // Nhận diện LPR becomes active
-      } else if (status === 'washing' || status === 'foamwashing') {
-        activeIndex = 1; // Rửa bọt tuyết becomes active
-      } else if (status === 'addon_processing' || status === 'addonprocessing') {
-        if (addonNames.length > 0) {
-          activeIndex = 2; // Addon processing becomes active
-        } else {
-          activeIndex = 2; // Fallback to Drying if no addon
-        }
-      } else if (status === 'drying') {
-        activeIndex = addonNames.length > 0 ? 3 : 2; // Drying becomes active
+    if (bookingStatus === 'Completed' || queueStatus === 'Completed' || queueStatus === 'Archived' || currentStage === 'Completed') {
+      activeIndex = 5;
+    } else if (queueStatus === 'Waiting' || queueStatus === 'LPR_Scan' || bookingStatus === 'CheckedIn' || currentStage) {
+      const stage = currentStage || 'CheckIn';
+      if (stage === 'CheckIn') {
+        activeIndex = 0;
+      } else if (stage === 'ExteriorWash' || stage === 'Exterior') {
+        activeIndex = 1;
+      } else if (stage === 'InteriorCleaning' || stage === 'Interior') {
+        activeIndex = 2;
+      } else if (stage === 'FinalInspection') {
+        activeIndex = 3;
       }
     }
 
     return steps.map((step, idx) => {
-      const isCompleted = bookingStatus === 'Completed' || queueStatus === 'Completed' || (activeIndex !== -1 && idx < activeIndex);
-      const isActive = bookingStatus !== 'Completed' && queueStatus !== 'Completed' && activeIndex !== -1 && idx === activeIndex;
+      const isCompleted = activeIndex !== -1 && idx < activeIndex;
+      const isActive = activeIndex !== -1 && idx === activeIndex;
       return {
         name: step.name,
         isCompleted,

@@ -86,6 +86,7 @@ namespace Auto_Wash.Controllers
         [Route("api/admin/bookings/{id}/cancel")]
         public async Task<IActionResult> CancelBooking(int id, [FromBody] CancelBookingDto request)
         {
+            if (!IsAdminOrStaff()) return Unauthorized(new { success = false, message = "Bạn không có quyền thực hiện hành động này!" });
             Console.WriteLine($"[CANCEL BOOKING] BookingId={id}");
 
             if (request == null)
@@ -153,6 +154,45 @@ namespace Auto_Wash.Controllers
                     return BadRequest(new { success = false, message = result.message });
                 }
                 return Ok(new { success = true, message = result.message, queueId = result.queueId });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPut]
+        [Route("api/admin/bookings/{id}/reschedule")]
+        public async Task<IActionResult> RescheduleBooking(int id, [FromBody] RescheduleBookingDto request)
+        {
+            if (!IsAdminOrStaff()) return Unauthorized(new { success = false, message = "Bạn không có quyền thực hiện hành động này!" });
+
+            if (request == null)
+            {
+                return BadRequest(new { success = false, message = "Không nhận được dữ liệu đổi lịch." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join("; ", ModelState.Values
+                    .SelectMany(x => x.Errors)
+                    .Select(x => x.ErrorMessage));
+                return BadRequest(new { success = false, message = $"Dữ liệu không hợp lệ: {errors}" });
+            }
+
+            if (!DateTime.TryParse(request.ScheduledAt, out DateTime newScheduledAt))
+            {
+                return BadRequest(new { success = false, message = "Thời gian hẹn mới không đúng định dạng." });
+            }
+
+            try
+            {
+                var result = await _adminBookingService.RescheduleBookingAsync(id, newScheduledAt, request.Reason);
+                if (!result.success)
+                {
+                    return BadRequest(new { success = false, message = result.message });
+                }
+                return Ok(new { success = true, message = result.message });
             }
             catch (Exception ex)
             {

@@ -26,6 +26,8 @@ namespace Auto_Wash.Data
         public DbSet<Queue> Queues { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<Review> Reviews { get; set; } = null!;
+        public DbSet<BookingAuditLog> BookingAuditLogs { get; set; } = null!;
+        public DbSet<BookingRescheduleHistory> BookingRescheduleHistories { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -368,6 +370,35 @@ namespace Auto_Wash.Data
                 .WithMany()
                 .HasForeignKey(r => r.CustomerId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // 18. BookingAuditLogs
+            builder.Entity<BookingAuditLog>()
+                .HasOne(al => al.Booking)
+                .WithMany()
+                .HasForeignKey(al => al.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 19. BookingRescheduleHistories
+            builder.Entity<BookingRescheduleHistory>()
+                .HasOne(rh => rh.Booking)
+                .WithMany()
+                .HasForeignKey(rh => rh.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Service>().HasData(
+                new Service
+                {
+                    ServiceId = 999,
+                    ServiceName = "Standard Car Wash",
+                    Description = "Dịch vụ rửa xe tiêu chuẩn bao gồm: Rửa ngoại thất, vệ sinh bánh xe, hút bụi nội thất, lau kính, lau taplo, dưỡng nội thất cơ bản, kiểm tra cuối.",
+                    Category = ServiceCategory.Basic,
+                    BasePrice = 250000,
+                    EstimatedMinutes = 60,
+                    IsAddOn = false,
+                    IsActive = true,
+                    IsFeatured = true
+                }
+            );
 
             // Configure all tables and columns to be lowercase for Supabase PostgreSQL compatibility
             foreach (var entity in builder.Model.GetEntityTypes())

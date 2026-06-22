@@ -7,7 +7,8 @@ import '../styles/customer/booking.css';
 
 const DEFAULT_TIME_SLOTS = [
   '08:00', '09:00', '10:00', '11:00', '12:00', 
-  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
+  '19:00', '20:00', '21:00', '22:00', '23:00'
 ];
 
 
@@ -18,16 +19,10 @@ export const CustomerBooking = () => {
 
   const [vehicles, setVehicles] = useState([]);
   const [mainServices, setMainServices] = useState([]);
-  const [addonServices, setAddonServices] = useState([]);
   
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-
-  useEffect(() => {
-    setSelectedAddons({});
-  }, [selectedVehicle]);
   
   const [selectedMain, setSelectedMain] = useState(null);
-  const [selectedAddons, setSelectedAddons] = useState({});
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('');
   
@@ -45,8 +40,22 @@ export const CustomerBooking = () => {
   const [occupiedSlots, setOccupiedSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [earliestAvailableDate, setEarliestAvailableDate] = useState(null);
+  const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
 
   useEffect(() => {
+    // Fetch dynamic slots configuration
+    const fetchConfig = async () => {
+      try {
+        const res = await customerService.getBookingConfig();
+        if (res.success && res.slots) {
+          setTimeSlots(res.slots);
+        }
+      } catch (err) {
+        console.error("Error loading booking config:", err);
+      }
+    };
+    fetchConfig();
+
     // Determine booking days window based on membership tier
     const tier = (user?.tier || 'Standard Member').toUpperCase();
     let days = 7;
@@ -105,45 +114,53 @@ export const CustomerBooking = () => {
 
     fetchVehicles();
 
-    // Set default main service
-    // Load services (checking Custom services in DB)
+    // Set default main service (Standard Car Wash ID 999)
     const fetchServices = async () => {
       try {
         const response = await customerService.getServices();
         if (response.success && response.services && response.services.length > 0) {
-          const mains = response.services.filter(s => s.isAddon === false && s.isActive === true)
-            .map(s => ({
-              id: s.id,
-              name: s.name,
-              desc: s.desc,
-              price: s.price,
-              time: s.estimatedMinutes + ' phút',
-              icon: 'fa-soap'
-            }));
-          setMainServices(mains);
-          if (mains.length > 0) {
-            setSelectedMain(mains[0]);
-          }
-
-          const addons = response.services.filter(s => s.isAddon === true && s.isActive === true)
-            .map(s => ({
-              id: s.id,
-              name: s.name,
-              desc: s.desc,
-              price: s.price,
-              icon: 'fa-plus-circle'
-            }));
-          setAddonServices(addons);
+          const standard = response.services.find(s => s.id === "999" || s.name === "Standard Car Wash");
+          const standardMapped = standard ? {
+            id: standard.id,
+            name: standard.name,
+            desc: standard.desc,
+            price: standard.price,
+            time: standard.estimatedMinutes + ' phút',
+            icon: 'fa-soap'
+          } : {
+            id: "999",
+            name: "Standard Car Wash",
+            desc: "Dịch vụ rửa xe tiêu chuẩn bao gồm: Rửa ngoại thất, vệ sinh bánh xe, hút bụi nội thất, lau kính, lau taplo, dưỡng nội thất cơ bản, kiểm tra cuối.",
+            price: 250000,
+            time: "60 phút",
+            icon: 'fa-soap'
+          };
+          setMainServices([standardMapped]);
+          setSelectedMain(standardMapped);
         } else {
-          setMainServices([]);
-          setAddonServices([]);
-          setSelectedMain(null);
+          const fallback = {
+            id: "999",
+            name: "Standard Car Wash",
+            desc: "Dịch vụ rửa xe tiêu chuẩn bao gồm: Rửa ngoại thất, vệ sinh bánh xe, hút bụi nội thất, lau kính, lau taplo, dưỡng nội thất cơ bản, kiểm tra cuối.",
+            price: 250000,
+            time: "60 phút",
+            icon: 'fa-soap'
+          };
+          setMainServices([fallback]);
+          setSelectedMain(fallback);
         }
       } catch (err) {
         console.error(err);
-        setMainServices([]);
-        setAddonServices([]);
-        setSelectedMain(null);
+        const fallback = {
+          id: "999",
+          name: "Standard Car Wash",
+          desc: "Dịch vụ rửa xe tiêu chuẩn bao gồm: Rửa ngoại thất, vệ sinh bánh xe, hút bụi nội thất, lau kính, lau taplo, dưỡng nội thất cơ bản, kiểm tra cuối.",
+          price: 250000,
+          time: "60 phút",
+          icon: 'fa-soap'
+        };
+        setMainServices([fallback]);
+        setSelectedMain(fallback);
       }
     };
 
@@ -179,24 +196,37 @@ export const CustomerBooking = () => {
   }, [user]);
 
   // Load occupied slots for selected date
-  useEffect(() => {
+  const fetchSlots = async () => {
     if (!bookingDate) return;
-    const fetchSlots = async () => {
-      setLoadingSlots(true);
-      setEarliestAvailableDate(null);
-      try {
-        const res = await customerService.getOccupiedSlots(bookingDate);
-        if (res.success) {
-          setSlotsStatus(res.slotsStatus || {});
-          setOccupiedSlots(res.occupiedSlots || []);
-        }
-      } catch (err) {
-        console.error("Error fetching slots status:", err);
-      } finally {
-        setLoadingSlots(false);
+    setLoadingSlots(true);
+    setEarliestAvailableDate(null);
+    try {
+      const res = await customerService.getOccupiedSlots(bookingDate);
+      if (res.success) {
+        setSlotsStatus(res.slotsStatus || {});
+        setOccupiedSlots(res.occupiedSlots || []);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching slots status:", err);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  useEffect(() => {
     fetchSlots();
+    // 30s Polling
+    const interval = setInterval(() => {
+      if (bookingDate) {
+        customerService.getOccupiedSlots(bookingDate).then(res => {
+          if (res.success) {
+            setSlotsStatus(res.slotsStatus || {});
+            setOccupiedSlots(res.occupiedSlots || []);
+          }
+        });
+      }
+    }, 30000);
+    return () => clearInterval(interval);
   }, [bookingDate]);
 
   const availableTimeSlots = useMemo(() => {
@@ -205,10 +235,10 @@ export const CustomerBooking = () => {
       String(today.getMonth() + 1).padStart(2, '0') + '-' + 
       String(today.getDate()).padStart(2, '0');
 
-    let slots = DEFAULT_TIME_SLOTS;
+    let slots = timeSlots;
     if (bookingDate === todayStr) {
       const minAllowedTime = new Date(today.getTime() + 15 * 60 * 1000);
-      slots = DEFAULT_TIME_SLOTS.filter(t => {
+      slots = timeSlots.filter(t => {
         const [hours, minutes] = t.split(':').map(Number);
         const slotDate = new Date();
         slotDate.setHours(hours, minutes, 0, 0);
@@ -217,7 +247,7 @@ export const CustomerBooking = () => {
     }
     // Filter out occupied slots
     return slots.filter(t => !occupiedSlots.includes(t));
-  }, [bookingDate, occupiedSlots]);
+  }, [bookingDate, occupiedSlots, timeSlots]);
 
   // Find earliest available date if this date has no slots
   useEffect(() => {
@@ -252,15 +282,7 @@ export const CustomerBooking = () => {
     setSelectedMain(svc);
   };
 
-  const handleToggleAddon = (addon) => {
-    const updated = { ...selectedAddons };
-    if (updated[addon.id]) {
-      delete updated[addon.id];
-    } else {
-      updated[addon.id] = addon;
-    }
-    setSelectedAddons(updated);
-  };
+  // Selected addons removed
 
   // Promo operations
   const applyPromo = (codeStr = promoCode) => {
@@ -307,9 +329,8 @@ export const CustomerBooking = () => {
   };
 
   // Pricing calculations
-  const addonTotal = Object.values(selectedAddons).reduce((s, a) => s + Number(a.price), 0);
   const mainPrice = selectedMain ? Number(selectedMain.price) : 0;
-  const baseTotal = mainPrice + addonTotal;
+  const baseTotal = mainPrice;
 
   // Voucher discount
   const promoDiscountAmount = appliedVoucher && baseTotal > 0
@@ -355,14 +376,13 @@ export const CustomerBooking = () => {
     setIsSubmitting(true);
 
     try {
-      // Call real backend booking API (do not send final price or points earned)
       const result = await customerService.createBooking({
         LicensePlate: selectedVehicle,
         MainServiceName: selectedMain.name,
-        AddonServiceNames: Object.values(selectedAddons).map(a => a.name),
         BookingDate: bookingDate,
         BookingTime: bookingTime,
         AppliedRedemptionId: appliedVoucher ? appliedVoucher.redemptionId : null,
+        VoucherCode: promoCode,
         Notes: ''
       });
 
@@ -387,10 +407,10 @@ export const CustomerBooking = () => {
         <div className="col-lg-8">
           
           {/* Step 1: Chọn phương tiện */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">1</span> Chọn phương tiện rửa
-            </h5>
+          <div className="app-card border-0 shadow-sm p-3 bg-white rounded-4 mb-3">
+            <h6 className="fw-bold mb-3" style={{ color: 'var(--navy-dark)', fontSize: '0.92rem' }}>
+              <span className="step-num-badge" style={{ width: '22px', height: '22px', fontSize: '0.75rem', marginRight: '6px' }}>1</span> Chọn phương tiện rửa
+            </h6>
             <div className="row g-3" id="vehicles-list">
               {vehicles.length === 0 ? (
                 <div className="col-12 text-center py-4">
@@ -430,85 +450,32 @@ export const CustomerBooking = () => {
             </div>
           </div>
 
-          {/* Step 2: Chọn gói chính */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">2</span> Chọn gói dịch vụ chính
-            </h5>
-            <div className="row g-3" id="main-services-list">
-              {mainServices.map((s) => {
-                const isSelected = selectedMain?.id === s.id;
-                return (
-                  <div key={s.id} className="col-md-6">
-                    <div
-                      className={`service-selectable-card ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleSelectMain(s)}
-                    >
-                      <div className="selected-tick-badge">
-                        <i className="fas fa-check-circle"></i>
-                      </div>
-                      <div className="d-flex align-items-start gap-3">
-                        <div className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style={{ background: 'rgba(15,23,42,0.06)', width: '42px', height: '42px' }}>
-                          <i className={`fas ${s.icon || 'fa-soap'} text-cyan`}></i>
-                        </div>
-                        <div className="flex-grow-1">
-                          <div className="fw-bold small" style={{ color: 'var(--navy-dark)' }}>{s.name}</div>
-                          <div className="text-muted" style={{ fontSize: '0.72rem', lineHeight: '1.3' }}>{s.desc}</div>
-                          <div className="d-flex justify-content-between align-items-center mt-2">
-                            <span className="fw-bold text-cyan" style={{ fontSize: '0.85rem' }}>{Number(s.price).toLocaleString()}đ</span>
-                            <span className="text-muted small" style={{ fontSize: '0.7rem' }}><i className="far fa-clock me-1"></i>{s.time}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Step 2: Thông tin dịch vụ (Read-Only) */}
+          <div className="app-card border-0 shadow-sm p-3 bg-white rounded-4 mb-3">
+            <h6 className="fw-bold mb-2.5" style={{ color: 'var(--navy-dark)', fontSize: '0.92rem' }}>
+              <span className="step-num-badge" style={{ width: '22px', height: '22px', fontSize: '0.75rem', marginRight: '6px' }}>2</span> Thông tin gói dịch vụ
+            </h6>
+            <div className="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
+              <div className="text-start">
+                <strong className="text-dark" style={{ fontSize: '0.88rem' }}>
+                  {selectedMain ? selectedMain.name : 'Standard Car Wash'}
+                </strong>
+                <p className="mb-0 text-muted" style={{ fontSize: '0.75rem', lineHeight: '1.4', marginTop: '2px' }}>
+                  {selectedMain ? selectedMain.desc : 'Dịch vụ rửa xe tiêu chuẩn'}
+                </p>
+              </div>
+              <div className="text-end flex-shrink-0 ms-3">
+                <span className="badge bg-white text-dark border fw-bold px-2.5 py-1.5 rounded-pill" style={{ fontSize: '0.78rem' }}>
+                  {selectedMain ? selectedMain.time : '60 phút'} • {selectedMain ? Number(selectedMain.price).toLocaleString() : '250.000'}đ
+                </span>
+              </div>
             </div>
           </div>
-
-          {/* Step 3: Chọn dịch vụ đi kèm (Add-ons Cards Grid) */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">3</span> Chọn dịch vụ đi kèm
-            </h5>
-            <div className="addons-grid-layout" id="addon-services-list">
-              {addonServices.map((a) => {
-                const isSelected = !!selectedAddons[a.id];
-                return (
-                  <div
-                    key={a.id}
-                    className={`addon-selectable-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => handleToggleAddon(a)}
-                  >
-                    <div>
-                      <div className="addon-card-header">
-                        <div className="addon-card-icon">
-                          <i className={`fas ${a.icon || 'fa-plus-circle'}`}></i>
-                        </div>
-                        <div className="addon-card-checkbox">
-                          {isSelected ? (
-                            <i className="fas fa-check-circle"></i>
-                          ) : (
-                            <i className="far fa-circle text-muted"></i>
-                          )}
-                        </div>
-                      </div>
-                      <div className="addon-card-name">{a.name}</div>
-                      <div className="addon-card-desc">{a.desc}</div>
-                    </div>
-                    <div className="addon-card-price">+{Number(a.price).toLocaleString()}đ</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Step 4: Chọn ngày & giờ */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">4</span> Chọn ngày & khung giờ hẹn
-            </h5>
+          {/* Step 3: Chọn ngày & giờ */}
+          <div className="app-card border-0 shadow-sm p-3 bg-white rounded-4 mb-3">
+            <h6 className="fw-bold mb-3" style={{ color: 'var(--navy-dark)', fontSize: '0.92rem' }}>
+              <span className="step-num-badge" style={{ width: '22px', height: '22px', fontSize: '0.75rem', marginRight: '6px' }}>3</span> Chọn ngày & khung giờ hẹn
+            </h6>
             <div className="row g-3">
               <div className="col-md-6">
                 <label className="form-label small fw-bold text-secondary">NGÀY HẸN RỬA</label>
@@ -610,19 +577,7 @@ export const CustomerBooking = () => {
                 </span>
               </div>
 
-              {Object.values(selectedAddons).length > 0 && (
-                <div className="text-start" id="summary-addons-block">
-                  <span className="text-muted small d-block mb-1">Dịch vụ đi kèm (Add-ons):</span>
-                  <div id="summary-addons-list" className="d-flex flex-column gap-1 border-start ps-3">
-                    {Object.values(selectedAddons).map((a, idx) => (
-                      <div key={idx} className="d-flex justify-content-between" style={{ fontSize: '0.78rem', color: '#475569' }}>
-                        <span>✓ {a.name}</span>
-                        <span>+{Number(a.price).toLocaleString()}đ</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Selected addons display removed */}
 
               <hr className="my-0 opacity-5" />
               

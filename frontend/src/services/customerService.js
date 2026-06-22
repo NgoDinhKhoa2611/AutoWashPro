@@ -88,6 +88,14 @@ export const customerService = {
     return response.data;
   },
 
+  rescheduleBooking: async (id, scheduledAt, reason) => {
+    const response = await api.post(`/Customer/RescheduleBooking/${id}`, {
+      ScheduledAt: scheduledAt,
+      Reason: reason
+    });
+    return response.data;
+  },
+
   createReview: async (bookingId, rating, comment) => {
     const response = await api.post('/api/reviews', {
       bookingId,
@@ -104,6 +112,11 @@ export const customerService = {
 
   getPendingReviews: async () => {
     const response = await api.get('/api/reviews/pending');
+    return response.data;
+  },
+
+  getBookingConfig: async () => {
+    const response = await api.get('/Customer/GetBookingConfig');
     return response.data;
   },
 

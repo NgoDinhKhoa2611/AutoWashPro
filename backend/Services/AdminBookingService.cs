@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Auto_Wash.Data;
 using Auto_Wash.Data.Entities;
 using Auto_Wash.DTOs.Booking;
@@ -13,11 +14,13 @@ namespace Auto_Wash.Services
     {
         private readonly AutoWashDbContext _context;
         private readonly BookingNotificationService _bookingNotificationService;
+        private readonly IConfiguration _configuration;
 
-        public AdminBookingService(AutoWashDbContext context, BookingNotificationService bookingNotificationService)
+        public AdminBookingService(AutoWashDbContext context, BookingNotificationService bookingNotificationService, IConfiguration configuration)
         {
             _context = context;
             _bookingNotificationService = bookingNotificationService;
+            _configuration = configuration;
         }
 
         public async Task<List<object>> GetAdminBookingsAsync()
@@ -43,20 +46,25 @@ namespace Auto_Wash.Services
         public async Task<object?> GetBookingDetailAsync(int bookingId)
         {
             var b = await _context.Bookings
+                .AsNoTracking()
                 .Include(b => b.Customer)
                     .ThenInclude(c => c.Account)
                 .Include(b => b.Customer)
                     .ThenInclude(c => c.Tier)
                 .Include(b => b.Vehicle)
-                .Include(b => b.BookingServices)
-                    .ThenInclude(bs => bs.Service)
                 .Include(b => b.AppliedRedemption)
                     .ThenInclude(r => r!.Reward)
                 .FirstOrDefaultAsync(x => x.BookingId == bookingId);
 
             if (b == null) return null;
 
-            var mainService = b.BookingServices
+            var bookingServices = await _context.BookingServices
+                .AsNoTracking()
+                .Include(bs => bs.Service)
+                .Where(bs => bs.BookingId == bookingId)
+                .ToListAsync();
+
+            var mainService = bookingServices
                 .Where(bs => !bs.Service.IsAddOn)
                 .Select(bs => new {
                     serviceId = bs.Service.ServiceId,
@@ -65,7 +73,7 @@ namespace Auto_Wash.Services
                 })
                 .FirstOrDefault();
 
-            var addons = b.BookingServices
+            var addons = bookingServices
                 .Where(bs => bs.Service.IsAddOn)
                 .Select(bs => new {
                     serviceId = bs.Service.ServiceId,
@@ -80,6 +88,33 @@ namespace Auto_Wash.Services
                 discountValue = b.PromoDiscount,
                 description = b.AppliedRedemption.Reward.Description
             } : null;
+
+            var timeline = await _context.BookingAuditLogs
+                .AsNoTracking()
+                .Where(al => al.BookingId == bookingId)
+                .OrderBy(al => al.CreatedAt)
+                .Select(al => new {
+                    id = al.Id,
+                    action = al.Action,
+                    description = al.Description ?? "",
+                    performedBy = al.PerformedBy,
+                    createdAt = al.CreatedAt
+                })
+                .ToListAsync();
+
+            var reschedules = await _context.BookingRescheduleHistories
+                .AsNoTracking()
+                .Where(rh => rh.BookingId == bookingId)
+                .OrderBy(rh => rh.CreatedAt)
+                .Select(rh => new {
+                    id = rh.Id,
+                    oldScheduledAt = rh.OldScheduledAt,
+                    newScheduledAt = rh.NewScheduledAt,
+                    changedBy = rh.ChangedBy,
+                    reason = rh.Reason ?? "",
+                    createdAt = rh.CreatedAt
+                })
+                .ToListAsync();
 
             return new {
                 bookingId = b.BookingId,
@@ -110,7 +145,9 @@ namespace Auto_Wash.Services
                 pointsEarned = b.PointsEarned,
                 status = b.Status.ToString(),
                 cancelReason = b.CancelReason,
-                createdAt = b.CreatedAt
+                createdAt = b.CreatedAt,
+                timeline = timeline,
+                reschedules = reschedules
             };
         }
 
@@ -265,6 +302,11 @@ namespace Auto_Wash.Services
                 return (false, "Không tìm thấy đơn đặt lịch.", 0);
             }
 
+            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+            {
+                return (false, $"Không thể check-in lịch đặt đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}.", 0);
+            }
+
             if (booking.Status != BookingStatus.Confirmed)
             {
                 return (false, "Chỉ đơn đặt lịch đang ở trạng thái 'Đã xác nhận' mới có thể thực hiện check-in.", 0);
@@ -279,55 +321,208 @@ namespace Auto_Wash.Services
                 );
             }
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                await _context.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(2410);");
-
-                // Check if queue record already exists
-                var existingQueue = await _context.Queues
-                    .FirstOrDefaultAsync(q => q.BookingId == booking.BookingId && q.Status != QueueStatus.Cancelled);
-                if (existingQueue != null)
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
+                    await _context.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(2410);");
+
+                    // Check if queue record already exists
+                    var existingQueue = await _context.Queues
+                        .FirstOrDefaultAsync(q => q.BookingId == booking.BookingId && q.Status != QueueStatus.Cancelled);
+                    if (existingQueue != null)
+                    {
+                        booking.Status = BookingStatus.CheckedIn;
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        return (true, "Đơn đặt lịch đã được check-in vào hàng đợi.", existingQueue.QueueId);
+                    }
+
+                    var today = DateTime.Today;
+                    var lastPos = await _context.Queues
+                        .Where(q => q.CheckInAt.Date == today && q.Status != QueueStatus.Cancelled)
+                        .Select(q => (int?)q.Position)
+                        .MaxAsync() ?? 0;
+
+                    var newQueue = new Queue
+                    {
+                        BookingId = booking.BookingId,
+                        VehicleId = booking.VehicleId,
+                        CustomerId = booking.CustomerId,
+                        LicensePlate = booking.Vehicle?.LicensePlate?.ToUpper()?.Trim() ?? string.Empty,
+                        CustomerName = booking.Customer?.Account?.FullName ?? "Khách vãng lai",
+                        TierId = booking.Customer?.TierId ?? 1,
+                        Status = QueueStatus.Waiting, // Initial status is Waiting
+                        Position = lastPos + 1,
+                        CheckInAt = DateTime.Now,
+                        StaffNote = booking.Notes ?? string.Empty
+                    };
+
                     booking.Status = BookingStatus.CheckedIn;
+
+                    _context.Queues.Add(newQueue);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    return (true, "Đơn đặt lịch đã được check-in vào hàng đợi.", existingQueue.QueueId);
+
+                    return (true, "Check-in thành công! Xe đã được thêm vào hàng đợi.", newQueue.QueueId);
                 }
-
-                var today = DateTime.Today;
-                var lastPos = await _context.Queues
-                    .Where(q => q.CheckInAt.Date == today && q.Status != QueueStatus.Cancelled)
-                    .Select(q => (int?)q.Position)
-                    .MaxAsync() ?? 0;
-
-                var newQueue = new Queue
+                catch (Exception)
                 {
-                    BookingId = booking.BookingId,
-                    VehicleId = booking.VehicleId,
-                    CustomerId = booking.CustomerId,
-                    LicensePlate = booking.Vehicle?.LicensePlate?.ToUpper()?.Trim() ?? string.Empty,
-                    CustomerName = booking.Customer?.Account?.FullName ?? "Khách vãng lai",
-                    TierId = booking.Customer?.TierId ?? 1,
-                    Status = QueueStatus.Waiting, // Initial status is Waiting
-                    Position = lastPos + 1,
-                    CheckInAt = DateTime.Now,
-                    StaffNote = booking.Notes ?? string.Empty
-                };
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+        }
 
-                booking.Status = BookingStatus.CheckedIn;
+        public async Task<(bool success, string message)> RescheduleBookingAsync(int bookingId, DateTime newScheduledAt, string reason)
+        {
+            var booking = await _context.Bookings
+                .Include(b => b.Customer)
+                    .ThenInclude(c => c.Account)
+                .Include(b => b.Vehicle)
+                .Include(b => b.BookingServices)
+                    .ThenInclude(bs => bs.Service)
+                .FirstOrDefaultAsync(b => b.BookingId == bookingId);
 
-                _context.Queues.Add(newQueue);
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return (true, "Check-in thành công! Xe đã được thêm vào hàng đợi.", newQueue.QueueId);
-            }
-            catch (Exception)
+            if (booking == null)
             {
-                await transaction.RollbackAsync();
-                throw;
+                return (false, "Không tìm thấy đơn đặt lịch.");
             }
+
+            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+            {
+                return (false, $"Không thể đổi lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}.");
+            }
+
+            if (booking.Status != BookingStatus.Pending && booking.Status != BookingStatus.Confirmed)
+            {
+                return (false, "Chỉ lịch hẹn ở trạng thái 'Chờ xác nhận' hoặc 'Đã xác nhận' mới có thể đổi lịch.");
+            }
+
+            var now = DateTime.Now;
+            if (newScheduledAt < now)
+            {
+                return (false, "Không thể đặt lịch ở thời gian đã qua.");
+            }
+
+            // Validate that the rescheduled time matches one of the generated operating slots
+            int startHour = _configuration.GetValue<int>("BookingCapacityConfig:StartHour", 8);
+            int endHour = _configuration.GetValue<int>("BookingCapacityConfig:EndHour", 23);
+            var allowedSlots = new HashSet<string>();
+            for (int h = startHour; h <= endHour; h++)
+            {
+                allowedSlots.Add($"{h:D2}:00");
+            }
+            string scheduledTimeStr = newScheduledAt.ToString("HH:mm");
+            if (!allowedSlots.Contains(scheduledTimeStr))
+            {
+                return (false, "Thời gian đặt lịch không hợp lệ. Vui lòng chọn đúng khung giờ hoạt động.");
+            }
+
+            var oldScheduledAt = booking.ScheduledAt;
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    int lockKey1 = newScheduledAt.Year * 10000 + newScheduledAt.Month * 100 + newScheduledAt.Day;
+                    int lockKey2 = newScheduledAt.Hour;
+                    await _context.Database.ExecuteSqlRawAsync($"SELECT pg_advisory_xact_lock({lockKey1}, {lockKey2});");
+
+                    int maxVehicles = _configuration.GetValue<int>("BookingCapacityConfig:MaxVehiclesPerSlot", 3);
+                    var slotCount = await _context.Bookings
+                        .CountAsync(b => b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled && b.Status != BookingStatus.NoShow
+                                      && b.ScheduledAt.Date == newScheduledAt.Date
+                                      && b.ScheduledAt.Hour == newScheduledAt.Hour
+                                      && b.BookingId != bookingId);
+                    if (slotCount >= maxVehicles)
+                    {
+                        return (false, "Khung giờ này đã đầy. Vui lòng chọn khung giờ khác.");
+                    }
+
+                    var hasDuplicate = await _context.Bookings
+                        .AnyAsync(b => b.VehicleId == booking.VehicleId
+                                    && b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled && b.Status != BookingStatus.NoShow
+                                    && b.ScheduledAt.Date == newScheduledAt.Date
+                                    && b.ScheduledAt.Hour == newScheduledAt.Hour
+                                    && b.BookingId != bookingId);
+                    if (hasDuplicate)
+                    {
+                        return (false, "Phương tiện này đã có lịch hẹn trong khung giờ đã chọn.");
+                    }
+
+                    booking.ScheduledAt = newScheduledAt;
+                    booking.Status = BookingStatus.Confirmed; 
+                    booking.Reminder1Sent = false;
+                    booking.Reminder2Sent = false;
+
+                    _context.BookingRescheduleHistories.Add(new BookingRescheduleHistory
+                    {
+                        BookingId = booking.BookingId,
+                        OldScheduledAt = oldScheduledAt,
+                        NewScheduledAt = newScheduledAt,
+                        ChangedBy = "Staff",
+                        Reason = reason,
+                        CreatedAt = DateTime.Now
+                    });
+
+                    _context.BookingAuditLogs.Add(new BookingAuditLog
+                    {
+                        BookingId = booking.BookingId,
+                        Action = "Rescheduled",
+                        Description = $"Đổi lịch hẹn từ {oldScheduledAt:dd/MM/yyyy HH:mm} thành {newScheduledAt:dd/MM/yyyy HH:mm}. Lý do: {reason}",
+                        PerformedBy = "Staff",
+                        CreatedAt = DateTime.Now
+                    });
+
+                    _context.Notifications.Add(new Notification
+                    {
+                        CustomerId = booking.CustomerId,
+                        Title = "Lịch hẹn của bạn đã được cập nhật bởi quản trị viên.",
+                        Message = $"Thời gian thay đổi: từ {oldScheduledAt:dd/MM/yyyy HH:mm} sang {newScheduledAt:dd/MM/yyyy HH:mm}. Lý do: {reason}",
+                        Type = "Booking",
+                        IsRead = false,
+                        CreatedAt = DateTime.Now
+                    });
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    // Send rescheduled email immediately
+                    var mainService = booking.BookingServices
+                        .Where(bs => !bs.Service.IsAddOn)
+                        .Select(bs => bs.Service.ServiceName)
+                        .FirstOrDefault() ?? "Dịch vụ rửa xe";
+
+                    var emailModel = new BookingRescheduleEmailModel
+                    {
+                        BookingId = booking.BookingId,
+                        CustomerName = booking.Customer?.Account?.FullName ?? "Khách hàng",
+                        Email = booking.Customer?.Account?.Email ?? "",
+                        LicensePlate = booking.Vehicle?.LicensePlate ?? "",
+                        OldScheduledAt = oldScheduledAt,
+                        NewScheduledAt = newScheduledAt,
+                        ServiceName = mainService,
+                        UpdatedByStaff = true
+                    };
+
+                    if (!string.IsNullOrWhiteSpace(emailModel.Email))
+                    {
+                        _bookingNotificationService.SendBookingRescheduledEmailInBackground(emailModel);
+                    }
+
+                    return (true, "Đổi lịch hẹn thành công.");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return (false, $"Đã xảy ra lỗi: {ex.Message}");
+                }
+            });
         }
     }
 }

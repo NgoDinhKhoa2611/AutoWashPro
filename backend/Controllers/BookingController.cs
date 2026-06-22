@@ -3,10 +3,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Auto_Wash.Data;
 using Auto_Wash.Data.Entities;
 using Auto_Wash.Services;
 using Auto_Wash.DTOs.Booking;
+using Auto_Wash.Helpers;
 
 namespace Auto_Wash.Controllers
 {
@@ -15,14 +17,17 @@ namespace Auto_Wash.Controllers
         private readonly AuthContextService _authContextService;
         private readonly Auto_Wash.Services.BookingService _bookingService;
         private readonly AutoWashDbContext _context;
+        private readonly IConfiguration _configuration;
 
         public BookingController(AuthContextService authContextService,
                                  Auto_Wash.Services.BookingService bookingService,
-                                 AutoWashDbContext context)
+                                 AutoWashDbContext context,
+                                 IConfiguration configuration)
         {
             _authContextService = authContextService;
             _bookingService = bookingService;
             _context = context;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -127,7 +132,8 @@ namespace Auto_Wash.Controllers
                         bookingTime = b.ScheduledAt.ToString("HH:mm"),
                         price = b.FinalPrice,
                         points = b.PointsEarned,
-                        hasReview = b.Stars.HasValue
+                        hasReview = b.Stars.HasValue,
+                        progressTracking = BookingWorkflowConfig.GetProgressForBooking(b, b.Queues.FirstOrDefault())
                     })
                     .ToList();
 
@@ -184,6 +190,10 @@ namespace Auto_Wash.Controllers
                     else if (queueStatusEnum == QueueStatus.Completed) washStep = 3 + addonsCount;
                 }
 
+                var progressTracking = BookingWorkflowConfig.GetProgressForBooking(activeBooking, queue);
+                // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
+                string eta = (queue != null ? queue.CheckInAt : activeBooking.ScheduledAt).AddSeconds(50).ToString("HH:mm:ss");
+
                 var bookingData = new
                 {
                     id = activeBooking.BookingId.ToString(),
@@ -201,10 +211,12 @@ namespace Auto_Wash.Controllers
                     price = activeBooking.FinalPrice,
                     points = activeBooking.PointsEarned,
                     hasQueue = hasQueue,
-                    paidAt = activeBooking.PaidAt?.ToString("yyyy-MM-dd HH:mm:ss")
+                    paidAt = activeBooking.PaidAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                    progressTracking = progressTracking,
+                    eta = eta
                 };
 
-                return Ok(new { success = true, booking = bookingData, queueStatus, washStep });
+                return Ok(new { success = true, booking = bookingData, queueStatus, washStep, progressTracking, eta });
             }
             catch (Exception ex)
             {
@@ -272,7 +284,78 @@ namespace Auto_Wash.Controllers
             }
         }
 
-        private static readonly string[] DEFAULT_TIME_SLOTS = { "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00" };
+        [HttpPost]
+        [Route("Customer/RescheduleBooking/{id}")]
+        public async Task<IActionResult> RescheduleBooking(int id, [FromBody] RescheduleBookingDto request)
+        {
+            if (request == null)
+            {
+                return BadRequest(new { success = false, message = "Không nhận được dữ liệu đổi lịch." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join("; ", ModelState.Values
+                    .SelectMany(x => x.Errors)
+                    .Select(x => x.ErrorMessage));
+                return BadRequest(new { success = false, message = $"Dữ liệu không hợp lệ: {errors}" });
+            }
+
+            if (!DateTime.TryParse(request.ScheduledAt, out DateTime newScheduledAt))
+            {
+                return BadRequest(new { success = false, message = "Thời gian hẹn mới không đúng định dạng." });
+            }
+
+            var customer = await _authContextService.GetCurrentCustomerAsync();
+            if (customer == null)
+            {
+                return Unauthorized(new { success = false, message = "Bạn chưa đăng nhập!" });
+            }
+
+            try
+            {
+                var result = await _bookingService.RescheduleBookingAsync(customer.CustomerId, id, newScheduledAt, request.Reason);
+                if (!result.success)
+                {
+                    return BadRequest(new { success = false, message = result.message });
+                }
+                return Ok(new { success = true, message = result.message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [Route("Customer/GetBookingConfig")]
+        public IActionResult GetBookingConfig()
+        {
+            try
+            {
+                int startHour = _configuration.GetValue<int>("BookingCapacityConfig:StartHour", 8);
+                int endHour = _configuration.GetValue<int>("BookingCapacityConfig:EndHour", 23);
+                int maxVehicles = _configuration.GetValue<int>("BookingCapacityConfig:MaxVehiclesPerSlot", 3);
+
+                var slots = new List<string>();
+                for (int h = startHour; h <= endHour; h++)
+                {
+                    slots.Add($"{h:D2}:00");
+                }
+
+                return Ok(new { 
+                    success = true, 
+                    startHour, 
+                    endHour, 
+                    maxVehiclesPerSlot = maxVehicles, 
+                    slots 
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
 
         [HttpGet]
         [Route("Customer/GetOccupiedSlots")]
@@ -285,8 +368,18 @@ namespace Auto_Wash.Controllers
 
             try
             {
+                int startHour = _configuration.GetValue<int>("BookingCapacityConfig:StartHour", 8);
+                int endHour = _configuration.GetValue<int>("BookingCapacityConfig:EndHour", 23);
+                int maxVehicles = _configuration.GetValue<int>("BookingCapacityConfig:MaxVehiclesPerSlot", 3);
+
+                var dynamicSlots = new List<string>();
+                for (int h = startHour; h <= endHour; h++)
+                {
+                    dynamicSlots.Add($"{h:D2}:00");
+                }
+
                 var bookings = await _context.Bookings
-                    .Where(b => b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled
+                    .Where(b => b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled && b.Status != BookingStatus.NoShow
                                 && b.ScheduledAt.Date == parsedDate.Date)
                     .Select(b => b.ScheduledAt.Hour)
                     .ToListAsync();
@@ -296,16 +389,16 @@ namespace Auto_Wash.Controllers
                     .ToDictionary(g => g.Key, g => g.Count());
 
                 var occupiedSlots = slotCounts
-                    .Where(kvp => kvp.Value >= 3)
+                    .Where(kvp => kvp.Value >= maxVehicles)
                     .Select(kvp => $"{kvp.Key:D2}:00")
                     .ToList();
 
-                var slotsStatus = DEFAULT_TIME_SLOTS.ToDictionary(
+                var slotsStatus = dynamicSlots.ToDictionary(
                     t => t,
                     t => {
                         int hr = int.Parse(t.Split(':')[0]);
                         int count = slotCounts.ContainsKey(hr) ? slotCounts[hr] : 0;
-                        return Math.Max(0, 3 - count);
+                        return Math.Max(0, maxVehicles - count);
                     }
                 );
 
@@ -333,7 +426,7 @@ namespace Auto_Wash.Controllers
 
                 var endPoint = startParsed.AddDays(windowDays);
                 var bookings = await _context.Bookings
-                    .Where(b => b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled
+                    .Where(b => b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled && b.Status != BookingStatus.NoShow
                                 && b.ScheduledAt.Date >= startParsed.Date && b.ScheduledAt.Date <= endPoint.Date)
                     .Select(b => new { b.ScheduledAt.Date, b.ScheduledAt.Hour })
                     .ToListAsync();
@@ -342,7 +435,11 @@ namespace Auto_Wash.Controllers
                     .GroupBy(b => new { b.Date, b.Hour })
                     .ToDictionary(g => g.Key, g => g.Count());
 
-                var standardHours = Enumerable.Range(8, 11).ToList();
+                int startHour = _configuration.GetValue<int>("BookingCapacityConfig:StartHour", 8);
+                int endHour = _configuration.GetValue<int>("BookingCapacityConfig:EndHour", 23);
+                int maxVehicles = _configuration.GetValue<int>("BookingCapacityConfig:MaxVehiclesPerSlot", 3);
+
+                var standardHours = Enumerable.Range(startHour, endHour - startHour + 1).ToList();
 
                 for (int i = 0; i <= windowDays; i++)
                 {
@@ -356,7 +453,7 @@ namespace Auto_Wash.Controllers
 
                         var key = new { Date = checkDate.Date, Hour = hour };
                         int count = grouped.ContainsKey(key) ? grouped[key] : 0;
-                        if (count < 3)
+                        if (count < maxVehicles)
                         {
                             return Ok(new { success = true, earliestDate = checkDate.ToString("yyyy-MM-dd") });
                         }

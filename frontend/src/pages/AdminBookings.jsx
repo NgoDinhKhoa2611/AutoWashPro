@@ -1,9 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/shared.css';
 import '../styles/admin/admin.css';
 import '../styles/admin/bookings.css';
 import { adminService } from '../services/adminService';
+import { customerService } from '../services/customerService';
+
+const DEFAULT_TIME_SLOTS = [
+  "08:00", "09:00", "10:00", "11:00", "12:00", 
+  "13:00", "14:00", "15:00", "16:00", "17:00", "18:00",
+  "19:00", "20:00", "21:00", "22:00", "23:00"
+];
 
 export const AdminBookings = () => {
   const navigate = useNavigate();
@@ -19,6 +26,52 @@ export const AdminBookings = () => {
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [bookingDetail, setBookingDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+
+  // Reschedule Form State
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('08:00');
+  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
+
+  useEffect(() => {
+    customerService.getBookingConfig()
+      .then(res => {
+        if (res.success && res.slots) {
+          setTimeSlots(res.slots);
+          if (res.slots.length > 0) {
+            setRescheduleTime(res.slots[0]);
+          }
+        }
+      })
+      .catch(err => console.error("Error loading booking config:", err));
+  }, []);
+
+  // Collapsible Sections State
+  const [expandedSections, setExpandedSections] = useState({
+    customer: true,
+    vehicle: true,
+    schedule: true,
+    service: false,
+    payment: false,
+    voucher: false,
+    history: false
+  });
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const customerHistory = useMemo(() => {
+    if (!bookingDetail || !bookings.length) return [];
+    return bookings.filter(b => 
+      b.phone === bookingDetail.customer.phone && 
+      b.bookingId !== bookingDetail.bookingId
+    );
+  }, [bookingDetail, bookings]);
 
   // Cancel Reason Modal States
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -54,6 +107,14 @@ export const AdminBookings = () => {
 
   useEffect(() => {
     loadBookings();
+    const interval = setInterval(() => {
+      adminService.getBookings().then(res => {
+        if (res && res.success) {
+          setBookings(res.bookings);
+        }
+      });
+    }, 30000);
+    return () => clearInterval(interval);
   }, [loadBookings]);
 
   useEffect(() => {
@@ -66,6 +127,15 @@ export const AdminBookings = () => {
   const loadBookingDetail = async (id) => {
     setLoadingDetail(true);
     setSelectedBookingId(id);
+    setExpandedSections({
+      customer: true,
+      vehicle: true,
+      schedule: true,
+      service: false,
+      payment: false,
+      voucher: false,
+      history: false
+    });
     try {
       const res = await adminService.getBookingDetail(id);
       if (res && res.success) {
@@ -86,6 +156,35 @@ export const AdminBookings = () => {
   const closeDrawer = () => {
     setSelectedBookingId(null);
     setBookingDetail(null);
+    setIsRescheduling(false);
+  };
+
+  const submitReschedule = async () => {
+    if (!rescheduleDate || !rescheduleTime) {
+      if (window.showToast) window.showToast('Vui lòng chọn ngày và giờ hẹn!', 'warning');
+      return;
+    }
+    if (!rescheduleReason.trim()) {
+      if (window.showToast) window.showToast('Vui lòng nhập lý do đổi lịch!', 'warning');
+      return;
+    }
+
+    const scheduledAt = `${rescheduleDate}T${rescheduleTime}:00`;
+    try {
+      const res = await adminService.rescheduleBooking(bookingDetail.bookingId, scheduledAt, rescheduleReason.trim());
+      if (res && res.success) {
+        if (window.showToast) window.showToast('Đổi lịch hẹn thành công!', 'success');
+        setIsRescheduling(false);
+        loadBookings();
+        loadBookingDetail(bookingDetail.bookingId);
+      } else {
+        if (window.showToast) window.showToast(res.message || 'Lỗi đổi lịch hẹn', 'error');
+      }
+    } catch (e) {
+      console.error('Reschedule error', e);
+      const errMsg = e.response?.data?.message || 'Lỗi hệ thống đổi lịch';
+      if (window.showToast) window.showToast(errMsg, 'error');
+    }
   };
 
   const handleConfirm = async (id, name) => {
@@ -184,8 +283,10 @@ export const AdminBookings = () => {
       case 'Pending': return 'Chờ xác nhận';
       case 'Confirmed': return 'Đã xác nhận';
       case 'CheckedIn': return 'Đã check-in';
+      case 'Washing': return 'Đang rửa';
       case 'Completed': return 'Hoàn thành';
       case 'Cancelled': return 'Đã hủy';
+      case 'NoShow': return 'Không đến';
       default: return status;
     }
   };
@@ -195,8 +296,10 @@ export const AdminBookings = () => {
       case 'Pending': return 'status-pending';
       case 'Confirmed': return 'status-confirmed';
       case 'CheckedIn': return 'status-checkedin';
+      case 'Washing': return 'status-washing';
       case 'Completed': return 'status-completed';
       case 'Cancelled': return 'status-cancelled';
+      case 'NoShow': return 'status-noshow';
       default: return '';
     }
   };
@@ -209,10 +312,14 @@ export const AdminBookings = () => {
         return { backgroundColor: '#DBEAFE', color: '#2563EB', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
       case 'CheckedIn':
         return { backgroundColor: '#EDE9FE', color: '#7C3AED', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
+      case 'Washing':
+        return { backgroundColor: '#E0F2FE', color: '#0369A1', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
       case 'Completed':
         return { backgroundColor: '#DCFCE7', color: '#16A34A', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
       case 'Cancelled':
         return { backgroundColor: '#FEE2E2', color: '#DC2626', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
+      case 'NoShow':
+        return { backgroundColor: '#F3F4F6', color: '#4B5563', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
       default:
         return {};
     }
@@ -307,7 +414,32 @@ export const AdminBookings = () => {
   // Filter logic
   const filteredBookings = bookings.filter(b => {
     const matchesPlate = (b.licensePlate || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
+    
+    let matchesStatus = true;
+    if (statusFilter === 'ALL') {
+      matchesStatus = true;
+    } else if (statusFilter === 'Pending') {
+      matchesStatus = b.status === 'Pending';
+    } else if (statusFilter === 'Confirmed') {
+      matchesStatus = b.status === 'Confirmed';
+    } else if (statusFilter === 'CheckedIn') {
+      matchesStatus = b.status === 'CheckedIn';
+    } else if (statusFilter === 'Washing') {
+      matchesStatus = b.status === 'Washing';
+    } else if (statusFilter === 'Completed') {
+      matchesStatus = b.status === 'Completed';
+    } else if (statusFilter === 'Cancelled') {
+      matchesStatus = b.status === 'Cancelled';
+    } else if (statusFilter === 'NoShow') {
+      matchesStatus = b.status === 'NoShow';
+    } else if (statusFilter === 'WAITING_CHECKIN') {
+      matchesStatus = b.status === 'Confirmed' || b.status === 'Pending';
+    } else if (statusFilter === 'PROCESSING') {
+      matchesStatus = b.status === 'CheckedIn' || b.status === 'Washing';
+    } else if (statusFilter === 'COMPLETED_TODAY') {
+      const todayStr = new Date().toLocaleDateString('sv-SE');
+      matchesStatus = b.status === 'Completed' && b.scheduledAt.split('T')[0] === todayStr;
+    }
     
     let matchesDate = true;
     if (dateFilter) {
@@ -319,12 +451,15 @@ export const AdminBookings = () => {
   });
 
   // Statistics
+  const todayStr = new Date().toLocaleDateString('sv-SE');
   const stats = {
-    pending: bookings.filter(b => b.status === 'Pending').length,
-    confirmed: bookings.filter(b => b.status === 'Confirmed').length,
-    checkedIn: bookings.filter(b => b.status === 'CheckedIn').length,
-    completed: bookings.filter(b => b.status === 'Completed').length,
-    cancelled: bookings.filter(b => b.status === 'Cancelled').length
+    waitingCheckIn: bookings.filter(b => b.status === 'Confirmed' || b.status === 'Pending').length,
+    processing: bookings.filter(b => b.status === 'CheckedIn' || b.status === 'Washing').length,
+    completedToday: bookings.filter(b => b.status === 'Completed' && b.scheduledAt.split('T')[0] === todayStr).length,
+    noShow: bookings.filter(b => b.status === 'NoShow').length,
+    todaysRevenue: bookings
+      .filter(b => b.status === 'Completed' && b.scheduledAt.split('T')[0] === todayStr)
+      .reduce((sum, b) => sum + (Number(b.finalPrice) || 0), 0)
   };
 
   // Render Skeleton Cards
@@ -362,44 +497,23 @@ export const AdminBookings = () => {
       {/* 1. PAGE HEADER */}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 text-start">
         <div>
-          <h2 className="fw-black mb-1 text-dark" style={{ letterSpacing: '-0.5px' }}>BOOKING MANAGEMENT</h2>
-          <p className="text-secondary small mb-0">Manage customer appointments, approvals and check-ins.</p>
+          <h2 className="fw-black mb-1 text-dark" style={{ letterSpacing: '-0.5px' }}>QUẢN LÝ ĐẶT LỊCH</h2>
+          <p className="text-secondary small mb-0">Quản lý lịch hẹn, duyệt lịch và check-in cho khách hàng</p>
         </div>
-        <button className="app-btn-primary text-dark fw-bold" onClick={loadBookings}>
-          <i className="fas fa-sync-alt me-1.5"></i>TẢI LẠI
-        </button>
       </div>
 
       {/* 2. SUMMARY DASHBOARD CARDS */}
       <div className="row g-3 mb-4 text-start">
-        {/* All Bookings */}
+        {/* Waiting Check-In */}
         <div className="col-12 col-sm-6 col-lg">
           <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-all ${statusFilter === 'ALL' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('ALL')}
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-pending ${statusFilter === 'WAITING_CHECKIN' ? 'active' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'WAITING_CHECKIN' ? 'ALL' : 'WAITING_CHECKIN')}
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#0ea5e9' }}>{bookings.length}</h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>TẤT CẢ LỊCH ĐẶT</small>
-              </div>
-              <div className="stat-icon-wrapper" style={{ background: '#E0F2FE', color: '#0ea5e9' }}>
-                <i className="fas fa-list fa-lg"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pending */}
-        <div className="col-12 col-sm-6 col-lg">
-          <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-pending ${statusFilter === 'Pending' ? 'active' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'Pending' ? 'ALL' : 'Pending')}
-          >
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#FA8C16' }}>{stats.pending}</h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>CHỜ XÁC NHẬN</small>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#FA8C16' }}>{stats.waitingCheckIn}</h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>CHỜ CHECK-IN</small>
               </div>
               <div className="stat-icon-wrapper" style={{ background: '#FFF7E6', color: '#FA8C16' }}>
                 <i className="fas fa-clock fa-lg"></i>
@@ -408,52 +522,34 @@ export const AdminBookings = () => {
           </div>
         </div>
 
-        {/* Confirmed */}
+        {/* Processing */}
         <div className="col-12 col-sm-6 col-lg">
           <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-confirmed ${statusFilter === 'Confirmed' ? 'active' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'Confirmed' ? 'ALL' : 'Confirmed')}
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-checkedin ${statusFilter === 'PROCESSING' ? 'active' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'PROCESSING' ? 'ALL' : 'PROCESSING')}
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#1677FF' }}>{stats.confirmed}</h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>ĐÃ XÁC NHẬN</small>
-              </div>
-              <div className="stat-icon-wrapper" style={{ background: '#E6F4FF', color: '#1677FF' }}>
-                <i className="fas fa-calendar-check fa-lg"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Checked-In */}
-        <div className="col-12 col-sm-6 col-lg">
-          <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-checkedin ${statusFilter === 'CheckedIn' ? 'active' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'CheckedIn' ? 'ALL' : 'CheckedIn')}
-          >
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#722ED1' }}>{stats.checkedIn}</h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>ĐÃ CHECK-IN</small>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#722ED1' }}>{stats.processing}</h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>ĐANG XỬ LÝ</small>
               </div>
               <div className="stat-icon-wrapper" style={{ background: '#F9F0FF', color: '#722ED1' }}>
-                <i className="fas fa-sign-in-alt fa-lg"></i>
+                <i className="fas fa-sync-alt fa-lg"></i>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Completed */}
+        {/* Completed Today */}
         <div className="col-12 col-sm-6 col-lg">
           <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-completed ${statusFilter === 'Completed' ? 'active' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'Completed' ? 'ALL' : 'Completed')}
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-completed ${statusFilter === 'COMPLETED_TODAY' ? 'active' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'COMPLETED_TODAY' ? 'ALL' : 'COMPLETED_TODAY')}
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#52C41A' }}>{stats.completed}</h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>HOÀN THÀNH</small>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#52C41A' }}>{stats.completedToday}</h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>HOÀN THÀNH HÔM NAY</small>
               </div>
               <div className="stat-icon-wrapper" style={{ background: '#F6FFED', color: '#52C41A' }}>
                 <i className="fas fa-check-circle fa-lg"></i>
@@ -462,19 +558,39 @@ export const AdminBookings = () => {
           </div>
         </div>
 
-        {/* Cancelled */}
+        {/* No Show */}
         <div className="col-12 col-sm-6 col-lg">
           <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-cancelled ${statusFilter === 'Cancelled' ? 'active' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'Cancelled' ? 'ALL' : 'Cancelled')}
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-cancelled ${statusFilter === 'NoShow' ? 'active' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'NoShow' ? 'ALL' : 'NoShow')}
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#F5222D' }}>{stats.cancelled}</h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>ĐÃ HỦY HẸN</small>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#64748b' }}>{stats.noShow}</h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>KHÁCH KHÔNG ĐẾN</small>
               </div>
-              <div className="stat-icon-wrapper" style={{ background: '#FFF1F0', color: '#F5222D' }}>
-                <i className="fas fa-times-circle fa-lg"></i>
+              <div className="stat-icon-wrapper" style={{ background: '#F1F5F9', color: '#64748b' }}>
+                <i className="fas fa-user-slash fa-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Today's Revenue */}
+        <div className="col-12 col-sm-6 col-lg">
+          <div 
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-all`}
+            style={{ cursor: 'default' }}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#0ea5e9' }}>
+                  {stats.todaysRevenue.toLocaleString()}đ
+                </h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>DOANH THU HÔM NAY</small>
+              </div>
+              <div className="stat-icon-wrapper" style={{ background: '#E0F2FE', color: '#0ea5e9' }}>
+                <i className="fas fa-dollar-sign fa-lg"></i>
               </div>
             </div>
           </div>
@@ -508,11 +624,15 @@ export const AdminBookings = () => {
               onChange={e => setStatusFilter(e.target.value)}
             >
               <option value="ALL">Tất cả trạng thái</option>
-              <option value="Pending">Chờ xác nhận</option>
-              <option value="Confirmed">Đã xác nhận</option>
-              <option value="CheckedIn">Đã check-in</option>
-              <option value="Completed">Hoàn thành</option>
-              <option value="Cancelled">Đã hủy</option>
+              <option value="Pending">Chờ xác nhận (Pending)</option>
+              <option value="Confirmed">Đã xác nhận (Confirmed)</option>
+              <option value="CheckedIn">Đã check-in (CheckedIn)</option>
+              <option value="Washing">Đang rửa xe (Washing)</option>
+              <option value="Completed">Hoàn thành (Completed)</option>
+              <option value="Cancelled">Đã hủy (Cancelled)</option>
+              <option value="NoShow">Không đến (NoShow)</option>
+              <option value="WAITING_CHECKIN">Chờ check-in (Tổng hợp)</option>
+              <option value="PROCESSING">Đang xử lý (Tổng hợp)</option>
             </select>
           </div>
 
@@ -569,14 +689,35 @@ export const AdminBookings = () => {
                 onClick={() => loadBookingDetail(b.bookingId)}
                 onMouseEnter={(e) => handleCardMouseEnter(e, b.bookingId)}
                 onMouseLeave={handleCardMouseLeave}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', height: 'auto' }}
               >
-                <div className="booking-card-row align-items-center mb-2">
+                {/* Top: BK-ID and Status */}
+                <div className="booking-card-row align-items-center mb-2.5">
                   <span className="fw-black text-cyan" style={{ fontSize: '1rem' }}>#BK-{b.bookingId}</span>
                   <span className={`booking-status-badge ${getStatusClass(b.status)}`} style={{ fontSize: '0.6rem', padding: '2px 8px' }}>
                     {getStatusLabel(b.status)}
                   </span>
                 </div>
+                
+                {/* Middle: License Plate and Service Package */}
+                <div className="booking-card-row align-items-center mb-2.5">
+                  <div className="d-flex flex-column text-start">
+                    <small className="text-muted" style={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>BIỂN SỐ XE</small>
+                    <span className="fw-black font-monospace text-dark px-2 py-0.5 rounded bg-light border" style={{ fontSize: '0.82rem', width: 'fit-content' }}>
+                      {b.licensePlate || 'Chưa cập nhật'}
+                    </span>
+                  </div>
+                  <div className="d-flex flex-column text-end">
+                    <small className="text-muted" style={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>GÓI DỊCH VỤ</small>
+                    <span className="fw-bold text-dark text-truncate" style={{ fontSize: '0.82rem', maxWidth: '140px' }} title={b.mainService?.serviceName || 'Standard Car Wash'}>
+                      {b.mainService?.serviceName || 'Standard Car Wash'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="booking-card-divider my-2"></div>
+
+                {/* Bottom: Date and Time */}
                 <div className="booking-card-row align-items-end mt-auto mb-0">
                   <div className="d-flex flex-column text-start">
                     <small className="text-muted" style={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>NGÀY HẸN</small>
@@ -674,8 +815,9 @@ export const AdminBookings = () => {
       <div className={`booking-drawer-overlay ${selectedBookingId ? 'show' : ''}`} onClick={closeDrawer}>
         <div className="booking-drawer text-start" onClick={e => e.stopPropagation()}>
           {/* Header */}
-          <div className="booking-drawer-header">
+          <div className="booking-drawer-header d-flex justify-content-between align-items-center">
             <h5 className="fw-black text-dark mb-0" style={{ letterSpacing: '-0.5px' }}>Chi tiết Lịch đặt: #{selectedBookingId}</h5>
+            <button type="button" className="btn-close" onClick={closeDrawer} aria-label="Close"></button>
           </div>
 
           {/* Body */}
@@ -685,173 +827,369 @@ export const AdminBookings = () => {
             ) : (
               <>
                 {/* Section 1: Customer Information */}
-                <div className="booking-drawer-section">
-                  <div className="booking-drawer-section-title">Thông tin khách hàng</div>
-                  <div className="bg-light p-3.5 rounded-4 border">
-                    <div className="row g-2.5">
-                      <div className="col-6">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Họ tên</small>
-                        <strong className="text-dark" style={{ fontSize: '0.85rem' }}>{bookingDetail.customer.fullName}</strong>
-                      </div>
-                      <div className="col-6">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Số điện thoại</small>
-                        <strong className="text-dark font-monospace" style={{ fontSize: '0.85rem' }}>{bookingDetail.customer.phone}</strong>
-                      </div>
-                      <div className="col-12 border-top pt-2">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Địa chỉ email</small>
-                        <span className="text-dark small">{bookingDetail.customer.email || 'Chưa cập nhật'}</span>
-                      </div>
-                      <div className="col-4 border-top pt-2">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Mã loyalty</small>
-                        <span className="text-cyan font-monospace fw-bold" style={{ fontSize: '0.78rem' }}>{bookingDetail.customer.membershipCode}</span>
-                      </div>
-                      <div className="col-4 border-top pt-2">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Hạng TV</small>
-                        <span className={getTierBadgeClass(bookingDetail.customer.tierName)}>{bookingDetail.customer.tierName}</span>
-                      </div>
-                      <div className="col-4 border-top pt-2">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Điểm tích lũy</small>
-                        <strong className="text-dark small">{bookingDetail.customer.pointBalance.toLocaleString()} PTS</strong>
+                <div className="booking-drawer-section mb-3">
+                  <div 
+                    className="booking-drawer-section-title" 
+                    onClick={() => toggleSection('customer')}
+                  >
+                    <span>1. Thông tin khách hàng</span>
+                    <i className={`fas fa-chevron-${expandedSections.customer ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                  </div>
+                  {expandedSections.customer && (
+                    <div className="bg-light p-2.5 rounded-3 border">
+                      <div className="row g-2">
+                        <div className="col-6">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Họ tên</small>
+                          <strong className="text-dark" style={{ fontSize: '0.8rem' }}>{bookingDetail.customer.fullName}</strong>
+                        </div>
+                        <div className="col-6">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Số điện thoại</small>
+                          <strong className="text-dark font-monospace" style={{ fontSize: '0.8rem' }}>{bookingDetail.customer.phone}</strong>
+                        </div>
+                        <div className="col-6 border-top pt-1.5">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Email</small>
+                          <span className="text-dark small" style={{ fontSize: '0.78rem' }}>{bookingDetail.customer.email || 'Chưa cập nhật'}</span>
+                        </div>
+                        <div className="col-6 border-top pt-1.5">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Hạng TV & Điểm</small>
+                          <div className="d-flex align-items-center gap-1.5 mt-0.5">
+                            <span className={getTierBadgeClass(bookingDetail.customer.tierName)} style={{ fontSize: '0.65rem', padding: '1px 6px' }}>{bookingDetail.customer.tierName}</span>
+                            <strong className="text-secondary small" style={{ fontSize: '0.75rem' }}>{bookingDetail.customer.pointBalance.toLocaleString()} PTS</strong>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Section 2: Vehicle Information */}
-                <div className="booking-drawer-section">
-                  <div className="booking-drawer-section-title">Thông tin phương tiện</div>
-                  <div className="bg-light p-3.5 rounded-4 border">
-                    <div className="row g-2.5">
-                      <div className="col-6">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Biển số xe</small>
-                        <strong className="text-dark font-monospace" style={{ fontSize: '0.9rem' }}>{bookingDetail.vehicle.licensePlate}</strong>
-                      </div>
-                      <div className="col-6">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Phân khúc xe</small>
-                        <span className="text-dark small fw-bold">{bookingDetail.vehicle.vehicleClass}</span>
-                      </div>
-                      <div className="col-6 border-top pt-2">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Hãng xe</small>
-                        <span className="text-dark small">{bookingDetail.vehicle.brand}</span>
-                      </div>
-                      <div className="col-6 border-top pt-2">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Dòng xe (Model)</small>
-                        <span className="text-dark small">{bookingDetail.vehicle.model}</span>
+                <div className="booking-drawer-section mb-3">
+                  <div 
+                    className="booking-drawer-section-title" 
+                    onClick={() => toggleSection('vehicle')}
+                  >
+                    <span>2. Thông tin phương tiện</span>
+                    <i className={`fas fa-chevron-${expandedSections.vehicle ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                  </div>
+                  {expandedSections.vehicle && (
+                    <div className="bg-light p-2.5 rounded-3 border">
+                      <div className="row g-2">
+                        <div className="col-6">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Biển số xe</small>
+                          <strong className="text-dark font-monospace" style={{ fontSize: '0.85rem' }}>{bookingDetail.vehicle.licensePlate}</strong>
+                        </div>
+                        <div className="col-6">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Phân khúc xe</small>
+                          <span className="text-dark fw-bold" style={{ fontSize: '0.78rem' }}>{bookingDetail.vehicle.vehicleClass}</span>
+                        </div>
+                        <div className="col-12 border-top pt-1.5">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Hãng xe & Dòng xe</small>
+                          <span className="text-dark small" style={{ fontSize: '0.78rem' }}>{bookingDetail.vehicle.brand} - {bookingDetail.vehicle.model}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Section 3: Appointment Information */}
-                <div className="booking-drawer-section">
-                  <div className="booking-drawer-section-title">Thông tin lịch trình</div>
-                  <div className="bg-light p-3.5 rounded-4 border">
-                    <div className="row g-2.5">
-                      <div className="col-6">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Ngày đặt hẹn</small>
-                        <strong className="text-dark" style={{ fontSize: '0.85rem' }}>{new Date(bookingDetail.scheduledAt).toLocaleDateString('vi-VN')}</strong>
-                      </div>
-                      <div className="col-6">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Giờ đặt hẹn</small>
-                        <strong className="text-dark font-monospace" style={{ fontSize: '0.85rem' }}>{new Date(bookingDetail.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</strong>
-                      </div>
-                      <div className="col-6 border-top pt-2">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Ngày tạo đơn</small>
-                        <span className="text-secondary small">{new Date(bookingDetail.createdAt).toLocaleString('vi-VN')}</span>
-                      </div>
-                      <div className="col-6 border-top pt-2">
-                        <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Trạng thái hiện tại</small>
-                        <span className={`booking-status-badge d-inline-block mt-0.5 ${getStatusClass(bookingDetail.status)}`}>
-                          {getStatusLabel(bookingDetail.status)}
-                        </span>
+                <div className="booking-drawer-section mb-3">
+                  <div 
+                    className="booking-drawer-section-title" 
+                    onClick={() => toggleSection('schedule')}
+                  >
+                    <span>3. Thông tin lịch trình</span>
+                    <i className={`fas fa-chevron-${expandedSections.schedule ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                  </div>
+                  {expandedSections.schedule && (
+                    <div className="bg-light p-2.5 rounded-3 border">
+                      <div className="row g-2">
+                        <div className="col-6">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Thời gian hẹn</small>
+                          <strong className="text-dark" style={{ fontSize: '0.8rem' }}>
+                            {new Date(bookingDetail.scheduledAt).toLocaleDateString('vi-VN')} @ {new Date(bookingDetail.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                          </strong>
+                        </div>
+                        <div className="col-6">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Trạng thái</small>
+                          <span className={`booking-status-badge d-inline-block mt-0.5 ${getStatusClass(bookingDetail.status)}`} style={{ fontSize: '0.62rem', padding: '2px 8px' }}>
+                            {getStatusLabel(bookingDetail.status)}
+                          </span>
+                        </div>
+                        <div className="col-12 border-top pt-1.5">
+                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Ngày tạo đơn</small>
+                          <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>{new Date(bookingDetail.createdAt).toLocaleString('vi-VN')}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {bookingDetail.status === 'Cancelled' && bookingDetail.cancelReason && (
-                  <div className="booking-drawer-section">
-                    <div className="booking-drawer-section-title text-danger" style={{ fontWeight: 700 }}>Lý do hủy lịch</div>
-                    <div className="p-3 border border-danger-subtle rounded-4 text-danger bg-danger-subtle bg-opacity-10 small fw-semibold">
+                  <div className="booking-drawer-section mb-3">
+                    <div className="booking-drawer-section-title text-danger mb-1.5" style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', borderLeft: '3px solid #dc3545', paddingLeft: '8px' }}>Lý do hủy lịch</div>
+                    <div className="p-2 border border-danger-subtle rounded-3 text-danger bg-danger bg-opacity-10 small fw-semibold" style={{ fontSize: '0.78rem' }}>
                       <i className="fas fa-exclamation-circle me-1.5"></i>{bookingDetail.cancelReason}
+                    </div>
+                  </div>
+                )}
+                
+                {isRescheduling && (
+                  <div className="booking-drawer-section mb-3 bg-light border border-info p-3 rounded-3 animate-confirm-in">
+                    <div className="fw-bold text-info mb-2 small text-uppercase" style={{ letterSpacing: '0.5px' }}>
+                      <i className="fas fa-edit me-1.5"></i>Thay đổi lịch hẹn mới
+                    </div>
+                    <div className="row g-2">
+                      <div className="col-12 col-sm-6">
+                        <label className="form-label small fw-bold text-muted mb-1">CHỌN NGÀY MỚI *</label>
+                        <input
+                          type="date"
+                          className="form-control bg-white border py-2 text-dark fw-bold"
+                          style={{ fontSize: '0.82rem' }}
+                          value={rescheduleDate}
+                          min={new Date().toLocaleDateString('sv-SE')}
+                          onChange={e => setRescheduleDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-12 col-sm-6">
+                        <label className="form-label small fw-bold text-muted mb-1">CHỌN GIỜ MỚI *</label>
+                        <select
+                          className="form-select bg-white border py-2 text-dark fw-bold"
+                          style={{ fontSize: '0.82rem' }}
+                          value={rescheduleTime}
+                          onChange={e => setRescheduleTime(e.target.value)}
+                        >
+                          {timeSlots.map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-12 mt-2">
+                        <label className="form-label small fw-bold text-muted mb-1">LÝ DO ĐỔI LỊCH *</label>
+                        <textarea
+                          className="form-control bg-white border py-2 text-dark"
+                          rows="2"
+                          maxLength="500"
+                          placeholder="Lý do thay đổi lịch hẹn..."
+                          value={rescheduleReason}
+                          onChange={e => setRescheduleReason(e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {/* Section 4: Service Information */}
-                <div className="booking-drawer-section">
-                  <div className="booking-drawer-section-title">Chi tiết dịch vụ đã chọn</div>
-                  <div className="bg-light p-3.5 rounded-4 border">
-                    {bookingDetail.mainService ? (
-                      <div className="d-flex justify-content-between align-items-center mb-2 small">
-                        <span className="text-dark fw-bold"><i className="fas fa-cog text-cyan me-1.5"></i>{bookingDetail.mainService.serviceName} (Chính)</span>
-                        <strong className="text-dark">{Number(bookingDetail.mainService.price).toLocaleString()}đ</strong>
+                <div className="booking-drawer-section mb-3">
+                  <div 
+                    className="booking-drawer-section-title" 
+                    onClick={() => toggleSection('service')}
+                  >
+                    <span>4. Gói dịch vụ</span>
+                    <i className={`fas fa-chevron-${expandedSections.service ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                  </div>
+                  {expandedSections.service && (
+                    <div className="border rounded-3 overflow-hidden bg-white">
+                      <table className="table table-sm table-borderless mb-0 align-middle" style={{ fontSize: '0.78rem', tableLayout: 'fixed', width: '100%' }}>
+                        <thead className="bg-light border-bottom" style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                          <tr>
+                            <th className="ps-3 py-1.5 text-muted" style={{ width: '50%' }}>Tên dịch vụ</th>
+                            <th className="py-1.5 text-muted text-center" style={{ width: '25%' }}>Thời lượng</th>
+                            <th className="pe-3 py-1.5 text-muted text-end" style={{ width: '25%' }}>Đơn giá</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bookingDetail.mainService ? (
+                            <tr className="border-bottom">
+                              <td className="ps-3 py-2 fw-semibold text-dark" style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                                <i className="fas fa-cog text-cyan me-1.5"></i>{bookingDetail.mainService.serviceName} <span className="badge bg-cyan text-dark small" style={{ fontSize: '0.55rem', padding: '1.5px 4px' }}>Chính</span>
+                              </td>
+                              <td className="py-2 text-center text-secondary">60 phút</td>
+                              <td className="pe-3 py-2 text-end fw-semibold text-dark">{Number(bookingDetail.mainService.price).toLocaleString()}đ</td>
+                            </tr>
+                          ) : (
+                            <tr className="border-bottom">
+                              <td colSpan="3" className="ps-3 py-2 text-secondary text-center">Không có dịch vụ chính</td>
+                            </tr>
+                          )}
+                          {bookingDetail.addons && bookingDetail.addons.map((add, idx) => (
+                            <tr key={idx} className={idx === bookingDetail.addons.length - 1 ? '' : 'border-bottom'}>
+                              <td className="ps-3 py-2 text-secondary" style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                                <i className="fas fa-plus text-muted me-1.5"></i>{add.serviceName}
+                              </td>
+                              <td className="py-2 text-center text-secondary">-</td>
+                              <td className="pe-3 py-2 text-end text-dark">{Number(add.price).toLocaleString()}đ</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 5: Payment Summary */}
+                <div className="booking-drawer-section mb-3">
+                  <div 
+                    className="booking-drawer-section-title" 
+                    onClick={() => toggleSection('payment')}
+                  >
+                    <span>5. Tổng kết chi phí</span>
+                    <i className={`fas fa-chevron-${expandedSections.payment ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                  </div>
+                  {expandedSections.payment && (
+                    <div className="bg-light p-2.5 rounded-3 border">
+                      <div className="d-flex justify-content-between align-items-center mb-1.5 small text-secondary" style={{ fontSize: '0.78rem' }}>
+                        <span>Tổng tiền dịch vụ:</span>
+                        <span>{Number(bookingDetail.basePrice).toLocaleString()}đ</span>
                       </div>
-                    ) : (
-                      <div className="small text-secondary">Không có dịch vụ chính</div>
-                    )}
-                    
-                    {bookingDetail.addons && bookingDetail.addons.length > 0 && (
-                      <div className="mt-2 pt-2 border-top">
-                        <small className="text-muted d-block mb-2 fw-bold">DỊCH VỤ ĐI KÈM (ADD-ONS)</small>
-                        {bookingDetail.addons.map((add, idx) => (
-                          <div key={idx} className="d-flex justify-content-between align-items-center mb-1.5 small">
-                            <span className="text-secondary"><i className="fas fa-plus text-muted me-1.5"></i>{add.serviceName}</span>
-                            <span className="text-dark">{Number(add.price).toLocaleString()}đ</span>
+                      {bookingDetail.voucher ? (
+                        <div className="d-flex justify-content-between align-items-start mb-1.5 small text-danger" style={{ fontSize: '0.78rem' }}>
+                          <div>
+                            <span>Khuyến mãi ({bookingDetail.voucher.rewardName}):</span>
+                            {bookingDetail.voucher.description && <small className="text-muted d-block" style={{ fontSize: '0.62rem' }}>{bookingDetail.voucher.description}</small>}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Section 5: Voucher Information */}
-                <div className="booking-drawer-section">
-                  <div className="booking-drawer-section-title">Voucher & Khuyến mãi</div>
-                  <div className="bg-light p-3.5 rounded-4 border">
-                    {bookingDetail.voucher ? (
-                      <div className="d-flex justify-content-between align-items-start small">
-                        <div>
-                          <strong className="text-danger"><i className="fas fa-ticket-alt me-1.5"></i>{bookingDetail.voucher.rewardName}</strong>
-                          <span className="text-muted d-block mt-0.5" style={{ fontSize: '0.68rem' }}>{bookingDetail.voucher.description || 'Không có mô tả.'}</span>
+                          <span>-{Number(bookingDetail.voucher.discountValue).toLocaleString()}đ</span>
                         </div>
-                        <strong className="text-danger">-{Number(bookingDetail.voucher.discountValue).toLocaleString()}đ</strong>
+                      ) : (
+                        <div className="d-flex justify-content-between align-items-center mb-1.5 small text-muted" style={{ fontSize: '0.78rem' }}>
+                          <span>Khuyến mãi:</span>
+                          <span>0đ</span>
+                        </div>
+                      )}
+                      <div className="d-flex justify-content-between align-items-center border-top pt-1.5 fw-bold" style={{ fontSize: '0.88rem' }}>
+                        <span className="text-dark">Số tiền cần trả:</span>
+                        <span className="text-cyan" style={{ fontSize: '1rem' }}>{Number(bookingDetail.finalPrice).toLocaleString()}đ</span>
                       </div>
-                    ) : (
-                      <div className="small text-secondary text-center py-1">Không có voucher nào được áp dụng</div>
-                    )}
-                  </div>
+                      <div className="d-flex justify-content-between align-items-center mt-1.5 small text-success" style={{ fontSize: '0.75rem' }}>
+                        <span>Tích lũy Loyalty:</span>
+                        <span>+{bookingDetail.pointsEarned} PTS</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Section 6: Payment Summary */}
-                <div className="booking-drawer-section mb-0">
-                  <div className="booking-drawer-section-title">Tổng kết chi phí</div>
-                  <div className="bg-light p-3.5 rounded-4 border">
-                    <div className="d-flex justify-content-between align-items-center mb-2 small text-secondary">
-                      <span>Giá dịch vụ gốc:</span>
-                      <span>{Number(bookingDetail.basePrice).toLocaleString()}đ</span>
-                    </div>
-                    {bookingDetail.voucher && (
-                      <div className="d-flex justify-content-between align-items-center mb-2 small text-danger">
-                        <span>Giảm giá khuyến mãi:</span>
-                        <span>-{Number(bookingDetail.voucher.discountValue).toLocaleString()}đ</span>
-                      </div>
-                    )}
-                    <div className="d-flex justify-content-between align-items-center border-top pt-2 fs-6 fw-bold">
-                      <span className="text-dark">Số tiền cần trả:</span>
-                      <span className="text-cyan">{Number(bookingDetail.finalPrice).toLocaleString()}đ</span>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center mt-2 small text-success">
-                      <span>Điểm Loyalty tích lũy (dự kiến):</span>
-                      <span>+{bookingDetail.pointsEarned} PTS</span>
-                    </div>
+                {/* Section 6: Voucher & Khuyến mãi */}
+                <div className="booking-drawer-section mb-3">
+                  <div 
+                    className="booking-drawer-section-title" 
+                    onClick={() => toggleSection('voucher')}
+                  >
+                    <span>6. Voucher & Khuyến mãi</span>
+                    <i className={`fas fa-chevron-${expandedSections.voucher ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
                   </div>
+                  {expandedSections.voucher && (
+                    <div className="bg-light p-2.5 rounded-3 border">
+                      {bookingDetail.voucher ? (
+                        <div className="d-flex justify-content-between align-items-start small">
+                          <div>
+                            <strong className="text-danger"><i className="fas fa-ticket-alt me-1.5"></i>{bookingDetail.voucher.rewardName}</strong>
+                            <span className="text-muted d-block mt-0.5" style={{ fontSize: '0.68rem' }}>{bookingDetail.voucher.description || 'Không có mô tả.'}</span>
+                          </div>
+                          <strong className="text-danger">-{Number(bookingDetail.voucher.discountValue).toLocaleString()}đ</strong>
+                        </div>
+                      ) : (
+                        <div className="small text-secondary text-center py-1">Không có voucher nào được áp dụng</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 7: Booking History, Timeline & Reschedules */}
+                <div className="booking-drawer-section mb-0">
+                  <div 
+                    className="booking-drawer-section-title" 
+                    onClick={() => toggleSection('history')}
+                  >
+                    <span>7. Dòng thời gian & Lịch sử đặt lịch</span>
+                    <i className={`fas fa-chevron-${expandedSections.history ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                  </div>
+                  {expandedSections.history && (
+                    <div className="bg-light p-2.5 rounded-3 border d-flex flex-column gap-3">
+                      {/* Timeline Audit Logs */}
+                      <div>
+                        <small className="text-muted d-block fw-bold mb-2" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>DÒNG THỜI GIAN ĐƠN ĐẶT</small>
+                        {bookingDetail.timeline && bookingDetail.timeline.length > 0 ? (
+                          <div className="booking-timeline ps-2 border-start py-1" style={{ fontSize: '0.75rem' }}>
+                            {bookingDetail.timeline.map((log) => (
+                              <div key={log.id} className="timeline-item mb-2.5 position-relative">
+                                <div className="timeline-marker" style={{ left: '-12.5px', top: '4px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--cyan-electric)', position: 'absolute' }}></div>
+                                <div className="d-flex justify-content-between align-items-start ms-2">
+                                  <div>
+                                    <strong className="text-dark">{log.action === 'Created' ? 'Khởi tạo' : log.action === 'Confirmed' ? 'Đã duyệt' : log.action === 'CheckedIn' ? 'Đã check-in' : log.action === 'WashingStarted' ? 'Đang rửa' : log.action === 'Completed' ? 'Hoàn thành' : log.action === 'Cancelled' ? 'Đã hủy' : log.action === 'NoShow' ? 'Không đến' : log.action === 'Rescheduled' ? 'Đổi lịch' : log.action}</strong>
+                                    <span className="text-secondary d-block mt-0.5" style={{ fontSize: '0.72rem' }}>{log.description}</span>
+                                  </div>
+                                  <div className="text-end text-muted font-monospace" style={{ fontSize: '0.68rem', minWidth: '100px' }}>
+                                    {new Date(log.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                                    <span className="badge bg-secondary-subtle text-secondary ms-1" style={{ fontSize: '0.55rem' }}>{log.performedBy}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="small text-secondary text-center py-1">Không có nhật ký dòng thời gian</div>
+                        )}
+                      </div>
+
+                      {/* Reschedule History */}
+                      {bookingDetail.reschedules && bookingDetail.reschedules.length > 0 && (
+                        <div className="border-top pt-2.5">
+                          <small className="text-muted d-block fw-bold mb-2" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>LỊCH SỬ ĐỔI LỊCH HẸN</small>
+                          <div className="d-flex flex-column gap-2" style={{ fontSize: '0.75rem' }}>
+                            {bookingDetail.reschedules.map((resch) => (
+                              <div key={resch.id} className="bg-white p-2 rounded border border-info-subtle">
+                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                  <strong className="text-info"><i className="fas fa-calendar-alt me-1"></i>Thay đổi lịch hẹn</strong>
+                                  <span className="text-muted font-monospace" style={{ fontSize: '0.65rem' }}>{new Date(resch.createdAt).toLocaleDateString('vi-VN')}</span>
+                                </div>
+                                <div className="text-dark mb-1">
+                                  <span>Từ: </span><span className="text-muted">{new Date(resch.oldScheduledAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</span>
+                                  <span className="mx-1.5"><i className="fas fa-long-arrow-alt-right"></i></span>
+                                  <span>Sang: </span><strong className="text-dark">{new Date(resch.newScheduledAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</strong>
+                                </div>
+                                <div className="text-secondary" style={{ fontSize: '0.7rem' }}>
+                                  <strong>Lý do:</strong> {resch.reason} <span className="badge bg-light text-secondary border float-end">{resch.changedBy}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Customer Booking History (Other bookings) */}
+                      <div className="border-top pt-2.5">
+                        <small className="text-muted d-block fw-bold mb-2" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>LỊCH HẸN KHÁC CỦA KHÁCH HÀNG ({customerHistory.length})</small>
+                        {customerHistory.length === 0 ? (
+                          <div className="small text-secondary text-center py-1">Không có lịch sử lịch đặt khác</div>
+                        ) : (
+                          <div className="d-flex flex-column gap-1.5" style={{ maxHeight: '120px', overflowY: 'auto' }}>
+                            {customerHistory.map(hist => {
+                              const hDate = new Date(hist.scheduledAt).toLocaleDateString('vi-VN');
+                              const hTime = new Date(hist.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                              return (
+                                <div key={hist.bookingId} className="bg-white p-2 rounded border d-flex justify-content-between align-items-center" style={{ fontSize: '0.75rem' }}>
+                                  <div className="d-flex flex-column text-start">
+                                    <strong className="text-dark font-monospace">#BK-{hist.bookingId} • {hist.licensePlate}</strong>
+                                    <span className="text-secondary" style={{ fontSize: '0.68rem' }}>{hDate} lúc {hTime}</span>
+                                  </div>
+                                  <div className="text-end">
+                                    <span className={`booking-status-badge ${getStatusClass(hist.status)}`} style={{ fontSize: '0.58rem', padding: '1px 6px' }}>
+                                      {getStatusLabel(hist.status)}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {bookingDetail.notes && (
-                  <div className="mt-3">
-                    <small className="text-muted d-block fw-bold mb-1">GHI CHÚ / YÊU CẦU ĐẶC BIỆT</small>
-                    <div className="p-3 border rounded text-secondary bg-white small">
+                  <div className="mt-2.5">
+                    <small className="text-muted d-block fw-bold mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>GHI CHÚ / YÊU CẦU ĐẶC BIỆT</small>
+                    <div className="p-2 border rounded text-secondary bg-white small" style={{ fontSize: '0.75rem' }}>
                       {bookingDetail.notes}
                     </div>
                   </div>
@@ -861,36 +1199,28 @@ export const AdminBookings = () => {
           </div>
 
           {/* Footer */}
-          {bookingDetail && ['Pending', 'Confirmed', 'CheckedIn'].includes(bookingDetail.status) && (
+          {bookingDetail && (isRescheduling || ['Pending', 'Confirmed', 'CheckedIn', 'Washing'].includes(bookingDetail.status)) && (
             <div className="booking-drawer-footer">
-              <div className="d-flex gap-2 w-100 justify-content-end">
-                {bookingDetail.status === 'Pending' && (
-                  <>
-                    <button
-                      className="btn btn-danger fw-bold text-white px-4 py-2"
-                      style={{ borderRadius: '12px', fontSize: '0.8rem' }}
-                      onClick={() => handleCancel(bookingDetail.bookingId, bookingDetail.customer.fullName)}
-                    >
-                      HỦY LỊCH HẸN
-                    </button>
-                    <button
-                      className="btn btn-success fw-bold text-white px-4 py-2"
-                      style={{ borderRadius: '12px', fontSize: '0.8rem' }}
-                      onClick={() => handleConfirm(bookingDetail.bookingId, bookingDetail.customer.fullName)}
-                    >
-                      DƯYỆT LỊCH HẸN
-                    </button>
-                  </>
-                )}
-                
-                {bookingDetail.status === 'Confirmed' && (() => {
-                  const bookingDate = new Date(bookingDetail.scheduledAt);
-                  bookingDate.setHours(0, 0, 0, 0);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const isFutureBooking = bookingDate > today;
-
-                  return (
+              {isRescheduling ? (
+                <div className="d-flex gap-2 w-100 justify-content-end">
+                  <button
+                    className="btn btn-secondary fw-bold px-4 py-2"
+                    style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                    onClick={() => setIsRescheduling(false)}
+                  >
+                    HỦY BỎ
+                  </button>
+                  <button
+                    className="btn btn-primary fw-bold text-white px-4 py-2"
+                    style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                    onClick={submitReschedule}
+                  >
+                    LƯU ĐỔI LỊCH
+                  </button>
+                </div>
+              ) : (
+                <div className="d-flex gap-2 w-100 justify-content-end">
+                  {bookingDetail.status === 'Pending' && (
                     <>
                       <button
                         className="btn btn-danger fw-bold text-white px-4 py-2"
@@ -900,39 +1230,79 @@ export const AdminBookings = () => {
                         HỦY LỊCH HẸN
                       </button>
                       <button
-                        className="btn btn-info fw-bold text-dark px-4 py-2"
-                        style={{
-                          borderRadius: '12px',
-                          fontSize: '0.8rem',
-                          background: isFutureBooking ? '#6c757d' : 'var(--cyan-electric)',
-                          color: isFutureBooking ? '#fff' : 'var(--dark)',
-                          border: 'none',
-                          cursor: isFutureBooking ? 'not-allowed' : 'pointer',
-                          opacity: isFutureBooking ? 0.65 : 1
-                        }}
-                        disabled={isFutureBooking}
-                        title={isFutureBooking ? "Chỉ có thể check-in vào ngày hẹn." : ""}
-                        onClick={() => handleCheckIn(bookingDetail.bookingId, bookingDetail.vehicle.licensePlate)}
+                        className="btn btn-success fw-bold text-white px-4 py-2"
+                        style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                        onClick={() => handleConfirm(bookingDetail.bookingId, bookingDetail.customer.fullName)}
                       >
-                        CHECK-IN NGAY
+                        DUYỆT LỊCH HẸN
                       </button>
                     </>
-                  );
-                })()}
+                  )}
+                  
+                  {bookingDetail.status === 'Confirmed' && (() => {
+                    const bookingDate = new Date(bookingDetail.scheduledAt);
+                    bookingDate.setHours(0, 0, 0, 0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isFutureBooking = bookingDate > today;
 
-                {bookingDetail.status === 'CheckedIn' && (
-                  <button
-                    className="btn btn-info fw-bold text-dark px-4 py-2"
-                    style={{ borderRadius: '12px', fontSize: '0.8rem', background: 'var(--cyan-electric)', border: 'none' }}
-                    onClick={() => {
-                      closeDrawer();
-                      navigate('/admin/queue');
-                    }}
-                  >
-                    <i className="fas fa-list-ol me-1.5"></i> XEM HÀNG ĐỢI
-                  </button>
-                )}
-              </div>
+                    return (
+                      <>
+                        <button
+                          className="btn btn-danger fw-bold text-white px-4 py-2"
+                          style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                          onClick={() => handleCancel(bookingDetail.bookingId, bookingDetail.customer.fullName)}
+                        >
+                          HỦY LỊCH HẸN
+                        </button>
+                        <button
+                          className="btn btn-warning fw-bold text-dark px-4 py-2"
+                          style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                          onClick={() => {
+                            const sDate = new Date(bookingDetail.scheduledAt);
+                            setRescheduleDate(sDate.toLocaleDateString('sv-SE'));
+                            setRescheduleTime(sDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+                            setRescheduleReason('');
+                            setIsRescheduling(true);
+                          }}
+                        >
+                          ĐỔI LỊCH HẸN
+                        </button>
+                        <button
+                          className="btn btn-info fw-bold text-dark px-4 py-2"
+                          style={{
+                            borderRadius: '12px',
+                            fontSize: '0.8rem',
+                            background: isFutureBooking ? '#6c757d' : 'var(--cyan-electric)',
+                            color: isFutureBooking ? '#fff' : 'var(--dark)',
+                            border: 'none',
+                            cursor: isFutureBooking ? 'not-allowed' : 'pointer',
+                            opacity: isFutureBooking ? 0.65 : 1
+                          }}
+                          disabled={isFutureBooking}
+                          title={isFutureBooking ? "Chỉ có thể check-in vào ngày hẹn." : ""}
+                          onClick={() => handleCheckIn(bookingDetail.bookingId, bookingDetail.vehicle.licensePlate)}
+                        >
+                          CHECK-IN NGAY
+                        </button>
+                      </>
+                    );
+                  })()}
+
+                  {['CheckedIn', 'Washing'].includes(bookingDetail.status) && (
+                    <button
+                      className="btn btn-info fw-bold text-dark px-4 py-2"
+                      style={{ borderRadius: '12px', fontSize: '0.8rem', background: 'var(--cyan-electric)', border: 'none' }}
+                      onClick={() => {
+                        closeDrawer();
+                        navigate('/admin/queue');
+                      }}
+                    >
+                      <i className="fas fa-list-ol me-1.5"></i> XEM HÀNG ĐỢI
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

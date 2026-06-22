@@ -3,7 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { customerService } from '../services/customerService';
 import { queueStatusMapper } from '../utils/queueStatusMapper';
 import '../styles/shared.css';
+import '../styles/admin/bookings.css'; // Accordion styling
 import '../styles/customer/history.css'; // Reuse premium styles
+
+const DEFAULT_TIME_SLOTS = [
+  "08:00", "09:00", "10:00", "11:00", "12:00", 
+  "13:00", "14:00", "15:00", "16:00", "17:00", "18:00",
+  "19:00", "20:00", "21:00", "22:00", "23:00"
+];
 
 export const CustomerBookings = () => {
   const { id: routeId } = useParams();
@@ -22,6 +29,20 @@ export const CustomerBookings = () => {
   const [detailModalBooking, setDetailModalBooking] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+
+  const [expandedSections, setExpandedSections] = useState({
+    overview: true,
+    service: false,
+    payment: false,
+    history: false
+  });
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState(null);
@@ -42,6 +63,76 @@ export const CustomerBookings = () => {
 
   const [showCancelReasonModal, setShowCancelReasonModal] = useState(false);
   const [cancelReasonDetails, setCancelReasonDetails] = useState(null); // { id, cancelledBy, cancelledAt, reason }
+
+  // Reschedule states
+  const [showRescheduleForm, setShowRescheduleForm] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('08:00');
+  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [occupiedSlots, setOccupiedSlots] = useState([]);
+  const [slotsStatus, setSlotsStatus] = useState({});
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
+  const [maxVehiclesPerSlot, setMaxVehiclesPerSlot] = useState(3);
+
+  useEffect(() => {
+    customerService.getBookingConfig()
+      .then(res => {
+        if (res.success && res.slots) {
+          setTimeSlots(res.slots);
+          if (res.slots.length > 0) {
+            setRescheduleTime(res.slots[0]);
+          }
+          if (res.maxVehiclesPerSlot) {
+            setMaxVehiclesPerSlot(res.maxVehiclesPerSlot);
+          }
+        }
+      })
+      .catch(err => console.error("Error loading booking config:", err));
+  }, []);
+
+  useEffect(() => {
+    if (rescheduleDate) {
+      setLoadingSlots(true);
+      customerService.getOccupiedSlots(rescheduleDate)
+        .then(res => {
+          if (res.success) {
+            setOccupiedSlots(res.occupiedSlots || []);
+            setSlotsStatus(res.slotsStatus || {});
+          }
+        })
+        .catch(err => console.error(err))
+        .finally(() => setLoadingSlots(false));
+    }
+  }, [rescheduleDate]);
+
+  const handleSubmitReschedule = async () => {
+    if (!rescheduleDate || !rescheduleTime) {
+      if (window.showToast) window.showToast('Vui lòng chọn ngày và giờ hẹn mới!', 'warning');
+      return;
+    }
+    if (!rescheduleReason.trim()) {
+      if (window.showToast) window.showToast('Vui lòng nhập lý do đổi lịch!', 'warning');
+      return;
+    }
+
+    const scheduledAt = `${rescheduleDate}T${rescheduleTime}:00`;
+    try {
+      const res = await customerService.rescheduleBooking(detailModalBooking.bookingId, scheduledAt, rescheduleReason.trim());
+      if (res.success) {
+        if (window.showToast) window.showToast(res.message || 'Đổi lịch hẹn thành công!', 'success');
+        setShowRescheduleForm(false);
+        loadData();
+        handleOpenDetail(detailModalBooking.bookingId);
+      } else {
+        if (window.showToast) window.showToast(res.message || 'Không thể đổi lịch hẹn.', 'warning');
+      }
+    } catch (err) {
+      console.error(err);
+      const errMsg = err.response?.data?.message || 'Đã xảy ra lỗi khi đổi lịch hẹn.';
+      if (window.showToast) window.showToast(errMsg, 'danger');
+    }
+  };
 
   // Fetch all bookings and reviews
   const loadData = async () => {
@@ -73,7 +164,27 @@ export const CustomerBookings = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+    const interval = setInterval(() => {
+      customerService.getWashHistory().then(bookingRes => {
+        if (bookingRes.success && bookingRes.history) {
+          setBookings(bookingRes.history);
+        }
+      });
+      customerService.getPendingReviews().then(pendingRes => {
+        if (pendingRes.success && pendingRes.bookings) {
+          setPendingReviewBookings(pendingRes.bookings);
+        }
+      });
+      if (showDetailModal && detailModalBooking) {
+        customerService.getBookingDetail(detailModalBooking.bookingId).then(res => {
+          if (res.success && res.booking) {
+            setDetailModalBooking(res.booking);
+          }
+        }).catch(err => console.error(err));
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [showDetailModal, detailModalBooking]);
 
   // Handle route parameter id to open detail modal on mount / change
   useEffect(() => {
@@ -85,6 +196,12 @@ export const CustomerBookings = () => {
   const handleOpenDetail = async (bookingId) => {
     setDetailLoading(true);
     setShowDetailModal(true);
+    setExpandedSections({
+      overview: true,
+      service: false,
+      payment: false,
+      history: false
+    });
     try {
       const res = await customerService.getBookingDetail(bookingId);
       if (res.success && res.booking) {
@@ -107,6 +224,7 @@ export const CustomerBookings = () => {
   const handleCloseDetail = () => {
     setShowDetailModal(false);
     setDetailModalBooking(null);
+    setShowRescheduleForm(false);
     if (routeId) {
       navigate('/customer/bookings');
     }
@@ -444,6 +562,19 @@ export const CustomerBookings = () => {
                                 <div className="mb-1 text-truncate"><i className="fas fa-plus-circle text-muted me-2"></i>Đi kèm: <strong className="text-dark">{b.addons.join(', ')}</strong></div>
                               )}
                               <div><i className="fas fa-coins text-muted me-2"></i>Tích điểm: <strong className="text-warning">+{b.status === 'Completed' ? b.points : 0} PTS</strong></div>
+                              {b.progressTracking?.stages && b.status === 'Completed' && (
+                                <div className="mt-2.5 pt-2.5 border-top text-start">
+                                  <small className="text-muted fw-bold d-block mb-1.5" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>TIẾN TRÌNH CHI TIẾT</small>
+                                  <div className="d-flex flex-column gap-1">
+                                    {b.progressTracking.stages.map((stage, sIdx) => (
+                                      <div key={sIdx} className="text-success small d-flex align-items-center gap-1.5" style={{ fontSize: '0.72rem', fontWeight: 500 }}>
+                                        <i className="fas fa-check-circle text-success" style={{ fontSize: '0.75rem' }}></i>
+                                        <span>{stage.displayName}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             <div className="d-flex justify-content-between align-items-center pt-3 border-top">
@@ -609,7 +740,7 @@ export const CustomerBookings = () => {
       {/* MODAL 1: BOOKING DETAIL MODAL */}
       {showDetailModal && (
         <div className="confirm-modal-backdrop show" style={{ display: 'flex' }}>
-          <div className="confirm-modal-card animate-confirm-in text-start" style={{ maxWidth: '580px', width: '100%' }}>
+          <div className="confirm-modal-card animate-confirm-in text-start" style={{ maxWidth: '580px', width: '92%', display: 'flex', flexDirection: 'column' }}>
             <div className="confirm-modal-header border-bottom pb-3">
               <h5 className="confirm-modal-title fw-bold text-dark d-flex align-items-center gap-2">
                 <i className="fas fa-info-circle text-cyan"></i>
@@ -628,227 +759,468 @@ export const CustomerBookings = () => {
                 <p className="text-secondary small">Đang tải chi tiết...</p>
               </div>
             ) : detailModalBooking ? (
-              <div className="confirm-modal-body py-3" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
+              showRescheduleForm ? (
+                <div className="confirm-modal-body py-4">
+                  <div className="p-3 bg-light rounded-4 border mb-3">
+                    <h6 className="fw-bold text-info mb-3 text-uppercase" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
+                      <i className="fas fa-calendar-alt me-1.5"></i>Thay đổi lịch hẹn mới
+                    </h6>
+                    <div className="row g-3">
+                      <div className="col-12 col-sm-6 text-start">
+                        <label className="form-label small fw-bold text-muted mb-1">CHỌN NGÀY HẸN MỚI *</label>
+                        <input
+                          type="date"
+                          className="form-control bg-white border py-2 text-dark fw-bold"
+                          style={{ fontSize: '0.82rem', borderRadius: '8px' }}
+                          value={rescheduleDate}
+                          min={new Date().toLocaleDateString('sv-SE')}
+                          onChange={e => setRescheduleDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-12 col-sm-6 text-start">
+                        <label className="form-label small fw-bold text-muted mb-1">CHỌN GIỜ HẸN MỚI *</label>
+                        <select
+                          className="form-select bg-white border py-2 text-dark fw-bold"
+                          style={{ fontSize: '0.82rem', borderRadius: '8px' }}
+                          value={rescheduleTime}
+                          onChange={e => setRescheduleTime(e.target.value)}
+                          disabled={loadingSlots || !rescheduleDate}
+                        >
+                          {timeSlots.map(t => {
+                            const isOccupied = occupiedSlots.includes(t);
+                            const remaining = slotsStatus[t] !== undefined ? slotsStatus[t] : maxVehiclesPerSlot;
+                            return (
+                              <option key={t} value={t} disabled={isOccupied}>
+                                {t} {isOccupied ? '(Đầy)' : `(Còn ${remaining} chỗ)`}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                      <div className="col-12 text-start">
+                        <label className="form-label small fw-bold text-muted mb-1">LÝ DO ĐỔI LỊCH *</label>
+                        <textarea
+                          className="form-control bg-white border py-2 text-dark"
+                          rows="3"
+                          maxLength="500"
+                          placeholder="Nhập lý do thay đổi lịch hẹn của bạn..."
+                          value={rescheduleReason}
+                          style={{ borderRadius: '8px' }}
+                          onChange={e => setRescheduleReason(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="confirm-modal-body py-3" style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: '4px' }}>
                 
-                {/* 1. Booking overview (merged vehicle and schedule info) */}
-                <div className="mb-3 px-1">
-                  <h6 className="fw-bold text-secondary mb-2.5" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>TỔNG QUAN LỊCH HẸN</h6>
-                  <div className="row g-3 py-1">
-                    <div className="col-6 col-sm-4">
-                      <small className="text-secondary d-block mb-1" style={{ fontSize: '0.62rem', fontWeight: 600 }}>PHƯƠNG TIỆN</small>
-                      <strong className="text-dark font-monospace" style={{ fontSize: '0.82rem' }}>{detailModalBooking.vehicle?.licensePlate}</strong>
-                      <span className="text-secondary small d-block" style={{ fontSize: '0.68rem', lineHeight: '1.2' }}>
-                        {detailModalBooking.vehicle?.brand} {detailModalBooking.vehicle?.model} ({detailModalBooking.vehicle?.vehicleClass})
-                      </span>
+                  {/* Section 1: Customer Information */}
+                  <div className="booking-drawer-section mb-3">
+                    <div 
+                      className="booking-drawer-section-title" 
+                      onClick={() => toggleSection('customer')}
+                      style={{ padding: '8px 12px', fontSize: '0.78rem' }}
+                    >
+                      <span className="fw-bold"><i className="fas fa-user me-1.5 text-cyan"></i>1. Thông tin khách hàng</span>
+                      <i className={`fas fa-chevron-${expandedSections.customer ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
                     </div>
-                    <div className="col-6 col-sm-4">
-                      <small className="text-secondary d-block mb-1" style={{ fontSize: '0.62rem', fontWeight: 600 }}>THỜI GIAN HẸN</small>
-                      <strong className="text-dark d-block" style={{ fontSize: '0.82rem' }}>{new Date(detailModalBooking.scheduledAt).toLocaleDateString('vi-VN')}</strong>
-                      <span className="badge bg-cyan bg-opacity-10 text-cyan font-monospace mt-0.5" style={{ fontSize: '0.68rem' }}>
-                        {new Date(detailModalBooking.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <div className="col-12 col-sm-4">
-                      <small className="text-secondary d-block mb-1" style={{ fontSize: '0.62rem', fontWeight: 600 }}>TRẠNG THÁI HIỆN TẠI</small>
-                      <span className={`badge px-2.5 py-1.5 rounded-pill small fw-bold ${
-                        detailModalBooking.queueStatus
-                          ? queueStatusMapper.getBadgeClass(detailModalBooking.queueStatus)
-                          : translateStatus(detailModalBooking.status).badgeClass
-                      }`} style={{ fontSize: '0.68rem' }}>
-                        {detailModalBooking.queueStatus
-                          ? queueStatusMapper.getLabel(detailModalBooking.queueStatus, detailModalBooking.addons ? detailModalBooking.addons.map(a => a.serviceName) : [])
-                          : translateStatus(detailModalBooking.status).label}
-                      </span>
-                    </div>
+                    {expandedSections.customer && (
+                      <div className="bg-light p-2.5 rounded-3 border">
+                        <div className="row g-2 m-0 w-100">
+                          <div className="col-6 ps-0">
+                            <small className="text-muted d-block mb-1" style={{ fontSize: '0.65rem' }}>Họ tên</small>
+                            <strong className="text-dark" style={{ fontSize: '0.8rem' }}>{detailModalBooking.customer.fullName}</strong>
+                          </div>
+                          <div className="col-6 pe-0">
+                            <small className="text-muted d-block mb-1" style={{ fontSize: '0.65rem' }}>Số điện thoại</small>
+                            <strong className="text-dark font-monospace" style={{ fontSize: '0.8rem' }}>{detailModalBooking.customer.phone}</strong>
+                          </div>
+                          <div className="col-12 border-top pt-1.5 px-0 mt-1.5">
+                            <small className="text-muted d-block mb-1" style={{ fontSize: '0.65rem' }}>Email</small>
+                            <span className="text-dark small" style={{ fontSize: '0.78rem' }}>{detailModalBooking.customer.email || 'Chưa cập nhật'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                {detailModalBooking.status !== 'Cancelled' && (
-                  <>
-                    <hr className="my-2.5 opacity-10" />
-                    {/* 2. Wash progress timeline */}
-                    <div className="mb-2 px-1">
-                      <h6 className="fw-bold text-secondary mb-2" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
-                        {detailModalBooking.queueStatus === 'Waiting' || detailModalBooking.queueStatus === 'WaitingCheckIn'
-                          ? 'LỊCH SẮP DIỄN RA'
-                          : 'TIẾN ĐỘ RỬA XE THỰC TẾ'}
-                      </h6>
-                      <div className="position-relative d-flex flex-column gap-1.5 py-0.5 px-1">
-                        {queueStatusMapper.getTimelineSteps(
-                          detailModalBooking.status,
-                          detailModalBooking.queueStatus,
-                          detailModalBooking.addons ? detailModalBooking.addons.map(a => a.serviceName) : []
-                        ).map((step, idx) => (
-                          <div key={idx} className="d-flex align-items-center gap-2 position-relative py-0.5">
-                            <div className="d-flex align-items-center justify-content-center" style={{ width: '16px', height: '16px', zIndex: 2 }}>
-                              {step.isCompleted ? (
-                                <i className="fas fa-check-circle text-success" style={{ fontSize: '0.78rem' }}></i>
-                              ) : step.isActive ? (
-                                <i className="fas fa-dot-circle text-primary animate-pulse" style={{ fontSize: '0.78rem' }}></i>
-                              ) : (
-                                <i className="far fa-circle text-muted" style={{ fontSize: '0.72rem' }}></i>
-                              )}
-                            </div>
-                            <span className={`${step.isCompleted ? 'text-secondary text-decoration-line-through' : step.isActive ? 'text-dark fw-bold' : 'text-muted'}`} style={{ fontSize: '0.74rem' }}>
-                              {step.name}
+                  {/* Section 2: Vehicle Information */}
+                  <div className="booking-drawer-section mb-3">
+                    <div 
+                      className="booking-drawer-section-title" 
+                      onClick={() => toggleSection('vehicle')}
+                      style={{ padding: '8px 12px', fontSize: '0.78rem' }}
+                    >
+                      <span className="fw-bold"><i className="fas fa-car-side me-1.5 text-cyan"></i>2. Thông tin phương tiện</span>
+                      <i className={`fas fa-chevron-${expandedSections.vehicle ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                    </div>
+                    {expandedSections.vehicle && (
+                      <div className="bg-light p-2.5 rounded-3 border">
+                        <div className="row g-2 m-0 w-100">
+                          <div className="col-6 ps-0">
+                            <small className="text-muted d-block mb-1" style={{ fontSize: '0.65rem' }}>Biển số xe</small>
+                            <strong className="text-dark font-monospace" style={{ fontSize: '0.85rem' }}>{detailModalBooking.vehicle?.licensePlate}</strong>
+                          </div>
+                          <div className="col-6 pe-0">
+                            <small className="text-muted d-block mb-1" style={{ fontSize: '0.65rem' }}>Phân khúc xe</small>
+                            <span className="text-dark fw-bold" style={{ fontSize: '0.78rem' }}>{detailModalBooking.vehicle?.vehicleClass}</span>
+                          </div>
+                          <div className="col-12 border-top pt-1.5 px-0 mt-1.5">
+                            <small className="text-muted d-block mb-1" style={{ fontSize: '0.65rem' }}>Hãng xe & Dòng xe</small>
+                            <span className="text-dark small" style={{ fontSize: '0.78rem' }}>{detailModalBooking.vehicle?.brand} - {detailModalBooking.vehicle?.model}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 3: Appointment Information */}
+                  <div className="booking-drawer-section mb-3">
+                    <div 
+                      className="booking-drawer-section-title" 
+                      onClick={() => toggleSection('schedule')}
+                      style={{ padding: '8px 12px', fontSize: '0.78rem' }}
+                    >
+                      <span className="fw-bold"><i className="fas fa-calendar-alt me-1.5 text-cyan"></i>3. Thông tin lịch trình</span>
+                      <i className={`fas fa-chevron-${expandedSections.schedule ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                    </div>
+                    {expandedSections.schedule && (
+                      <div className="bg-light p-2.5 rounded-3 border">
+                        <div className="row g-2 m-0 w-100">
+                          <div className="col-6 ps-0">
+                            <small className="text-secondary d-block mb-1" style={{ fontSize: '0.62rem', fontWeight: 600 }}>THỜI GIAN HẸN</small>
+                            <strong className="text-dark d-block" style={{ fontSize: '0.82rem' }}>{new Date(detailModalBooking.scheduledAt).toLocaleDateString('vi-VN')}</strong>
+                            <span className="badge bg-cyan bg-opacity-10 text-cyan font-monospace mt-0.5" style={{ fontSize: '0.68rem' }}>
+                              {new Date(detailModalBooking.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                             </span>
-                            {step.isActive && (
-                              <span className="badge bg-info bg-opacity-10 text-cyan ms-auto fw-bold" style={{ fontSize: '0.52rem', borderRadius: '4px', padding: '2px 5px' }}>Đang chạy</span>
+                          </div>
+                          <div className="col-6 pe-0">
+                            <small className="text-secondary d-block mb-1" style={{ fontSize: '0.62rem', fontWeight: 600 }}>TRẠNG THÁI</small>
+                            <span className={`badge px-2.5 py-1.5 rounded-pill small fw-bold d-inline-block mt-0.5 ${
+                              detailModalBooking.queueStatus
+                                ? queueStatusMapper.getBadgeClass(detailModalBooking.queueStatus)
+                                : translateStatus(detailModalBooking.status).badgeClass
+                            }`} style={{ fontSize: '0.68rem' }}>
+                              {detailModalBooking.queueStatus
+                                ? queueStatusMapper.getLabel(detailModalBooking.queueStatus, detailModalBooking.addons ? detailModalBooking.addons.map(a => a.serviceName) : [])
+                                : translateStatus(detailModalBooking.status).label}
+                            </span>
+                          </div>
+                          <div className="col-12 border-top pt-1.5 px-0 mt-1.5">
+                            <small className="text-muted d-block mb-1" style={{ fontSize: '0.65rem' }}>Ngày tạo đơn</small>
+                            <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>{new Date(detailModalBooking.createdAt).toLocaleString('vi-VN')}</span>
+                          </div>
+                        </div>
+
+                        {detailModalBooking.status !== 'Cancelled' && (
+                          <div className="border-top pt-2.5 mt-2.5">
+                            <small className="text-secondary d-block mb-2 fw-bold" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>
+                              {detailModalBooking.queueStatus === 'Waiting' || detailModalBooking.queueStatus === 'WaitingCheckIn'
+                                ? 'LỊCH SẮP DIỄN RA'
+                                : 'TIẾN ĐỘ RỬA XE THỰC TẾ'}
+                            </small>
+
+                            {/* Live Progress Bar & Info */}
+                            {detailModalBooking.progressTracking && detailModalBooking.progressTracking.progress !== undefined && (
+                              <div className="mb-3 p-3 rounded-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                  <span className="small text-secondary fw-bold" style={{ fontSize: '0.7rem' }}>Tiến độ: {detailModalBooking.progressTracking.progress}%</span>
+                                  {detailModalBooking.progressTracking.remainingSeconds !== undefined && detailModalBooking.progressTracking.remainingSeconds > 0 && (
+                                    <span className="small text-cyan fw-bold font-monospace" style={{ fontSize: '0.7rem' }}>Còn lại: {detailModalBooking.progressTracking.remainingSeconds}s</span>
+                                  )}
+                                </div>
+                                <div className="progress" style={{ height: '6px', background: '#e2e8f0', borderRadius: '10px' }}>
+                                  <div className="progress-bar" style={{ width: `${detailModalBooking.progressTracking.progress}%`, background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)', borderRadius: '10px' }}></div>
+                                </div>
+                              </div>
                             )}
+
+                            {/* Stages Checklist with Timestamps */}
+                            <div className="position-relative d-flex flex-column gap-2 py-0.5">
+                              {(() => {
+                                const stages = detailModalBooking.progressTracking?.stages?.length
+                                  ? detailModalBooking.progressTracking.stages
+                                  : [
+                                      { displayName: 'Check-in', isCompleted: detailModalBooking.status === 'CheckedIn' || detailModalBooking.status === 'Washing' || detailModalBooking.status === 'Completed', isActive: detailModalBooking.status === 'CheckedIn' },
+                                      { displayName: 'Rửa ngoại thất', isCompleted: detailModalBooking.status === 'Completed', isActive: detailModalBooking.status === 'Washing' },
+                                      { displayName: 'Vệ sinh nội thất', isCompleted: detailModalBooking.status === 'Completed', isActive: false },
+                                      { displayName: 'Kiểm tra cuối', isCompleted: detailModalBooking.status === 'Completed', isActive: false },
+                                      { displayName: 'Hoàn tất', isCompleted: detailModalBooking.status === 'Completed', isActive: false }
+                                    ];
+
+                                return stages.map((step, idx) => (
+                                  <div key={idx} className="d-flex align-items-center justify-content-between p-2 rounded-3 border bg-white" style={{
+                                    borderColor: step.isActive ? 'rgba(14, 165, 233, 0.3)' : '#e2e8f0',
+                                    background: step.isActive ? 'rgba(14, 165, 233, 0.02)' : 'none'
+                                  }}>
+                                    <div className="d-flex align-items-center gap-2">
+                                      {step.isCompleted ? (
+                                        <i className="fas fa-check-circle text-success" style={{ fontSize: '0.78rem' }}></i>
+                                      ) : step.isActive ? (
+                                        <i className="fas fa-spinner fa-spin text-cyan" style={{ fontSize: '0.78rem' }}></i>
+                                      ) : (
+                                        <i className="far fa-circle text-muted" style={{ fontSize: '0.72rem' }}></i>
+                                      )}
+                                      <div className="d-flex flex-column">
+                                        <span className={`${step.isCompleted ? 'text-secondary text-decoration-line-through' : step.isActive ? 'text-dark fw-bold' : 'text-muted'}`} style={{ fontSize: '0.76rem' }}>
+                                          {step.displayName}
+                                        </span>
+                                        {step.completedAt && (
+                                          <span className="text-muted" style={{ fontSize: '0.62rem' }}>
+                                            Xong lúc: {new Date(step.completedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                        )}
+                                        {step.isActive && step.startedAt && (
+                                          <span className="text-cyan" style={{ fontSize: '0.62rem' }}>
+                                            Bắt đầu: {new Date(step.startedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {step.isCompleted && <span className="badge bg-success bg-opacity-10 text-success" style={{ fontSize: '0.55rem' }}>Xong</span>}
+                                    {step.isActive && <span className="badge bg-info bg-opacity-10 text-cyan animate-pulse" style={{ fontSize: '0.55rem' }}>Đang chạy</span>}
+                                    {!step.isCompleted && !step.isActive && <span className="badge bg-light text-muted" style={{ fontSize: '0.55rem' }}>Chờ</span>}
+                                  </div>
+                                ));
+                              })()}
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <hr className="my-2.5 opacity-10" />
-
-                {/* 3. Services Details */}
-                <div className="mb-3 px-1">
-                  <h6 className="fw-bold text-secondary mb-2" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>CHI TIẾT DỊCH VỤ</h6>
-                  <div className="py-1">
-                    {detailModalBooking.mainService && (
-                      <div className="d-flex justify-content-between align-items-center py-1.5 border-bottom border-light">
-                        <div>
-                          <strong className="text-dark small d-block" style={{ fontSize: '0.78rem' }}>{detailModalBooking.mainService.serviceName}</strong>
-                          <small className="text-secondary" style={{ fontSize: '0.65rem' }}>Gói rửa chính</small>
-                        </div>
-                        <strong className="text-cyan small" style={{ fontSize: '0.78rem' }}>{Number(detailModalBooking.mainService.price).toLocaleString()}đ</strong>
-                      </div>
-                    )}
-                    {detailModalBooking.addons && detailModalBooking.addons.length > 0 ? (
-                      detailModalBooking.addons.map((a, i) => (
-                        <div key={i} className="d-flex justify-content-between align-items-center py-1.5 border-bottom border-light last-border-none">
-                          <div>
-                            <strong className="text-dark small d-block" style={{ fontSize: '0.78rem' }}>{a.serviceName}</strong>
-                            <small className="text-secondary" style={{ fontSize: '0.65rem' }}>Dịch vụ đi kèm</small>
-                          </div>
-                          <strong className="text-cyan small" style={{ fontSize: '0.78rem' }}>{Number(a.price).toLocaleString()}đ</strong>
-                        </div>
-                      ))
-                    ) : (
-                      !detailModalBooking.mainService && <div className="text-muted small italic py-1">Không chọn dịch vụ đi kèm.</div>
-                    )}
-                  </div>
-                </div>
-
-                <hr className="my-2.5 opacity-10" />
-
-                {/* 4. Payments info (Voucher merged here) */}
-                <div className="mb-3 px-1">
-                  <h6 className="fw-bold text-secondary mb-2" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>CHI TIẾT THANH TOÁN</h6>
-                  <div className="py-1">
-                    <div className="d-flex justify-content-between align-items-center mb-1 text-secondary small" style={{ fontSize: '0.75rem' }}>
-                      <span>Giá gốc dịch vụ:</span>
-                      <strong>{Number(detailModalBooking.basePrice).toLocaleString()}đ</strong>
-                    </div>
-                    {detailModalBooking.voucher && (
-                      <div className="d-flex justify-content-between align-items-center mb-1 small text-success" style={{ fontSize: '0.72rem' }}>
-                        <span>Ưu đãi voucher:</span>
-                        <span className="fw-bold">
-                          <i className="fas fa-ticket-alt me-1"></i>
-                          {detailModalBooking.voucher.rewardName}
-                        </span>
-                      </div>
-                    )}
-                    {detailModalBooking.promoDiscount > 0 && (
-                      <div className="d-flex justify-content-between align-items-center mb-1 text-secondary small" style={{ fontSize: '0.75rem' }}>
-                        <span>Giảm giá voucher:</span>
-                        <strong className="text-success">-{Number(detailModalBooking.promoDiscount).toLocaleString()}đ</strong>
-                      </div>
-                    )}
-                    <hr className="my-2 opacity-5" />
-                    <div className="d-flex justify-content-between align-items-center text-dark">
-                      <span className="fw-bold small" style={{ fontSize: '0.78rem' }}>TỔNG THANH TOÁN:</span>
-                      <strong className="text-cyan fs-5">{Number(detailModalBooking.finalPrice).toLocaleString()}đ</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <hr className="my-2.5 opacity-10" />
-
-                {/* 5. Loyalty Points info */}
-                <div className="mb-3 px-1">
-                  <h6 className="fw-bold text-secondary mb-2" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>LỢI ÍCH THÀNH VIÊN</h6>
-                  <div className="py-1 d-flex align-items-center justify-content-between" style={{ fontSize: '0.75rem' }}>
-                    <div>
-                      <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>TIỂU CHUẨN TÍCH ĐIỂM</small>
-                      <span className="text-dark font-semibold">Tích lũy điểm khi rửa xe hoàn tất.</span>
-                    </div>
-                    <div className="text-end">
-                      <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>ĐIỂM DỰ KIẾN</small>
-                      <strong className="text-warning font-monospace" style={{ fontSize: '0.9rem' }}>+{detailModalBooking.pointsEarned} PTS</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {detailModalBooking.hasReview && (
-                  <>
-                    <hr className="my-2.5 opacity-10" />
-                    {/* 5.5. Submitted Review Details */}
-                    <div className="mb-3 px-1">
-                      <h6 className="fw-bold text-secondary mb-2" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>ĐÁNH GIÁ CỦA BẠN</h6>
-                      <div className="py-1 text-start">
-                        <div className="text-warning mb-1.5" style={{ fontSize: '0.75rem' }}>
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <i key={s} className={`${s <= (detailModalBooking.rating || 5) ? 'fas' : 'far'} fa-star`} style={{ fontSize: '0.8rem' }}></i>
-                          ))}
-                        </div>
-                        <div className="small text-secondary italic" style={{ fontSize: '0.75rem' }}>"{detailModalBooking.reviewText || 'Không có bình luận.'}"</div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {detailModalBooking.status === 'Cancelled' && (
-                  <>
-                    <hr className="my-2.5 opacity-10" />
-                    {/* 6. Cancellation details */}
-                    <div className="mb-3 px-1">
-                      <h6 className="fw-bold text-danger mb-2" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}><i className="fas fa-exclamation-circle me-1.5"></i>CHI TIẾT HỦY LỊCH HẸN</h6>
-                      <div className="py-1 text-start" style={{ fontSize: '0.75rem' }}>
-                        <div className="small text-secondary mb-1">Hủy bởi: <strong className="text-dark">{detailModalBooking.cancelledBy === 'Customer' ? 'Khách hàng' : 'Quản trị viên'}</strong></div>
-                        {detailModalBooking.cancelledAt && (
-                          <div className="small text-secondary mb-1">Thời gian hủy: <strong className="text-dark">{new Date(detailModalBooking.cancelledAt).toLocaleString('vi-VN')}</strong></div>
                         )}
-                        <div className="small text-secondary">Lý do: <strong className="text-danger italic">"{detailModalBooking.cancelReason || 'Không có lý do cụ thể.'}"</strong></div>
                       </div>
-                    </div>
-                  </>
-                )}
+                    )}
+                  </div>
 
-                {detailModalBooking.status === 'Completed' && (
-                  <>
-                    <hr className="my-2.5 opacity-10" />
-                    {/* 7. Completed details */}
-                    <div className="mb-3 px-1 d-flex justify-content-between align-items-center" style={{ fontSize: '0.75rem' }}>
-                      <div>
-                        <h6 className="fw-bold text-success mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}><i className="fas fa-check-double me-1.5"></i>HOÀN TẤT DỊCH VỤ</h6>
-                        <small className="text-secondary">Thời gian thanh toán: <strong className="text-dark">{detailModalBooking.paidAt ? new Date(detailModalBooking.paidAt).toLocaleString('vi-VN') : 'Đã thanh toán'}</strong></small>
-                      </div>
-                      <div className="text-end">
-                        <span className="badge bg-success text-white fw-bold" style={{ fontSize: '0.65rem', padding: '6px 12px' }}>ĐÃ THANH TOÁN</span>
-                      </div>
+                  {/* Section 4: Services Details */}
+                  <div className="booking-drawer-section mb-3">
+                    <div 
+                      className="booking-drawer-section-title" 
+                      onClick={() => toggleSection('service')}
+                      style={{ padding: '8px 12px', fontSize: '0.78rem' }}
+                    >
+                      <span className="fw-bold"><i className="fas fa-concierge-bell me-1.5 text-cyan"></i>4. Chi tiết dịch vụ</span>
+                      <i className={`fas fa-chevron-${expandedSections.service ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
                     </div>
-                  </>
-                )}
+                    {expandedSections.service && (
+                      <div className="bg-light p-2.5 rounded-3 border">
+                        <div className="py-1">
+                          {detailModalBooking.mainService && (
+                            <div className="d-flex justify-content-between align-items-center py-1.5 border-bottom border-light">
+                              <div>
+                                <strong className="text-dark small d-block" style={{ fontSize: '0.78rem' }}>{detailModalBooking.mainService.serviceName}</strong>
+                                <small className="text-secondary" style={{ fontSize: '0.65rem' }}>Gói rửa chính</small>
+                              </div>
+                              <strong className="text-cyan small" style={{ fontSize: '0.78rem' }}>{Number(detailModalBooking.mainService.price).toLocaleString()}đ</strong>
+                            </div>
+                          )}
+                          {detailModalBooking.addons && detailModalBooking.addons.length > 0 ? (
+                            detailModalBooking.addons.map((a, i) => (
+                              <div key={i} className="d-flex justify-content-between align-items-center py-1.5 border-bottom border-light last-border-none">
+                                <div>
+                                  <strong className="text-dark small d-block" style={{ fontSize: '0.78rem' }}>{a.serviceName}</strong>
+                                  <small className="text-secondary" style={{ fontSize: '0.65rem' }}>Dịch vụ đi kèm</small>
+                                </div>
+                                <strong className="text-cyan small" style={{ fontSize: '0.78rem' }}>{Number(a.price).toLocaleString()}đ</strong>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-muted small italic py-1">Không chọn dịch vụ đi kèm.</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-              </div>
+                  {/* Section 5: Payment Summary & Voucher */}
+                  <div className="booking-drawer-section mb-3">
+                    <div 
+                      className="booking-drawer-section-title" 
+                      onClick={() => toggleSection('payment')}
+                      style={{ padding: '8px 12px', fontSize: '0.78rem' }}
+                    >
+                      <span className="fw-bold"><i className="fas fa-credit-card me-1.5 text-cyan"></i>5. Chi phí & điểm thưởng</span>
+                      <i className={`fas fa-chevron-${expandedSections.payment ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                    </div>
+                    {expandedSections.payment && (
+                      <div className="bg-light p-2.5 rounded-3 border">
+                        <div className="py-1">
+                          <div className="d-flex justify-content-between align-items-center mb-1 text-secondary small" style={{ fontSize: '0.75rem' }}>
+                            <span>Giá gốc dịch vụ:</span>
+                            <strong>{Number(detailModalBooking.basePrice).toLocaleString()}đ</strong>
+                          </div>
+                          {detailModalBooking.voucher && (
+                            <div className="d-flex justify-content-between align-items-center mb-1 small text-success" style={{ fontSize: '0.72rem' }}>
+                              <span>Ưu đãi voucher:</span>
+                              <span className="fw-bold">
+                                <i className="fas fa-ticket-alt me-1"></i>
+                                {detailModalBooking.voucher.rewardName}
+                              </span>
+                            </div>
+                          )}
+                          {detailModalBooking.promoDiscount > 0 && (
+                            <div className="d-flex justify-content-between align-items-center mb-1 text-secondary small" style={{ fontSize: '0.75rem' }}>
+                              <span>Giảm giá voucher:</span>
+                              <strong className="text-success">-{Number(detailModalBooking.promoDiscount).toLocaleString()}đ</strong>
+                            </div>
+                          )}
+                          <hr className="my-2 opacity-5" />
+                          <div className="d-flex justify-content-between align-items-center text-dark mb-2">
+                            <span className="fw-bold small" style={{ fontSize: '0.78rem' }}>TỔNG THANH TOÁN:</span>
+                            <strong className="text-cyan fs-5">{Number(detailModalBooking.finalPrice).toLocaleString()}đ</strong>
+                          </div>
+                          <div className="d-flex align-items-center justify-content-between border-top pt-2 mt-2" style={{ fontSize: '0.75rem' }}>
+                            <div>
+                              <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>TIÊU CHUẨN TÍCH ĐIỂM</small>
+                              <span className="text-dark font-semibold">Tích lũy điểm khi rửa xe hoàn tất.</span>
+                            </div>
+                            <div className="text-end">
+                              <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>ĐIỂM DỰ KIẾN</small>
+                              <strong className="text-warning font-monospace" style={{ fontSize: '0.9rem' }}>+{detailModalBooking.pointsEarned} PTS</strong>
+                            </div>
+                          </div>
+                          {detailModalBooking.status === 'Completed' && (
+                            <div className="border-top pt-2 mt-2" style={{ fontSize: '0.75rem' }}>
+                              <small className="text-secondary d-block mb-1">Thời gian thanh toán: <strong className="text-dark">{detailModalBooking.paidAt ? new Date(detailModalBooking.paidAt).toLocaleString('vi-VN') : 'Đã thanh toán'}</strong></small>
+                              <span className="badge bg-success text-white fw-bold mt-1" style={{ fontSize: '0.62rem', padding: '4px 8px' }}>ĐH HOÀN TẤT & ĐÃ THANH TOÁN</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 6: Voucher & Khuyến mãi */}
+                  <div className="booking-drawer-section mb-3">
+                    <div 
+                      className="booking-drawer-section-title" 
+                      onClick={() => toggleSection('voucher')}
+                      style={{ padding: '8px 12px', fontSize: '0.78rem' }}
+                    >
+                      <span className="fw-bold"><i className="fas fa-ticket-alt me-1.5 text-cyan"></i>6. Voucher & Khuyến mãi</span>
+                      <i className={`fas fa-chevron-${expandedSections.voucher ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                    </div>
+                    {expandedSections.voucher && (
+                      <div className="bg-light p-2.5 rounded-3 border">
+                        {detailModalBooking.voucher ? (
+                          <div className="d-flex justify-content-between align-items-start small">
+                            <div>
+                              <strong className="text-danger"><i className="fas fa-ticket-alt me-1.5"></i>{detailModalBooking.voucher.rewardName}</strong>
+                              <span className="text-muted d-block mt-0.5" style={{ fontSize: '0.68rem' }}>{detailModalBooking.voucher.description || 'Không có mô tả.'}</span>
+                            </div>
+                            <strong className="text-danger">-{Number(detailModalBooking.voucher.discountValue).toLocaleString()}đ</strong>
+                          </div>
+                        ) : (
+                          <div className="small text-secondary text-center py-1">Không có voucher nào được áp dụng</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 7: Booking History & timeline logs */}
+                  <div className="booking-drawer-section mb-0">
+                    <div 
+                      className="booking-drawer-section-title" 
+                      onClick={() => toggleSection('history')}
+                      style={{ padding: '8px 12px', fontSize: '0.78rem' }}
+                    >
+                      <span className="fw-bold"><i className="fas fa-history me-1.5 text-cyan"></i>7. Nhật ký hoạt động & Lịch sử đổi lịch</span>
+                      <i className={`fas fa-chevron-${expandedSections.history ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
+                    </div>
+                    {expandedSections.history && (
+                      <div className="bg-light p-2.5 rounded-3 border d-flex flex-column gap-3">
+                        {/* Timeline Audit Logs */}
+                        <div>
+                          <small className="text-muted d-block fw-bold mb-2" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>DÒNG THỜI GIAN ĐƠN ĐẶT</small>
+                          {detailModalBooking.timeline && detailModalBooking.timeline.length > 0 ? (
+                            <div className="booking-timeline ps-2 border-start py-1 text-start" style={{ fontSize: '0.75rem' }}>
+                              {detailModalBooking.timeline.map((log) => (
+                                <div key={log.id} className="timeline-item mb-2.5 position-relative">
+                                  <div className="timeline-marker" style={{ left: '-12.5px', top: '4px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--cyan-electric)', position: 'absolute' }}></div>
+                                  <div className="d-flex justify-content-between align-items-start ms-2">
+                                    <div>
+                                      <strong className="text-dark">{log.action === 'Created' ? 'Khởi tạo' : log.action === 'Confirmed' ? 'Đã duyệt' : log.action === 'CheckedIn' ? 'Đã check-in' : log.action === 'WashingStarted' ? 'Đang rửa' : log.action === 'Completed' ? 'Hoàn thành' : log.action === 'Cancelled' ? 'Đã hủy' : log.action === 'NoShow' ? 'Không đến' : log.action === 'Rescheduled' ? 'Đổi lịch' : log.action}</strong>
+                                      <span className="text-secondary d-block mt-0.5" style={{ fontSize: '0.72rem' }}>{log.description}</span>
+                                    </div>
+                                    <div className="text-end text-muted font-monospace" style={{ fontSize: '0.65rem', minWidth: '80px', paddingLeft: '8px' }}>
+                                      {new Date(log.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="small text-secondary text-center py-1">Không có nhật ký dòng thời gian</div>
+                          )}
+                        </div>
+
+                        {/* Reschedule History */}
+                        {detailModalBooking.reschedules && detailModalBooking.reschedules.length > 0 && (
+                          <div className="border-top pt-2.5">
+                            <small className="text-muted d-block fw-bold mb-2" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>LỊCH SỬ ĐỔI LỊCH HẸN</small>
+                            <div className="d-flex flex-column gap-2 text-start" style={{ fontSize: '0.75rem' }}>
+                              {detailModalBooking.reschedules.map((resch) => (
+                                <div key={resch.id} className="bg-white p-2 rounded border border-info-subtle">
+                                  <div className="d-flex justify-content-between align-items-center mb-1">
+                                    <strong className="text-info"><i className="fas fa-calendar-alt me-1"></i>Thay đổi lịch hẹn</strong>
+                                    <span className="text-muted font-monospace" style={{ fontSize: '0.65rem' }}>{new Date(resch.createdAt).toLocaleDateString('vi-VN')}</span>
+                                  </div>
+                                  <div className="text-dark mb-1">
+                                    <span>Từ: </span><span className="text-muted">{new Date(resch.oldScheduledAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</span>
+                                    <span className="mx-1"><i className="fas fa-long-arrow-alt-right"></i></span>
+                                    <span>Sang: </span><strong className="text-dark">{new Date(resch.newScheduledAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</strong>
+                                  </div>
+                                  <div className="text-secondary" style={{ fontSize: '0.7rem' }}>
+                                    <strong>Lý do:</strong> {resch.reason} <span className="badge bg-light text-secondary border float-end">{resch.changedBy}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              )
             ) : null}
 
-            <div className="confirm-modal-footer d-flex gap-2 justify-content-end border-top pt-3 mt-2">
-              {detailModalBooking && (detailModalBooking.status === 'Pending' || detailModalBooking.status === 'Pending Confirmation' || detailModalBooking.status === 'Confirmed') && (
-                <button className="btn btn-outline-danger px-4 py-2 small fw-bold" style={{ borderRadius: '8px' }} onClick={(e) => handleOpenCancel(detailModalBooking.bookingId, e)}>
-                  Hủy lịch hẹn
-                </button>
+            <div className="confirm-modal-footer d-flex flex-wrap gap-2 justify-content-end border-top pt-3 mt-2">
+              {showRescheduleForm ? (
+                <>
+                  <button className="btn btn-light px-4 py-2 small border text-dark" style={{ borderRadius: '8px' }} onClick={() => setShowRescheduleForm(false)}>Hủy bỏ</button>
+                  <button className="app-btn-primary px-4 py-2 border-0 text-dark fw-bold small" style={{ borderRadius: '8px' }} onClick={handleSubmitReschedule}>Xác nhận đổi</button>
+                </>
+              ) : (
+                <>
+                  {detailModalBooking && (detailModalBooking.status === 'Pending' || detailModalBooking.status === 'Pending Confirmation' || detailModalBooking.status === 'Confirmed') && (
+                    <>
+                      <button className="btn btn-outline-danger px-4 py-2 small fw-bold" style={{ borderRadius: '8px' }} onClick={(e) => handleOpenCancel(detailModalBooking.bookingId, e)}>
+                        Hủy lịch hẹn
+                      </button>
+                      <button 
+                        className="btn btn-warning px-4 py-2 small fw-bold text-dark" 
+                        style={{ borderRadius: '8px' }} 
+                        onClick={() => {
+                          const sDate = new Date(detailModalBooking.scheduledAt);
+                          setRescheduleDate(sDate.toLocaleDateString('sv-SE'));
+                          setRescheduleTime(sDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+                          setRescheduleReason('');
+                          setShowRescheduleForm(true);
+                        }}
+                      >
+                        Đổi lịch hẹn
+                      </button>
+                    </>
+                  )}
+                  {detailModalBooking && detailModalBooking.status === 'Completed' && !detailModalBooking.hasReview && (
+                    <button className="app-btn-primary px-4 py-2 border-0 text-dark fw-bold small" style={{ borderRadius: '8px' }} onClick={() => { handleCloseDetail(); handleOpenReview(detailModalBooking.bookingId); }}>
+                      Đánh giá ngay
+                    </button>
+                  )}
+                  <button className="app-btn-secondary px-4 py-2 small" style={{ borderRadius: '8px' }} onClick={handleCloseDetail}>Đóng lại</button>
+                </>
               )}
-              {detailModalBooking && detailModalBooking.status === 'Completed' && !detailModalBooking.hasReview && (
-                <button className="app-btn-primary px-4 py-2 border-0 text-dark fw-bold small" style={{ borderRadius: '8px' }} onClick={() => { handleCloseDetail(); handleOpenReview(detailModalBooking.bookingId); }}>
-                  Đánh giá ngay
-                </button>
-              )}
-              <button className="app-btn-secondary px-4 py-2 small" style={{ borderRadius: '8px' }} onClick={handleCloseDetail}>Đóng lại</button>
             </div>
           </div>
         </div>
@@ -857,7 +1229,7 @@ export const CustomerBookings = () => {
       {/* MODAL 2: CANCELLATION MODAL */}
       {showCancelModal && (
         <div className="confirm-modal-backdrop show" style={{ display: 'flex' }}>
-          <div className="confirm-modal-card animate-confirm-in text-start" style={{ maxWidth: '440px', width: '100%' }}>
+          <div className="confirm-modal-card animate-confirm-in text-start" style={{ maxWidth: '440px', width: '92%' }}>
             <div className="confirm-modal-header border-bottom pb-3">
               <h5 className="confirm-modal-title fw-bold text-danger">Hủy lịch đặt xe #{cancelTargetId}</h5>
               <button type="button" className="confirm-modal-close-btn border-0 bg-transparent text-secondary" onClick={() => setShowCancelModal(false)}>
@@ -891,7 +1263,7 @@ export const CustomerBookings = () => {
       {/* MODAL 3: REVIEW SYSTEM POPUP */}
       {showReviewModal && (
         <div className="confirm-modal-backdrop show" style={{ display: 'flex' }}>
-          <div className="confirm-modal-card animate-confirm-in text-start" style={{ maxWidth: '440px', width: '100%' }}>
+          <div className="confirm-modal-card animate-confirm-in text-start" style={{ maxWidth: '440px', width: '92%' }}>
             <div className="confirm-modal-header border-bottom pb-3">
               <h5 className="confirm-modal-title fw-bold text-dark"><i className="fas fa-star text-warning me-1.5"></i>Đánh giá chất lượng dịch vụ</h5>
               <button type="button" className="confirm-modal-close-btn border-0 bg-transparent text-secondary" onClick={() => setShowReviewModal(false)}>
@@ -951,7 +1323,7 @@ export const CustomerBookings = () => {
       {/* MODAL 4: VIEW CANCELLATION REASON POPUP */}
       {showCancelReasonModal && cancelReasonDetails && (
         <div className="confirm-modal-backdrop show" style={{ display: 'flex' }}>
-          <div className="confirm-modal-card animate-confirm-in text-start" style={{ maxWidth: '440px', width: '100%' }}>
+          <div className="confirm-modal-card animate-confirm-in text-start" style={{ maxWidth: '440px', width: '92%' }}>
             <div className="confirm-modal-header border-bottom pb-3">
               <h5 className="confirm-modal-title fw-bold text-danger"><i className="fas fa-exclamation-circle me-1.5"></i>Chi tiết hủy lịch đặt xe</h5>
               <button type="button" className="confirm-modal-close-btn border-0 bg-transparent text-secondary" onClick={() => setShowCancelReasonModal(false)}>
