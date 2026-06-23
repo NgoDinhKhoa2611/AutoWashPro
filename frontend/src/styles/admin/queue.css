@@ -3,11 +3,22 @@
    AutoWash Pro — SWP391 FPT University
    ============================================================ */
 
-/* ── Queue Grid Layout ───────────────────────────────────── */
 .queue-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+}
+
+@media (max-width: 991.98px) {
+  .queue-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .queue-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 
 .queue-card-service {
@@ -87,7 +98,7 @@
 }
 
 .status-cancelled {
-  border-left: 3px solid #6b7280;
+  border-left: 3px solid #ef4444;
 }
 
 /* ── Card Header ─────────────────────────────────────────── */

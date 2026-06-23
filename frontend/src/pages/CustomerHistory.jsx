@@ -199,7 +199,6 @@ export const CustomerHistory = () => {
                               <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Gói dịch vụ</small>
                               <span className="fw-bold text-dark" style={{ fontSize: '0.85rem' }}>
                                 {b.mainService}
-                                {b.addons && b.addons.length > 0 ? ` + ${b.addons.join(', ')}` : ''}
                               </span>
                             </div>
                             <div className="col-6 text-end">

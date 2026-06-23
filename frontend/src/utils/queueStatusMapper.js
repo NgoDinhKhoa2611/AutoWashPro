@@ -1,21 +1,25 @@
 export const queueStatusMapper = {
-  getLabel: (status, addons = []) => {
+  getLabel: (status) => {
     switch (status) {
       case 'Waiting':
       case 'WaitingCheckIn':
         return 'Chờ check-in';
-      case 'LPR_Scan':
-      case 'LprScanned':
-        return 'Đã quét LPR';
+      case 'CheckedIn':
+      case 'CheckIn':
+        return 'Đã check-in';
       case 'Washing':
       case 'FoamWashing':
         return 'Đang rửa xe';
       case 'Drying':
         return 'Đang sấy khô';
       case 'Completed':
-        return 'Hoàn tất';
       case 'Archived':
-        return 'Đã giao xe';
+      case 'Checkout':
+        return 'Hoàn tất';
+      case 'Cancelled':
+        return 'Đã hủy';
+      case 'NoShow':
+        return 'Khách không đến';
       default:
         return 'Chờ check-in';
     }
@@ -25,18 +29,20 @@ export const queueStatusMapper = {
     switch (status) {
       case 'Waiting':
       case 'WaitingCheckIn':
-        return 'bg-secondary bg-opacity-10 text-secondary';
-      case 'LPR_Scan':
-      case 'LprScanned':
-        return 'bg-info bg-opacity-10 text-cyan';
+        return 'bg-warning bg-opacity-10 text-warning';
+      case 'CheckedIn':
+      case 'CheckIn':
       case 'Washing':
       case 'FoamWashing':
       case 'Drying':
         return 'bg-primary bg-opacity-10 text-primary';
       case 'Completed':
-        return 'bg-success bg-opacity-10 text-success';
       case 'Archived':
-        return 'bg-success bg-opacity-15 text-success fw-bold';
+      case 'Checkout':
+        return 'bg-success bg-opacity-10 text-success';
+      case 'Cancelled':
+      case 'NoShow':
+        return 'bg-danger bg-opacity-10 text-danger';
       default:
         return 'bg-secondary bg-opacity-10 text-muted';
     }
@@ -47,8 +53,8 @@ export const queueStatusMapper = {
       case 'Waiting':
       case 'WaitingCheckIn':
         return 'fa-clock';
-      case 'LPR_Scan':
-      case 'LprScanned':
+      case 'CheckedIn':
+      case 'CheckIn':
         return 'fa-qrcode';
       case 'Washing':
       case 'FoamWashing':
@@ -56,9 +62,9 @@ export const queueStatusMapper = {
       case 'Drying':
         return 'fa-wind';
       case 'Completed':
-        return 'fa-check-circle';
       case 'Archived':
-        return 'fa-car-side';
+      case 'Checkout':
+        return 'fa-check-circle';
       default:
         return 'fa-hourglass-start';
     }
@@ -66,30 +72,25 @@ export const queueStatusMapper = {
 
   getTimelineSteps: (bookingStatus, queueStatus, currentStage) => {
     const steps = [
-      { id: 'CheckIn', name: 'Check-in' },
+      { id: 'CheckedIn', name: 'Đã check-in' },
       { id: 'Washing', name: 'Rửa xe' },
       { id: 'Drying', name: 'Sấy khô' },
-      { id: 'FinalInspection', name: 'Kiểm tra cuối' },
-      { id: 'Completed', name: 'Hoàn tất' },
-      { id: 'Checkout', name: 'Đã giao xe' }
+      { id: 'Completed', name: 'Hoàn tất' }
     ];
 
     let activeIndex = -1;
     
-    if (bookingStatus === 'Checkout' || queueStatus === 'Archived' || currentStage === 'Checkout') {
-      activeIndex = 6;
-    } else if (bookingStatus === 'Completed' || queueStatus === 'Completed' || currentStage === 'Completed') {
-      activeIndex = 5;
-    } else if (queueStatus === 'Waiting' || queueStatus === 'LPR_Scan' || bookingStatus === 'CheckedIn' || currentStage) {
-      const stage = currentStage || 'CheckIn';
-      if (stage === 'CheckIn') {
+    if (bookingStatus === 'Checkout' || queueStatus === 'Archived' || currentStage === 'Checkout' ||
+        bookingStatus === 'Completed' || queueStatus === 'Completed' || currentStage === 'Completed') {
+      activeIndex = 4;
+    } else {
+      const stage = currentStage || '';
+      if (stage === 'CheckIn' || stage === 'CheckedIn' || bookingStatus === 'CheckedIn') {
         activeIndex = 0;
       } else if (stage === 'Washing') {
         activeIndex = 1;
       } else if (stage === 'Drying') {
         activeIndex = 2;
-      } else if (stage === 'FinalInspection') {
-        activeIndex = 3;
       }
     }
 

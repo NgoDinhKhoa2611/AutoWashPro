@@ -9,11 +9,11 @@ namespace Auto_Wash.Helpers
             return status switch
             {
                 QueueStatus.Waiting => "Chờ check-in",
-                QueueStatus.LPR_Scan => "Check-in",
-                QueueStatus.Washing => "Rửa ngoại thất",
-                QueueStatus.Addon_Processing => "Vệ sinh nội thất",
-                QueueStatus.Drying => "Kiểm tra cuối",
+                QueueStatus.Washing => "Đang rửa xe",
+                QueueStatus.Drying => "Đang sấy khô",
                 QueueStatus.Completed => "Hoàn tất",
+                QueueStatus.Archived => "Đã giao xe",
+                QueueStatus.Cancelled => "Đã hủy",
                 _ => "Chờ check-in"
             };
         }

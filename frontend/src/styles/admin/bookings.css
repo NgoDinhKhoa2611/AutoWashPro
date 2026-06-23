@@ -65,23 +65,19 @@
 .booking-card.card-pending {
     border-left: 5px solid #FA8C16;
 }
-.booking-card.card-confirmed {
-    border-left: 5px solid #1677FF;
-}
-.booking-card.card-checkedin {
-    border-left: 5px solid #722ED1;
-}
+.booking-card.card-confirmed,
+.booking-card.card-checkedin,
 .booking-card.card-washing {
-    border-left: 5px solid #0ea5e9;
+    border-left: 5px solid #1677FF;
 }
 .booking-card.card-completed {
     border-left: 5px solid #52C41A;
 }
 .booking-card.card-cancelled {
-    border-left: 5px solid #F5222D;
+    border-left: 5px solid #64748b;
 }
 .booking-card.card-noshow {
-    border-left: 5px solid #64748b;
+    border-left: 5px solid #F5222D;
 }
 
 .booking-card-row {
@@ -202,7 +198,7 @@
 }
 
 .booking-drawer-section {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 .booking-drawer-section-title {
     font-size: 0.74rem;
@@ -210,9 +206,9 @@
     color: #0f172a;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     border-left: 3px solid var(--cyan-electric, #0ea5e9);
-    padding: 10px 14px;
+    padding: 6px 12px;
     background: #f8fafc;
     border-radius: 8px;
     display: flex;

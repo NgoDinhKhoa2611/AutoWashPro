@@ -77,26 +77,25 @@ namespace Auto_Wash.Services
 
             foreach (var q in activeQueues)
             {
-                // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
                 var elapsedSeconds = (now - q.CheckInAt).TotalSeconds;
                 if (elapsedSeconds < 0) elapsedSeconds = 0;
 
-                if (elapsedSeconds < 10)
+                if (elapsedSeconds < BookingWorkflowConfig.CheckInSeconds)
                 {
-                    if (q.Status == QueueStatus.Waiting || q.Status == QueueStatus.LPR_Scan)
+                    if (q.Status == QueueStatus.Waiting)
                     {
                         q.CurrentStage = "CheckIn";
                     }
                 }
-                else if (elapsedSeconds < 25)
+                else if (elapsedSeconds < BookingWorkflowConfig.CheckInSeconds + BookingWorkflowConfig.WashingSeconds)
                 {
-                    if (q.Status == QueueStatus.Waiting || q.Status == QueueStatus.LPR_Scan || q.Status == QueueStatus.Washing)
+                    if (q.Status == QueueStatus.Waiting || q.Status == QueueStatus.Washing)
                     {
                         q.CurrentStage = "Washing";
                         if (q.Status != QueueStatus.Washing)
                         {
                             q.Status = QueueStatus.Washing;
-                            q.StartedAt ??= q.CheckInAt.AddSeconds(10);
+                            q.StartedAt ??= q.CheckInAt.AddSeconds(BookingWorkflowConfig.CheckInSeconds);
                             changed = true;
 
                             if (q.Booking != null && q.Booking.Status != BookingStatus.Washing)
@@ -119,7 +118,7 @@ namespace Auto_Wash.Services
                         }
                     }
                 }
-                else if (elapsedSeconds < 40)
+                else if (elapsedSeconds < BookingWorkflowConfig.TotalDurationSeconds)
                 {
                     if (q.Status == QueueStatus.Washing || q.Status == QueueStatus.Drying)
                     {
@@ -131,14 +130,7 @@ namespace Auto_Wash.Services
                         }
                     }
                 }
-                else if (elapsedSeconds < 50)
-                {
-                    if (q.Status == QueueStatus.Drying)
-                    {
-                        q.CurrentStage = "FinalInspection";
-                    }
-                }
-                else // elapsedSeconds >= 50
+                else // elapsedSeconds >= BookingWorkflowConfig.TotalDurationSeconds
                 {
                     q.CurrentStage = "Completed";
                     if (q.Status != QueueStatus.Completed && q.Status != QueueStatus.Archived)
@@ -156,7 +148,7 @@ namespace Auto_Wash.Services
                             {
                                 BookingId = q.BookingId!.Value,
                                 Action = "Completed",
-                                Description = "Tự động hoàn thành dịch vụ sau 50 giây.",
+                                Description = $"Tự động hoàn thành dịch vụ sau {BookingWorkflowConfig.TotalDurationSeconds} giây.",
                                 PerformedBy = "System",
                                 CreatedAt = now
                             });

@@ -94,10 +94,10 @@ namespace Auto_Wash.Services
                         QueuePriority = b.Customer?.Tier?.QueuePriority ?? 0,
                         BookingTime = b.ScheduledAt.ToString("HH:mm"),
                         EstimatedStart = b.ScheduledAt.ToString("HH:mm:ss"),
-                        EtaCompletion = b.ScheduledAt.AddSeconds(50).ToString("HH:mm:ss"),
+                        EtaCompletion = b.ScheduledAt.AddSeconds(BookingWorkflowConfig.TotalDurationSeconds).ToString("HH:mm:ss"),
                         CurrentStage = "CheckIn",
                         Progress = 0,
-                        RemainingSeconds = 50,
+                        RemainingSeconds = BookingWorkflowConfig.TotalDurationSeconds,
                         ProgressTracking = BookingWorkflowConfig.GetProgressForBooking(b, null)
                     };
                 })
@@ -166,7 +166,7 @@ namespace Auto_Wash.Services
                     // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
                     var estStart = q.CheckInAt;
                     item.EstimatedStart = estStart.ToString("HH:mm:ss");
-                    item.EtaCompletion = estStart.AddSeconds(50).ToString("HH:mm:ss");
+                    item.EtaCompletion = estStart.AddSeconds(BookingWorkflowConfig.TotalDurationSeconds).ToString("HH:mm:ss");
 
                     item.ProgressTracking = BookingWorkflowConfig.GetProgressForBooking(q.Booking, q);
                     item.CurrentStage = item.ProgressTracking.CurrentStage;
@@ -226,6 +226,20 @@ namespace Auto_Wash.Services
                         if (booking == null)
                         {
                             return (false, "Không tìm thấy lịch đặt!", null!);
+                        }
+
+                        // Check-in window validation (±15 minutes)
+                        var now = DateTime.Now;
+                        var earliestAllowed = booking.ScheduledAt.AddMinutes(-15);
+                        var latestAllowed = booking.ScheduledAt.AddMinutes(15);
+
+                        if (now < earliestAllowed)
+                        {
+                            return (false, $"Chưa đến thời gian check-in! Bạn chỉ có thể check-in sớm tối đa 15 phút (từ {earliestAllowed:HH:mm}).", null!);
+                        }
+                        if (now > latestAllowed)
+                        {
+                            return (false, $"Đã quá giờ check-in! Bạn chỉ có thể check-in trễ tối đa 15 phút (trước {latestAllowed:HH:mm}).", null!);
                         }
 
                         // Enforce: Do not check-in Cancelled, Completed, or NoShow bookings
@@ -369,7 +383,7 @@ namespace Auto_Wash.Services
                             if (q.StartedAt == null && q.Status != QueueStatus.Waiting) q.StartedAt = DateTime.Now;
 
                             // Sync current stage
-                            if (q.Status == QueueStatus.Waiting || q.Status == QueueStatus.LPR_Scan)
+                            if (q.Status == QueueStatus.Waiting)
                                 q.CurrentStage = "CheckIn";
                             else if (q.Status == QueueStatus.Washing)
                                 q.CurrentStage = "Washing";
@@ -378,7 +392,7 @@ namespace Auto_Wash.Services
                             else if (q.Status == QueueStatus.Completed)
                                 q.CurrentStage = "Completed";
                             else if (q.Status == QueueStatus.Archived)
-                                q.CurrentStage = "Checkout";
+                                q.CurrentStage = "Completed";
 
                             if (parsedStatus.HasValue && oldStatus != parsedStatus.Value)
                             {
@@ -417,7 +431,7 @@ namespace Auto_Wash.Services
                 if (q.Status == QueueStatus.Completed) q.CompletedAt ??= DateTime.Now;
 
                 // Sync current stage
-                if (q.Status == QueueStatus.Waiting || q.Status == QueueStatus.LPR_Scan)
+                if (q.Status == QueueStatus.Waiting)
                     q.CurrentStage = "CheckIn";
                 else if (q.Status == QueueStatus.Washing)
                     q.CurrentStage = "Washing";
@@ -426,7 +440,7 @@ namespace Auto_Wash.Services
                 else if (q.Status == QueueStatus.Completed)
                     q.CurrentStage = "Completed";
                 else if (q.Status == QueueStatus.Archived)
-                    q.CurrentStage = "Checkout";
+                    q.CurrentStage = "Completed";
 
                 // Sync booking status and timestamps
                 if (q.Booking != null && parsedStatus.HasValue && oldStatus != parsedStatus.Value)
@@ -731,42 +745,9 @@ namespace Auto_Wash.Services
                     title = "Chờ check-in";
                     message = "Xe của bạn đang chờ check-in vào hàng đợi.";
                     break;
-                case QueueStatus.LPR_Scan:
-                    title = "Đã quét LPR";
-                    message = "Xe của bạn đã được quét biển số.";
-                    break;
                 case QueueStatus.Washing:
                     title = "Đang rửa bọt tuyết";
                     message = "Xe của bạn đã bắt đầu được rửa.";
-                    break;
-                case QueueStatus.Addon_Processing:
-                    string addonNameLabel = "Đang xử lý dịch vụ đi kèm";
-                    if (q.BookingId != null)
-                    {
-                        var booking = await _context.Bookings
-                            .Include(b => b.BookingServices)
-                                .ThenInclude(bs => bs.Service)
-                            .FirstOrDefaultAsync(b => b.BookingId == q.BookingId);
-                        
-                        if (booking != null)
-                        {
-                            var addonNames = booking.BookingServices
-                                .Where(bs => bs.Service.IsAddOn)
-                                .Select(bs => bs.Service.ServiceName)
-                                .ToList();
-
-                            if (addonNames.Count == 1)
-                            {
-                                addonNameLabel = $"{addonNames[0]} đang thực hiện";
-                            }
-                            else if (addonNames.Count > 1)
-                            {
-                                addonNameLabel = $"Đang xử lý {addonNames.Count} dịch vụ đi kèm";
-                            }
-                        }
-                    }
-                    title = addonNameLabel;
-                    message = "Dịch vụ đi kèm đang được thực hiện.";
                     break;
                 case QueueStatus.Drying:
                     title = "Đang sấy khô";

@@ -405,14 +405,7 @@ namespace Auto_Wash.Services
                 })
                 .FirstOrDefault();
 
-            var addons = bookingServices
-                .Where(bs => bs.Service.IsAddOn)
-                .Select(bs => new {
-                    serviceId = bs.Service.ServiceId,
-                    serviceName = bs.Service.ServiceName,
-                    price = bs.PriceSnapshot
-                })
-                .ToList();
+
 
             var voucher = b.AppliedRedemption != null ? new {
                 rewardId = b.AppliedRedemption.Reward.RewardId,
@@ -467,7 +460,6 @@ namespace Auto_Wash.Services
                     vehicleClass = b.Vehicle?.VehicleClass ?? ""
                 },
                 mainService = mainService,
-                addons = addons,
                 voucher = voucher,
                 notes = b.Notes ?? "",
                 scheduledAt = b.ScheduledAt,

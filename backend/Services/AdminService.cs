@@ -61,7 +61,7 @@ namespace Auto_Wash.Services
 
             // 5. Active Queue
             var activeQueue = await _context.Queues
-                .CountAsync(q => q.Status == QueueStatus.Waiting || q.Status == QueueStatus.Washing || q.Status == QueueStatus.LPR_Scan || q.Status == QueueStatus.Addon_Processing || q.Status == QueueStatus.Drying);
+                .CountAsync(q => q.Status == QueueStatus.Waiting || q.Status == QueueStatus.Washing || q.Status == QueueStatus.Drying);
 
             // 6. Average Wash Duration
             double avgMinutesVal = 0;

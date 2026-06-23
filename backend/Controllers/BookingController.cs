@@ -47,8 +47,7 @@ namespace Auto_Wash.Controllers
                         price = s.BasePrice,
                         estimatedMinutes = s.EstimatedMinutes,
                         isActive = s.IsActive,
-                        isFeatured = s.IsFeatured,
-                        isAddon = s.IsAddOn
+                        isFeatured = s.IsFeatured
                     })
                     .ToList();
 
@@ -120,7 +119,6 @@ namespace Auto_Wash.Controllers
                         id = b.BookingId.ToString(),
                         vehicle = b.Vehicle.LicensePlate,
                         mainService = b.BookingServices.Where(bs => !bs.Service.IsAddOn).Select(bs => bs.Service.ServiceName).FirstOrDefault() ?? "Rửa xe",
-                        addons = b.BookingServices.Where(bs => bs.Service.IsAddOn).Select(bs => bs.Service.ServiceName).ToList(),
                         status = b.Status == BookingStatus.Pending ? "Pending Confirmation"
                                : b.Status == BookingStatus.Confirmed ? "Confirmed"
                                : b.Status == BookingStatus.CheckedIn ? "Checked In"
@@ -168,10 +166,6 @@ namespace Auto_Wash.Controllers
                     .Where(bs => !bs.Service.IsAddOn)
                     .Select(bs => bs.Service.ServiceName)
                     .FirstOrDefault() ?? "Rửa xe";
-                var addons = activeBooking.BookingServices
-                    .Where(bs => bs.Service.IsAddOn)
-                    .Select(bs => bs.Service.ServiceName)
-                    .ToList();
 
                 var queue = activeBooking.Queues.FirstOrDefault();
                 bool hasQueue = queue != null;
@@ -179,27 +173,23 @@ namespace Auto_Wash.Controllers
                 string queueStatus = queueStatusEnum.ToString();
 
                 int washStep = hasQueue ? 0 : -1;
-                int addonsCount = addons.Count;
                 if (hasQueue)
                 {
                     if (queueStatusEnum == QueueStatus.Waiting) washStep = 0;
-                    else if (queueStatusEnum == QueueStatus.LPR_Scan) washStep = 1;
-                    else if (queueStatusEnum == QueueStatus.Washing) washStep = 2;
-                    else if (queueStatusEnum == QueueStatus.Addon_Processing) washStep = 2 + (addonsCount > 0 ? 1 : 0);
-                    else if (queueStatusEnum == QueueStatus.Drying) washStep = 2 + addonsCount;
-                    else if (queueStatusEnum == QueueStatus.Completed) washStep = 3 + addonsCount;
+                    else if (queueStatusEnum == QueueStatus.Washing) washStep = 1;
+                    else if (queueStatusEnum == QueueStatus.Drying) washStep = 2;
+                    else if (queueStatusEnum == QueueStatus.Completed) washStep = 3;
                 }
 
                 var progressTracking = BookingWorkflowConfig.GetProgressForBooking(activeBooking, queue);
                 // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
-                string eta = (queue != null ? queue.CheckInAt : activeBooking.ScheduledAt).AddSeconds(50).ToString("HH:mm:ss");
+                string eta = (queue != null ? queue.CheckInAt : activeBooking.ScheduledAt).AddSeconds(BookingWorkflowConfig.TotalDurationSeconds).ToString("HH:mm:ss");
 
                 var bookingData = new
                 {
                     id = activeBooking.BookingId.ToString(),
                     vehicle = activeBooking.Vehicle.LicensePlate,
                     mainService = mainSvcName,
-                    addons = addons,
                     status = activeBooking.Status == BookingStatus.Pending ? "Pending Confirmation"
                            : activeBooking.Status == BookingStatus.Confirmed ? "Confirmed"
                            : activeBooking.Status == BookingStatus.CheckedIn ? "Checked In"

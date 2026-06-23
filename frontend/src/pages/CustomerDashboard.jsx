@@ -111,13 +111,38 @@ export const CustomerDashboard = () => {
 
     loadDashboardData();
 
-    // dynamic polling for active booking status every 2 seconds
-    const interval = setInterval(() => {
-      fetchActiveBooking();
-    }, 2000);
+    let intervalId = null;
+
+    const startPolling = () => {
+      if (intervalId) return;
+      intervalId = setInterval(() => {
+        if (document.hidden) return;
+        fetchActiveBooking();
+      }, 10000);
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    startPolling();
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      clearInterval(interval);
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -420,9 +445,7 @@ export const CustomerDashboard = () => {
                        {activeBooking.progressTracking?.currentStage === 'CheckIn' ? 'Check-in' :
                         activeBooking.progressTracking?.currentStage === 'Washing' ? 'Rửa xe' :
                         activeBooking.progressTracking?.currentStage === 'Drying' ? 'Sấy khô' :
-                        activeBooking.progressTracking?.currentStage === 'FinalInspection' ? 'Kiểm tra cuối' :
                         activeBooking.progressTracking?.currentStage === 'Completed' ? 'Hoàn tất' :
-                        activeBooking.progressTracking?.currentStage === 'Checkout' ? 'Đã giao xe' :
                         activeBooking.progressTracking?.currentStage || 'Đang chuẩn bị'}
                     </strong>
                   </div>

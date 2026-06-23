@@ -52,9 +52,7 @@ export const AdminBookings = () => {
     customer: true,
     vehicle: true,
     schedule: true,
-    service: false,
     payment: false,
-    voucher: false,
     history: false
   });
 
@@ -131,9 +129,7 @@ export const AdminBookings = () => {
       customer: true,
       vehicle: true,
       schedule: true,
-      service: false,
       payment: false,
-      voucher: false,
       history: false
     });
     try {
@@ -286,7 +282,7 @@ export const AdminBookings = () => {
       case 'Washing': return 'Đang rửa';
       case 'Completed': return 'Hoàn thành';
       case 'Cancelled': return 'Đã hủy';
-      case 'NoShow': return 'Không đến';
+      case 'NoShow': return 'Khách không đến';
       default: return status;
     }
   };
@@ -630,7 +626,7 @@ export const AdminBookings = () => {
               <option value="Washing">Đang rửa xe (Washing)</option>
               <option value="Completed">Hoàn thành (Completed)</option>
               <option value="Cancelled">Đã hủy (Cancelled)</option>
-              <option value="NoShow">Không đến (NoShow)</option>
+              <option value="NoShow">Khách không đến (NoShow)</option>
               <option value="WAITING_CHECKIN">Chờ check-in (Tổng hợp)</option>
               <option value="PROCESSING">Đang xử lý (Tổng hợp)</option>
             </select>
@@ -783,11 +779,6 @@ export const AdminBookings = () => {
               <div className="preview-field mb-2">
                 <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>DỊCH VỤ CHÍNH</div>
                 <div className="preview-val" style={{ color: '#F8FAFC', fontWeight: '600', fontSize: '0.85rem' }}>{previewData.mainService?.serviceName || 'Rửa xe tiêu chuẩn'}</div>
-                {previewData.addons && previewData.addons.length > 0 && (
-                  <div style={{ color: '#CBD5E1', fontSize: '0.75rem', marginTop: '2px', lineHeight: '1.3' }}>
-                    <span className="text-muted small">Đi kèm: </span> {previewData.addons.map(a => a.serviceName).join(', ')}
-                  </div>
-                )}
               </div>
 
               <div className="preview-divider"></div>
@@ -827,7 +818,7 @@ export const AdminBookings = () => {
             ) : (
               <>
                 {/* Section 1: Customer Information */}
-                <div className="booking-drawer-section mb-3">
+                <div className="booking-drawer-section mb-2">
                   <div 
                     className="booking-drawer-section-title" 
                     onClick={() => toggleSection('customer')}
@@ -836,7 +827,7 @@ export const AdminBookings = () => {
                     <i className={`fas fa-chevron-${expandedSections.customer ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
                   </div>
                   {expandedSections.customer && (
-                    <div className="bg-light p-2.5 rounded-3 border">
+                    <div className="bg-light p-2 rounded-3 border">
                       <div className="row g-2">
                         <div className="col-6">
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Họ tên</small>
@@ -846,11 +837,11 @@ export const AdminBookings = () => {
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Số điện thoại</small>
                           <strong className="text-dark font-monospace" style={{ fontSize: '0.8rem' }}>{bookingDetail.customer.phone}</strong>
                         </div>
-                        <div className="col-6 border-top pt-1.5">
+                        <div className="col-6 border-top pt-1">
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Email</small>
                           <span className="text-dark small" style={{ fontSize: '0.78rem' }}>{bookingDetail.customer.email || 'Chưa cập nhật'}</span>
                         </div>
-                        <div className="col-6 border-top pt-1.5">
+                        <div className="col-6 border-top pt-1">
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Hạng TV & Điểm</small>
                           <div className="d-flex align-items-center gap-1.5 mt-0.5">
                             <span className={getTierBadgeClass(bookingDetail.customer.tierName)} style={{ fontSize: '0.65rem', padding: '1px 6px' }}>{bookingDetail.customer.tierName}</span>
@@ -863,7 +854,7 @@ export const AdminBookings = () => {
                 </div>
 
                 {/* Section 2: Vehicle Information */}
-                <div className="booking-drawer-section mb-3">
+                <div className="booking-drawer-section mb-2">
                   <div 
                     className="booking-drawer-section-title" 
                     onClick={() => toggleSection('vehicle')}
@@ -872,7 +863,7 @@ export const AdminBookings = () => {
                     <i className={`fas fa-chevron-${expandedSections.vehicle ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
                   </div>
                   {expandedSections.vehicle && (
-                    <div className="bg-light p-2.5 rounded-3 border">
+                    <div className="bg-light p-2 rounded-3 border">
                       <div className="row g-2">
                         <div className="col-6">
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Biển số xe</small>
@@ -882,7 +873,7 @@ export const AdminBookings = () => {
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Phân khúc xe</small>
                           <span className="text-dark fw-bold" style={{ fontSize: '0.78rem' }}>{bookingDetail.vehicle.vehicleClass}</span>
                         </div>
-                        <div className="col-12 border-top pt-1.5">
+                        <div className="col-12 border-top pt-1">
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Hãng xe & Dòng xe</small>
                           <span className="text-dark small" style={{ fontSize: '0.78rem' }}>{bookingDetail.vehicle.brand} - {bookingDetail.vehicle.model}</span>
                         </div>
@@ -892,7 +883,7 @@ export const AdminBookings = () => {
                 </div>
 
                 {/* Section 3: Appointment Information */}
-                <div className="booking-drawer-section mb-3">
+                <div className="booking-drawer-section mb-2">
                   <div 
                     className="booking-drawer-section-title" 
                     onClick={() => toggleSection('schedule')}
@@ -901,7 +892,7 @@ export const AdminBookings = () => {
                     <i className={`fas fa-chevron-${expandedSections.schedule ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
                   </div>
                   {expandedSections.schedule && (
-                    <div className="bg-light p-2.5 rounded-3 border">
+                    <div className="bg-light p-2 rounded-3 border">
                       <div className="row g-2">
                         <div className="col-6">
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Thời gian hẹn</small>
@@ -915,7 +906,7 @@ export const AdminBookings = () => {
                             {getStatusLabel(bookingDetail.status)}
                           </span>
                         </div>
-                        <div className="col-12 border-top pt-1.5">
+                        <div className="col-12 border-top pt-1">
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Ngày tạo đơn</small>
                           <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>{new Date(bookingDetail.createdAt).toLocaleString('vi-VN')}</span>
                         </div>
@@ -978,143 +969,97 @@ export const AdminBookings = () => {
                   </div>
                 )}
 
-                {/* Section 4: Service Information */}
-                <div className="booking-drawer-section mb-3">
-                  <div 
-                    className="booking-drawer-section-title" 
-                    onClick={() => toggleSection('service')}
-                  >
-                    <span>4. Gói dịch vụ</span>
-                    <i className={`fas fa-chevron-${expandedSections.service ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
-                  </div>
-                  {expandedSections.service && (
-                    <div className="border rounded-3 overflow-hidden bg-white">
-                      <table className="table table-sm table-borderless mb-0 align-middle" style={{ fontSize: '0.78rem', tableLayout: 'fixed', width: '100%' }}>
-                        <thead className="bg-light border-bottom" style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>
-                          <tr>
-                            <th className="ps-3 py-1.5 text-muted" style={{ width: '50%' }}>Tên dịch vụ</th>
-                            <th className="py-1.5 text-muted text-center" style={{ width: '25%' }}>Thời lượng</th>
-                            <th className="pe-3 py-1.5 text-muted text-end" style={{ width: '25%' }}>Đơn giá</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bookingDetail.mainService ? (
-                            <tr className="border-bottom">
-                              <td className="ps-3 py-2 fw-semibold text-dark" style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>
-                                <i className="fas fa-cog text-cyan me-1.5"></i>{bookingDetail.mainService.serviceName} <span className="badge bg-cyan text-dark small" style={{ fontSize: '0.55rem', padding: '1.5px 4px' }}>Chính</span>
-                              </td>
-                              <td className="py-2 text-center text-secondary">60 phút</td>
-                              <td className="pe-3 py-2 text-end fw-semibold text-dark">{Number(bookingDetail.mainService.price).toLocaleString()}đ</td>
-                            </tr>
-                          ) : (
-                            <tr className="border-bottom">
-                              <td colSpan="3" className="ps-3 py-2 text-secondary text-center">Không có dịch vụ chính</td>
-                            </tr>
-                          )}
-                          {bookingDetail.addons && bookingDetail.addons.map((add, idx) => (
-                            <tr key={idx} className={idx === bookingDetail.addons.length - 1 ? '' : 'border-bottom'}>
-                              <td className="ps-3 py-2 text-secondary" style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>
-                                <i className="fas fa-plus text-muted me-1.5"></i>{add.serviceName}
-                              </td>
-                              <td className="py-2 text-center text-secondary">-</td>
-                              <td className="pe-3 py-2 text-end text-dark">{Number(add.price).toLocaleString()}đ</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-                {/* Section 5: Payment Summary */}
-                <div className="booking-drawer-section mb-3">
+                {/* Section 4: Payment Summary */}
+                <div className="booking-drawer-section mb-2">
                   <div 
                     className="booking-drawer-section-title" 
                     onClick={() => toggleSection('payment')}
                   >
-                    <span>5. Tổng kết chi phí</span>
+                    <span>4. Chi phí & thanh toán</span>
                     <i className={`fas fa-chevron-${expandedSections.payment ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
                   </div>
                   {expandedSections.payment && (
-                    <div className="bg-light p-2.5 rounded-3 border">
-                      <div className="d-flex justify-content-between align-items-center mb-1.5 small text-secondary" style={{ fontSize: '0.78rem' }}>
-                        <span>Tổng tiền dịch vụ:</span>
-                        <span>{Number(bookingDetail.basePrice).toLocaleString()}đ</span>
+                    <div className="bg-light p-2 rounded-3 border">
+                      {/* Service Table */}
+                      <div className="border rounded-3 overflow-hidden bg-white mb-2">
+                        <table className="table table-sm table-borderless mb-0 align-middle" style={{ fontSize: '0.78rem', tableLayout: 'fixed', width: '100%' }}>
+                          <thead className="bg-light border-bottom" style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                            <tr>
+                              <th className="ps-3 py-1.5 text-muted" style={{ width: '60%' }}>Tên dịch vụ</th>
+                              <th className="py-1.5 text-muted text-center" style={{ width: '20%' }}>Thời lượng</th>
+                              <th className="pe-3 py-1.5 text-muted text-end" style={{ width: '20%' }}>Đơn giá</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {bookingDetail.mainService ? (
+                              <tr>
+                                <td className="ps-3 py-2 fw-semibold text-dark" style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                                  <i className="fas fa-cog text-cyan me-1.5"></i>{bookingDetail.mainService.serviceName} <span className="badge bg-cyan text-dark small" style={{ fontSize: '0.55rem', padding: '1.5px 4px' }}>Chính</span>
+                                </td>
+                                <td className="py-2 text-center text-secondary">60 phút</td>
+                                <td className="pe-3 py-2 text-end fw-semibold text-dark">{Number(bookingDetail.mainService.price).toLocaleString()}đ</td>
+                              </tr>
+                            ) : (
+                              <tr>
+                                <td colSpan="3" className="ps-3 py-2 text-secondary text-center">Không có dịch vụ chính</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
-                      {bookingDetail.voucher ? (
-                        <div className="d-flex justify-content-between align-items-start mb-1.5 small text-danger" style={{ fontSize: '0.78rem' }}>
-                          <div>
-                            <span>Khuyến mãi ({bookingDetail.voucher.rewardName}):</span>
-                            {bookingDetail.voucher.description && <small className="text-muted d-block" style={{ fontSize: '0.62rem' }}>{bookingDetail.voucher.description}</small>}
+
+                      {/* Payment Calculations */}
+                      <div className="px-1 py-1">
+                        <div className="d-flex justify-content-between align-items-center mb-1.5 small text-secondary" style={{ fontSize: '0.78rem' }}>
+                          <span>Tổng tiền dịch vụ:</span>
+                          <span>{Number(bookingDetail.basePrice).toLocaleString()}đ</span>
+                        </div>
+                        {bookingDetail.voucher && (
+                          <div className="border-top pt-1.5 mt-1.5 mb-1.5">
+                            <div className="d-flex justify-content-between align-items-start mb-1 small text-danger" style={{ fontSize: '0.78rem' }}>
+                              <div>
+                                <strong className="text-danger"><i className="fas fa-ticket-alt me-1.5"></i>{bookingDetail.voucher.rewardName}</strong>
+                                {bookingDetail.voucher.description && <small className="text-muted d-block" style={{ fontSize: '0.62rem' }}>{bookingDetail.voucher.description}</small>}
+                              </div>
+                              <span className="fw-bold text-danger">-{Number(bookingDetail.voucher.discountValue || bookingDetail.promoDiscount).toLocaleString()}đ</span>
+                            </div>
                           </div>
-                          <span>-{Number(bookingDetail.voucher.discountValue).toLocaleString()}đ</span>
+                        )}
+                        <div className="d-flex justify-content-between align-items-center border-top pt-1.5 fw-bold" style={{ fontSize: '0.88rem' }}>
+                          <span className="text-dark">Số tiền cần trả:</span>
+                          <span className="text-cyan" style={{ fontSize: '1rem' }}>{Number(bookingDetail.finalPrice).toLocaleString()}đ</span>
                         </div>
-                      ) : (
-                        <div className="d-flex justify-content-between align-items-center mb-1.5 small text-muted" style={{ fontSize: '0.78rem' }}>
-                          <span>Khuyến mãi:</span>
-                          <span>0đ</span>
+                        <div className="d-flex justify-content-between align-items-center mt-1.5 small text-success" style={{ fontSize: '0.75rem' }}>
+                          <span>Tích lũy Loyalty:</span>
+                          <span>+{bookingDetail.pointsEarned} PTS</span>
                         </div>
-                      )}
-                      <div className="d-flex justify-content-between align-items-center border-top pt-1.5 fw-bold" style={{ fontSize: '0.88rem' }}>
-                        <span className="text-dark">Số tiền cần trả:</span>
-                        <span className="text-cyan" style={{ fontSize: '1rem' }}>{Number(bookingDetail.finalPrice).toLocaleString()}đ</span>
-                      </div>
-                      <div className="d-flex justify-content-between align-items-center mt-1.5 small text-success" style={{ fontSize: '0.75rem' }}>
-                        <span>Tích lũy Loyalty:</span>
-                        <span>+{bookingDetail.pointsEarned} PTS</span>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Section 6: Voucher & Khuyến mãi */}
-                <div className="booking-drawer-section mb-3">
-                  <div 
-                    className="booking-drawer-section-title" 
-                    onClick={() => toggleSection('voucher')}
-                  >
-                    <span>6. Voucher & Khuyến mãi</span>
-                    <i className={`fas fa-chevron-${expandedSections.voucher ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
-                  </div>
-                  {expandedSections.voucher && (
-                    <div className="bg-light p-2.5 rounded-3 border">
-                      {bookingDetail.voucher ? (
-                        <div className="d-flex justify-content-between align-items-start small">
-                          <div>
-                            <strong className="text-danger"><i className="fas fa-ticket-alt me-1.5"></i>{bookingDetail.voucher.rewardName}</strong>
-                            <span className="text-muted d-block mt-0.5" style={{ fontSize: '0.68rem' }}>{bookingDetail.voucher.description || 'Không có mô tả.'}</span>
-                          </div>
-                          <strong className="text-danger">-{Number(bookingDetail.voucher.discountValue).toLocaleString()}đ</strong>
-                        </div>
-                      ) : (
-                        <div className="small text-secondary text-center py-1">Không có voucher nào được áp dụng</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Section 7: Booking History, Timeline & Reschedules */}
+                {/* Section 5: Booking History, Timeline & Reschedules */}
                 <div className="booking-drawer-section mb-0">
                   <div 
                     className="booking-drawer-section-title" 
                     onClick={() => toggleSection('history')}
                   >
-                    <span>7. Dòng thời gian & Lịch sử đặt lịch</span>
+                    <span>5. Dòng thời gian & Lịch sử đặt lịch</span>
                     <i className={`fas fa-chevron-${expandedSections.history ? 'up' : 'down'} text-muted`} style={{ fontSize: '0.65rem' }}></i>
                   </div>
                   {expandedSections.history && (
-                    <div className="bg-light p-2.5 rounded-3 border d-flex flex-column gap-3">
+                    <div className="bg-light p-2 rounded-3 border d-flex flex-column gap-2">
                       {/* Timeline Audit Logs */}
                       <div>
-                        <small className="text-muted d-block fw-bold mb-2" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>DÒNG THỜI GIAN ĐƠN ĐẶT</small>
+                        <small className="text-muted d-block fw-bold mb-1.5" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>DÒNG THỜI GIAN ĐƠN ĐẶT</small>
                         {bookingDetail.timeline && bookingDetail.timeline.length > 0 ? (
                           <div className="booking-timeline ps-2 border-start py-1" style={{ fontSize: '0.75rem' }}>
                             {bookingDetail.timeline.map((log) => (
-                              <div key={log.id} className="timeline-item mb-2.5 position-relative">
+                              <div key={log.id} className="timeline-item mb-2 position-relative">
                                 <div className="timeline-marker" style={{ left: '-12.5px', top: '4px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--cyan-electric)', position: 'absolute' }}></div>
                                 <div className="d-flex justify-content-between align-items-start ms-2">
                                   <div>
-                                    <strong className="text-dark">{log.action === 'Created' ? 'Khởi tạo' : log.action === 'Confirmed' ? 'Đã duyệt' : log.action === 'CheckedIn' ? 'Đã check-in' : log.action === 'WashingStarted' ? 'Đang rửa' : log.action === 'Completed' ? 'Hoàn thành' : log.action === 'Cancelled' ? 'Đã hủy' : log.action === 'NoShow' ? 'Không đến' : log.action === 'Rescheduled' ? 'Đổi lịch' : log.action}</strong>
+                                    <strong className="text-dark">{log.action === 'Created' ? 'Khởi tạo' : log.action === 'Confirmed' ? 'Đã duyệt' : log.action === 'CheckedIn' ? 'Đã check-in' : log.action === 'WashingStarted' ? 'Đang rửa' : log.action === 'Completed' ? 'Hoàn thành' : log.action === 'Cancelled' ? 'Đã hủy' : log.action === 'NoShow' ? 'Khách không đến' : log.action === 'Rescheduled' ? 'Đổi lịch' : log.action}</strong>
                                     <span className="text-secondary d-block mt-0.5" style={{ fontSize: '0.72rem' }}>{log.description}</span>
                                   </div>
                                   <div className="text-end text-muted font-monospace" style={{ fontSize: '0.68rem', minWidth: '100px' }}>

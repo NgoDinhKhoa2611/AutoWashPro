@@ -52,8 +52,8 @@ export const AdminDashboard = () => {
     try {
       const response = await adminService.getQueue();
       if (response) {
-        const waiting = response.filter(item => item.status === 'Waiting' || item.status === 'LPR_Scan').length;
-        const washing = response.filter(item => item.status === 'Washing' || item.status === 'Addon_Processing' || item.status === 'Drying').length;
+        const waiting = response.filter(item => item.status === 'Waiting').length;
+        const washing = response.filter(item => item.status === 'Washing' || item.status === 'Drying').length;
         const completed = response.filter(item => item.status === 'Completed').length;
 
         // Calculate revenue from completed orders today
@@ -263,7 +263,7 @@ export const AdminDashboard = () => {
               <div className="app-card border-0 p-3.5 bg-white rounded-4 h-100">
                 <small className="text-muted d-block fw-bold" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>XE ĐANG CHỜ RỬA</small>
                 <h4 className="fw-bold text-warning mt-1 mb-1">{realtimeCounters.waitingCount} xe</h4>
-                <small className="text-secondary" style={{ fontSize: '0.68rem' }}>Đang đợi check-in/quét LPR</small>
+                <small className="text-secondary" style={{ fontSize: '0.68rem' }}>Đang đợi check-in</small>
               </div>
             </div>
 

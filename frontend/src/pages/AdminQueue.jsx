@@ -8,19 +8,18 @@ const STAFF_LIST = ['Nguyễn Văn A', 'Trần Văn B', 'Lê Văn C', 'Phạm H�
 
 const STAGE_LABEL_MAP = {
   CheckIn: 'Check-in',
-  ExteriorWash: 'Rửa ngoại thất',
-  Exterior: 'Rửa ngoại thất',
-  InteriorCleaning: 'Vệ sinh nội thất',
-  Interior: 'Vệ sinh nội thất',
-  FinalInspection: 'Kiểm tra cuối',
+  CheckedIn: 'Check-in',
+  Washing: 'Rửa xe',
+  Drying: 'Sấy khô',
   Completed: 'Hoàn tất',
+  Checkout: 'Hoàn tất',
+  Archived: 'Hoàn tất',
 };
 
 const STAGE_COLOR_MAP = {
   'Check-in': '#f59e0b',
-  'Rửa ngoại thất': '#3b82f6',
-  'Vệ sinh nội thất': '#8b5cf6',
-  'Kiểm tra cuối': '#0ea5e9',
+  'Rửa xe': '#3b82f6',
+  'Sấy khô': '#0ea5e9',
   'Hoàn tất': '#22c55e',
   'Chờ check-in': '#94a3b8',
 };
@@ -85,47 +84,76 @@ export const AdminQueue = () => {
 
   useEffect(() => {
     fetchQueue();
-    // 30s Polling
-    const interval = setInterval(() => {
-      Promise.all([
-        adminService.getQueue(),
-        adminService.getBookings()
-      ]).then(([res, bookingsRes]) => {
-        if (res) {
-          setQueue({
-            waitingForCheckIn: res.waitingForCheckIn || [],
-            currentlyProcessing: res.currentlyProcessing || [],
-            completedToday: res.completedToday || []
-          });
+    let intervalId = null;
 
-          // Sync selectedVehicle during polling
-          setSelectedVehicle(prev => {
-            if (!prev) return null;
-            const allItems = [
-              ...(res.waitingForCheckIn || []),
-              ...(res.currentlyProcessing || []),
-              ...(res.completedToday || [])
-            ];
-            const updated = allItems.find(item => item.queueId === prev.queueId);
-            if (updated) {
-              const statusGroup = (res.waitingForCheckIn || []).some(x => x.queueId === updated.queueId) ? 'Waiting'
-                                : (res.currentlyProcessing || []).some(x => x.queueId === updated.queueId) ? 'Processing'
-                                : 'Completed';
-              return {
-                ...updated,
-                statusGroup,
-                mainService: updated.services?.[0]?.name || 'Standard Car Wash'
-              };
-            }
-            return prev;
-          });
-        }
-        if (bookingsRes && bookingsRes.success) {
-          setBookings(bookingsRes.bookings);
-        }
-      }).catch(err => console.error(err));
-    }, 2000);
-    return () => clearInterval(interval);
+    const startPolling = () => {
+      if (intervalId) return;
+      intervalId = setInterval(() => {
+        if (document.hidden) return;
+
+        Promise.all([
+          adminService.getQueue(),
+          adminService.getBookings()
+        ]).then(([res, bookingsRes]) => {
+          if (res) {
+            setQueue({
+              waitingForCheckIn: res.waitingForCheckIn || [],
+              currentlyProcessing: res.currentlyProcessing || [],
+              completedToday: res.completedToday || []
+            });
+
+            // Sync selectedVehicle during polling
+            setSelectedVehicle(prev => {
+              if (!prev) return null;
+              const allItems = [
+                ...(res.waitingForCheckIn || []),
+                ...(res.currentlyProcessing || []),
+                ...(res.completedToday || [])
+              ];
+              const updated = allItems.find(item => item.queueId === prev.queueId);
+              if (updated) {
+                const statusGroup = (res.waitingForCheckIn || []).some(x => x.queueId === updated.queueId) ? 'Waiting'
+                                  : (res.currentlyProcessing || []).some(x => x.queueId === updated.queueId) ? 'Processing'
+                                  : 'Completed';
+                return {
+                  ...updated,
+                  statusGroup,
+                  mainService: updated.services?.[0]?.name || 'Standard Car Wash'
+                };
+              }
+              return prev;
+            });
+          }
+          if (bookingsRes && bookingsRes.success) {
+            setBookings(bookingsRes.bookings);
+          }
+        }).catch(err => console.error(err));
+      }, 10000);
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    startPolling();
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Move vehicle to next stage
@@ -244,7 +272,7 @@ export const AdminQueue = () => {
 
   // Dynamic Service Stages
   const getServiceStages = (serviceName) => {
-    return ['Check-in', 'Rửa ngoại thất', 'Vệ sinh nội thất', 'Kiểm tra cuối', 'Hoàn tất'];
+    return ['Check-in', 'Rửa xe', 'Sấy khô', 'Hoàn tất'];
   };
 
   const getActiveStageIndex = (item, stages) => {
@@ -253,11 +281,10 @@ export const AdminQueue = () => {
     if (item.statusGroup === 'NoShow') return stages.length - 1;
     
     const backendStage = item.currentStage;
-    if (backendStage === 'CheckIn') return 0;
-    if (backendStage === 'ExteriorWash' || backendStage === 'Exterior') return 1;
-    if (backendStage === 'InteriorCleaning' || backendStage === 'Interior') return 2;
-    if (backendStage === 'FinalInspection') return 3;
-    if (backendStage === 'Completed') return 4;
+    if (backendStage === 'CheckIn' || backendStage === 'CheckedIn') return 0;
+    if (backendStage === 'Washing') return 1;
+    if (backendStage === 'Drying') return 2;
+    if (backendStage === 'Completed') return 3;
     return 0;
   };
 
@@ -411,10 +438,19 @@ export const AdminQueue = () => {
             <span className="stage-dot" style={{ background: '#ef4444' }}></span>
             Khách không đến
           </div>
+          <div className="mt-2 mb-1">
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <span className="small text-secondary" style={{ fontSize: '0.68rem' }}>Tiến độ</span>
+              <span className="small fw-bold text-dark" style={{ fontSize: '0.68rem' }}>0%</span>
+            </div>
+            <div className="progress" style={{ height: '4px', background: '#e2e8f0', borderRadius: '10px' }}>
+              <div className="progress-bar" style={{ width: '0%', background: '#ef4444', borderRadius: '10px' }}></div>
+            </div>
+          </div>
           <div className="queue-card-info-grid">
             <div className="queue-info-row">
-              <span className="queue-info-label">Giờ quá hạn</span>
-              <span className="queue-info-value font-monospace">{item.noShowTime || '—'}</span>
+              <span className="queue-info-label">ETA</span>
+              <span className="queue-info-value font-monospace">N/A</span>
             </div>
           </div>
           <div className="queue-card-actions">
@@ -455,12 +491,6 @@ export const AdminQueue = () => {
         {/* License plate */}
         <div className="queue-card-plate">{item.licensePlate}</div>
 
-        {/* Service Name */}
-        <div className="queue-card-service text-truncate small fw-bold text-secondary">
-          <i className="fas fa-concierge-bell me-1.5" style={{ fontSize: '0.7rem' }}></i>
-          {item.mainService}
-        </div>
-
         {/* Current stage badge */}
         <div className="stage-badge" style={{
           background: `${stageColor}15`,
@@ -470,25 +500,23 @@ export const AdminQueue = () => {
           {stageLabel}
         </div>
 
+        {/* Progress % */}
+        <div className="mt-2 mb-1">
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <span className="small text-secondary" style={{ fontSize: '0.68rem' }}>Tiến độ</span>
+            <span className="small fw-bold text-dark" style={{ fontSize: '0.68rem' }}>{item.progress ?? 0}%</span>
+          </div>
+          <div className="progress" style={{ height: '4px', background: '#e2e8f0', borderRadius: '10px' }}>
+            <div className="progress-bar" style={{ width: `${item.progress ?? 0}%`, background: statusColor, borderRadius: '10px' }}></div>
+          </div>
+        </div>
+
         {/* Info rows */}
         <div className="queue-card-info-grid">
           <div className="queue-info-row">
-            <span className="queue-info-label">{isWaiting ? 'Hẹn lúc' : 'Check-in'}</span>
-            <span className="queue-info-value font-monospace">{item.checkInTime || item.bookingTime || '—'}</span>
+            <span className="queue-info-label">ETA</span>
+            <span className="queue-info-value font-monospace">{item.etaCompletion || '—'}</span>
           </div>
-
-          {!isWaiting && (
-            <>
-              <div className="queue-info-row">
-                <span className="queue-info-label">Còn lại</span>
-                <span className="queue-info-value font-monospace">{formatRemaining(item.remainingSeconds)}</span>
-              </div>
-              <div className="queue-info-row">
-                <span className="queue-info-label">ETA</span>
-                <span className="queue-info-value font-monospace">{item.etaCompletion || '—'}</span>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Action buttons */}
@@ -538,21 +566,22 @@ export const AdminQueue = () => {
         </div>
         <div className="queue-card-plate" style={{ fontSize: '0.95rem' }}>{item.licensePlate}</div>
         
-        <div className="queue-card-service text-truncate small fw-bold text-secondary" style={{ fontSize: '0.68rem' }}>
-          <i className="fas fa-concierge-bell me-1.5" style={{ fontSize: '0.65rem' }}></i>
-          {item.mainService}
-        </div>
-
         <div className="stage-badge" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontSize: '0.65rem', padding: '1px 6px' }}>
           <span className="stage-dot" style={{ background: '#22c55e' }}></span>
           Hoàn tất
         </div>
 
-        <div className="queue-card-info-grid">
-          <div className="queue-info-row">
-            <span className="queue-info-label">Check-in</span>
-            <span className="queue-info-value font-monospace" style={{ fontSize: '0.68rem' }}>{item.checkInTime || item.bookingTime || '—'}</span>
+        <div className="mt-2 mb-1">
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <span className="small text-secondary" style={{ fontSize: '0.68rem' }}>Tiến độ</span>
+            <span className="small fw-bold text-dark" style={{ fontSize: '0.68rem' }}>100%</span>
           </div>
+          <div className="progress" style={{ height: '4px', background: '#e2e8f0', borderRadius: '10px' }}>
+            <div className="progress-bar" style={{ width: '100%', background: '#22c55e', borderRadius: '10px' }}></div>
+          </div>
+        </div>
+
+        <div className="queue-card-info-grid">
           <div className="queue-info-row">
             <span className="queue-info-label">Hoàn thành</span>
             <span className="queue-info-value font-monospace text-success" style={{ fontSize: '0.68rem' }}>{item.completedTime || '—'}</span>
@@ -772,7 +801,7 @@ export const AdminQueue = () => {
                       <span className="text-muted d-block small fw-bold">TRẠNG THÁI</span>
                       <div>
                         <span className="badge bg-danger bg-opacity-10 text-danger fw-bold rounded-pill px-2.5 py-1" style={{ fontSize: '0.75rem' }}>
-                          Khách không đến (No-Show)
+                          Khách không đến
                         </span>
                       </div>
                     </div>

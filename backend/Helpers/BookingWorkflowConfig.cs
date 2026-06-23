@@ -8,20 +8,17 @@ namespace Auto_Wash.Helpers
     public static class BookingWorkflowConfig
     {
         // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
-        public const int CheckInSeconds = 10;
-        public const int WashingSeconds = 15;
+        public const int CheckInSeconds = 15;
+        public const int WashingSeconds = 20;
         public const int DryingSeconds = 15;
-        public const int FinalInspectionSeconds = 10;
         public const int TotalDurationSeconds = 50;
 
         private static readonly (string Key, string Name)[] OfficialStages = new[]
         {
-            ("CheckIn", "Check-in"),
-            ("Washing", "Rửa xe"),
-            ("Drying", "Sấy khô"),
-            ("FinalInspection", "Kiểm tra cuối"),
-            ("Completed", "Hoàn tất"),
-            ("Checkout", "Đã giao xe")
+            ("CheckIn", "Đã check-in"),
+            ("Washing", "Đang rửa xe"),
+            ("Drying", "Đang sấy khô"),
+            ("Completed", "Hoàn tất")
         };
 
         public static string GetCurrentStage(double elapsedSeconds)
@@ -30,23 +27,17 @@ namespace Auto_Wash.Helpers
                 return "CheckIn";
             if (elapsedSeconds < CheckInSeconds + WashingSeconds)
                 return "Washing";
-            if (elapsedSeconds < CheckInSeconds + WashingSeconds + DryingSeconds)
-                return "Drying";
-            if (elapsedSeconds < TotalDurationSeconds)
-                return "FinalInspection";
-            return "Completed";
+            return "Drying";
         }
 
         public static int GetStageProgress(string stage)
         {
             return stage switch
             {
-                "CheckIn" => 15,
-                "Washing" => 35,
-                "Drying" => 55,
-                "FinalInspection" => 75,
-                "Completed" => 90,
-                "Checkout" => 100,
+                "CheckIn" => 25,
+                "Washing" => 60,
+                "Drying" => 85,
+                "Completed" => 100,
                 _ => 0
             };
         }
@@ -57,20 +48,20 @@ namespace Auto_Wash.Helpers
 
             if (booking != null && booking.CheckedOutAt != null)
             {
-                dto.CurrentStage = "Checkout";
+                dto.CurrentStage = "Completed";
                 dto.Progress = 100;
                 dto.RemainingSeconds = 0;
             }
             else if (queue != null && queue.Status == QueueStatus.Archived)
             {
-                dto.CurrentStage = "Checkout";
+                dto.CurrentStage = "Completed";
                 dto.Progress = 100;
                 dto.RemainingSeconds = 0;
             }
             else if (booking != null && booking.Status == BookingStatus.Completed)
             {
                 dto.CurrentStage = "Completed";
-                dto.Progress = 90;
+                dto.Progress = 100;
                 dto.RemainingSeconds = 0;
             }
             else if (booking != null && (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.NoShow))
@@ -113,7 +104,7 @@ namespace Auto_Wash.Helpers
             else if (queue != null && queue.Status == QueueStatus.Completed)
             {
                 dto.CurrentStage = "Completed";
-                dto.Progress = 90;
+                dto.Progress = 100;
                 dto.RemainingSeconds = 0;
             }
             else
@@ -126,13 +117,9 @@ namespace Auto_Wash.Helpers
 
             // Populate stages checklist dynamically
             int activeIndex = -1;
-            if (dto.CurrentStage == "Checkout")
+            if (dto.CurrentStage == "Completed")
             {
                 activeIndex = OfficialStages.Length;
-            }
-            else if (dto.CurrentStage == "Completed")
-            {
-                activeIndex = OfficialStages.Length - 1;
             }
             else
             {

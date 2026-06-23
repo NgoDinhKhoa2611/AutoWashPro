@@ -73,14 +73,7 @@ namespace Auto_Wash.Services
                 })
                 .FirstOrDefault();
 
-            var addons = bookingServices
-                .Where(bs => bs.Service.IsAddOn)
-                .Select(bs => new {
-                    serviceId = bs.Service.ServiceId,
-                    serviceName = bs.Service.ServiceName,
-                    price = bs.PriceSnapshot
-                })
-                .ToList();
+
 
             var voucher = b.AppliedRedemption != null ? new {
                 rewardId = b.AppliedRedemption.Reward.RewardId,
@@ -136,7 +129,6 @@ namespace Auto_Wash.Services
                     vehicleClass = b.Vehicle.VehicleClass
                 },
                 mainService = mainService,
-                addons = addons,
                 voucher = voucher,
                 notes = b.Notes ?? "",
                 scheduledAt = b.ScheduledAt,
@@ -300,6 +292,20 @@ namespace Auto_Wash.Services
             if (booking == null)
             {
                 return (false, "Không tìm thấy đơn đặt lịch.", 0);
+            }
+
+            // Check-in window validation (±15 minutes)
+            var now = DateTime.Now;
+            var earliestAllowed = booking.ScheduledAt.AddMinutes(-15);
+            var latestAllowed = booking.ScheduledAt.AddMinutes(15);
+
+            if (now < earliestAllowed)
+            {
+                return (false, $"Chưa đến thời gian check-in! Bạn chỉ có thể check-in sớm tối đa 15 phút (từ {earliestAllowed:HH:mm}).", 0);
+            }
+            if (now > latestAllowed)
+            {
+                return (false, $"Đã quá giờ check-in! Bạn chỉ có thể check-in trễ tối đa 15 phút (trước {latestAllowed:HH:mm}).", 0);
             }
 
             if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
