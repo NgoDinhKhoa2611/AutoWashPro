@@ -194,6 +194,30 @@ namespace Auto_Wash.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetLoyaltyStatus()
+        {
+            var customer = await _authContextService.GetCurrentCustomerAsync();
+            if (customer == null)
+            {
+                return Unauthorized(new { success = false, message = "Bạn chưa đăng nhập!" });
+            }
+
+            try
+            {
+                var status = await _customerService.GetLoyaltyStatusAsync(customer.CustomerId);
+                if (status == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy khách hàng." });
+                }
+                return Ok(new { success = true, status });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> RedeemReward([FromBody] RedeemRewardRequest request)
         {

@@ -17,7 +17,7 @@ const TIER_DATA = {
   "Silver Member": {
     color: "#94a3b8",
     cardClass: "tier-silver",
-    multiplier: "x1.1",
+    multiplier: "x1.2",
     queuePerk: "Ưu tiên hàng đợi trước khách thường.",
     birthday: "Tặng 01 lần rửa xe phổ thông miễn phí.",
     nextTier: "Gold",
@@ -26,7 +26,7 @@ const TIER_DATA = {
   "Gold Member": {
     color: "#ffcf33",
     cardClass: "tier-gold",
-    multiplier: "x1.2",
+    multiplier: "x1.5",
     queuePerk: "Bypass hàng rửa xe thường. Vào thẳng ô rửa VIP.",
     birthday:
       "Tặng 01 combo cao cấp rửa xe + hút bụi nội thất miễn phí vào tháng sinh nhật.",
@@ -36,7 +36,7 @@ const TIER_DATA = {
   "Platinum Member": {
     color: "#0ea5e9",
     cardClass: "tier-platinum",
-    multiplier: "x1.5",
+    multiplier: "x2.0",
     queuePerk: "Ưu tiên TUYỆT ĐỐI. Phục vụ ngay không chờ đợi.",
     birthday: "Tặng gói chăm sóc xe toàn diện + bộ quà VIP tháng sinh nhật.",
     nextTier: "Diamond Ultimate",
@@ -52,6 +52,18 @@ export const CustomerLoyalty = () => {
 
   const [pendingRedeem, setPendingRedeem] = useState(null);
   const [redeemModalOpen, setRedeemModalOpen] = useState(false);
+  const [loyalty, setLoyalty] = useState(null);
+
+  const loadLoyaltyStatus = async () => {
+    try {
+      const res = await customerService.getLoyaltyStatus();
+      if (res && res.success && res.status) {
+        setLoyalty(res.status);
+      }
+    } catch (e) {
+      console.error("Failed to load loyalty status", e);
+    }
+  };
 
   const fetchClaimedVouchers = async () => {
     try {
@@ -78,6 +90,7 @@ export const CustomerLoyalty = () => {
   useEffect(() => {
     fetchClaimedVouchers();
     loadRewards();
+    loadLoyaltyStatus();
 
     const query = new URLSearchParams(window.location.search);
     const tab = query.get("tab");
@@ -171,12 +184,22 @@ export const CustomerLoyalty = () => {
   } else if (rawTier === "Platinum" || rawTier === "Platinum Member") {
     currentTier = "Platinum Member";
   }
-  const pts = user?.points ?? 0;
+  const pts = loyalty?.points ?? user?.points ?? 0;
   const nextTierDetails =
     TIER_DATA[currentTier] || TIER_DATA["Standard Member"];
-  const remaining = nextTierDetails.neededPts
-    ? Math.max(0, nextTierDetails.neededPts - pts) + " PTS"
-    : "Tối cao";
+
+  // Ranking is driven by spend within a rolling 6-month window (from the backend),
+  // not by loyalty points. These power the member-card progress bar.
+  const windowMonths = loyalty?.windowMonths ?? 6;
+  const windowedSpend = loyalty?.windowedSpend ?? 0;
+  const nextTierMin = loyalty?.nextTierMin ?? null;
+  const nextTierName = loyalty?.nextTierName ?? nextTierDetails.nextTier;
+  const amountToNext = loyalty?.amountToNextTier ?? 0;
+  const isMaxTier = !nextTierMin;
+  const spendProgressPct = nextTierMin
+    ? Math.min(100, Math.round((windowedSpend / nextTierMin) * 100))
+    : 100;
+  const fmtVnd = (n) => "₫" + Number(n || 0).toLocaleString("vi-VN");
 
   return (
     <div className="container-fluid py-4">
@@ -220,8 +243,53 @@ export const CustomerLoyalty = () => {
                 className="text-white mb-3"
                 style={{ opacity: 0.7, fontSize: "0.85rem" }}
               >
-                AutoWash Loyalty Points
+                AutoWash Loyalty Points · dùng để đổi quà
               </p>
+
+              {/* Rolling 6-month ranking-spend progress toward next tier */}
+              <div className="mb-2">
+                <div
+                  className="d-flex justify-content-between mb-1 text-white"
+                  style={{ fontSize: "0.68rem", opacity: 0.85, fontWeight: 700 }}
+                >
+                  <span
+                    style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}
+                  >
+                    Chi tiêu {windowMonths} tháng
+                  </span>
+                  <span>
+                    {fmtVnd(windowedSpend)}
+                    {!isMaxTier && ` / ${fmtVnd(nextTierMin)}`}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    height: 8,
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.22)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${spendProgressPct}%`,
+                      height: "100%",
+                      borderRadius: 999,
+                      background: "var(--cyan-electric, #0ea5e9)",
+                      transition: "width .4s ease",
+                    }}
+                  />
+                </div>
+                <div
+                  className="text-white mt-1"
+                  style={{ fontSize: "0.66rem", opacity: 0.8 }}
+                >
+                  {isMaxTier
+                    ? "Bạn đang ở hạng cao nhất 🎉"
+                    : `Còn ${fmtVnd(amountToNext)} để lên hạng ${nextTierName}`}
+                </div>
+              </div>
+
               <div className="d-flex justify-content-between align-items-center mt-4">
                 <div>
                   <small
@@ -239,7 +307,7 @@ export const CustomerLoyalty = () => {
                     className="fw-bold text-cyan mt-1"
                     style={{ fontSize: "0.88rem" }}
                   >
-                    {nextTierDetails.nextTier} — còn {remaining}
+                    {isMaxTier ? "Tối cao" : nextTierName}
                   </div>
                 </div>
                 <div className="text-end">
@@ -304,7 +372,7 @@ export const CustomerLoyalty = () => {
               onClick={() => {
                 if (window.showToast)
                   window.showToast(
-                    "Quy định: Mỗi 1.000đ chi tiêu = 1 PTS. Hạng VIP nhân hệ số: Bạc x1.1, Vàng x1.2, Kim Cương x1.5.",
+                    `Tích điểm: (chi tiêu ÷ 1.000đ) × hệ số hạng — Bạc x1.2, Vàng x1.5, Bạch Kim x2.0. Hạng được xét theo tổng chi tiêu trong ${windowMonths} tháng gần nhất (điểm dùng để đổi quà, không ảnh hưởng hạng).`,
                     "info",
                   );
               }}
