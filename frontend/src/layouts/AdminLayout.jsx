@@ -15,8 +15,7 @@ export const AdminLayout = () => {
                     location.pathname.startsWith('/admin/queue') ? 'queue' :
                     location.pathname.startsWith('/admin/bookings') ? 'bookings' :
                     location.pathname.startsWith('/admin/customers') ? 'customers' :
-                    location.pathname.startsWith('/admin/services') ? 'services' :
-                    location.pathname.startsWith('/admin/promotions') ? 'promotions' : 'dashboard';
+                    location.pathname.startsWith('/admin/services') ? 'services' : 'dashboard';
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -65,9 +64,6 @@ export const AdminLayout = () => {
           </Link>
           <Link to="/admin/services" className={`sidebar-link ${activeNav === 'services' ? 'active' : ''}`}>
             <i className="fas fa-box"></i> <span>Dịch vụ</span>
-          </Link>
-          <Link to="/admin/promotions" className={`sidebar-link ${activeNav === 'promotions' ? 'active' : ''}`}>
-            <i className="fas fa-tags"></i> <span>Voucher & ưu đãi</span>
           </Link>
           <hr className="mx-3 opacity-10 my-4" />
           <button type="button" className="sidebar-link text-danger opacity-75 border-0 bg-transparent w-100 text-start" onClick={handleLogout}>

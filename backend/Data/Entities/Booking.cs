@@ -35,8 +35,6 @@ namespace Auto_Wash.Data.Entities
 
         public int PointsRedeemed { get; set; } = 0;
 
-        public int? PromoCodeId { get; set; }
-
         public int? RedemptionId { get; set; }
 
         [MaxLength(500)]
@@ -101,9 +99,6 @@ namespace Auto_Wash.Data.Entities
 
         [ForeignKey("VehicleId")]
         public virtual Vehicle Vehicle { get; set; } = null!;
-
-        [ForeignKey("PromoCodeId")]
-        public virtual Campaign? PromoCodeCampaign { get; set; }
 
         [ForeignKey("RedemptionId")]
         public virtual RewardRedemption? AppliedRedemption { get; set; }

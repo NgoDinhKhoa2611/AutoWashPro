@@ -22,7 +22,6 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminQueue = lazy(() => import('./pages/AdminQueue'));
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
 const AdminServices = lazy(() => import('./pages/AdminServices'));
-const AdminPromotions = lazy(() => import('./pages/AdminPromotions'));
 const AdminBookings = lazy(() => import('./pages/AdminBookings'));
 
 const PageLoader = () => (
@@ -81,7 +80,6 @@ function App() {
             <Route path="bookings" element={<AdminBookings />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="services" element={<AdminServices />} />
-            <Route path="promotions" element={<AdminPromotions />} />
           </Route>
 
           {/* Fallback routing */}

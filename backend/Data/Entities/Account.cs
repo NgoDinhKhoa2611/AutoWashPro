@@ -36,6 +36,5 @@ namespace Auto_Wash.Data.Entities
         // Navigation properties
         public virtual Customer? Customer { get; set; }
         public virtual ICollection<LoyaltyConfig> UpdatedLoyaltyConfigs { get; set; } = new List<LoyaltyConfig>();
-        public virtual ICollection<Campaign> CreatedCampaigns { get; set; } = new List<Campaign>();
     }
 }
