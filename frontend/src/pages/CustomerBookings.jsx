@@ -325,7 +325,16 @@ export const CustomerBookings = () => {
       }
     } catch (err) {
       console.error(err);
-      if (window.showToast) window.showToast('Đã xảy ra lỗi khi hủy lịch hẹn.', 'danger');
+      // The backend returns business-rule rejections as HTTP 400 (e.g. the 60-minute
+      // window), which axios throws here. Surface the server's actual message instead
+      // of a generic error; fall back to a generic toast only for real network/5xx errors.
+      const serverMessage = err.response?.data?.message;
+      if (window.showToast) {
+        window.showToast(
+          serverMessage || 'Không thể hủy lịch hẹn.',
+          serverMessage ? 'warning' : 'danger'
+        );
+      }
     } finally {
       setCancelling(false);
     }

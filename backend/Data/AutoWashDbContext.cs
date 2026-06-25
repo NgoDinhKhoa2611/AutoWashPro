@@ -18,7 +18,6 @@ namespace Auto_Wash.Data
         public DbSet<TierPerk> TierPerks { get; set; } = null!;
         public DbSet<LoyaltyConfig> LoyaltyConfigs { get; set; } = null!;
         public DbSet<Reward> Rewards { get; set; } = null!;
-        public DbSet<Campaign> Campaigns { get; set; } = null!;
         public DbSet<Booking> Bookings { get; set; } = null!;
         public DbSet<RewardRedemption> RewardRedemptions { get; set; } = null!;
         public DbSet<BookingService> BookingServices { get; set; } = null!;
@@ -156,24 +155,6 @@ namespace Auto_Wash.Data
                 .HasForeignKey(r => r.MinTierId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // 10. Campaigns
-            builder.Entity<Campaign>()
-                .HasIndex(c => c.PromoCode)
-                .IsUnique()
-                .HasDatabaseName("uq_campaigns_promocode");
-
-            builder.Entity<Campaign>()
-                .HasOne(c => c.TargetTierMin)
-                .WithMany()
-                .HasForeignKey(c => c.TargetTierMinId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            builder.Entity<Campaign>()
-                .HasOne(c => c.CreatedByAccount)
-                .WithMany(a => a.CreatedCampaigns)
-                .HasForeignKey(c => c.CreatedBy)
-                .OnDelete(DeleteBehavior.Restrict);
-
             // 11. Bookings
             builder.Entity<Booking>()
                 .HasIndex(b => b.CustomerId)
@@ -204,12 +185,6 @@ namespace Auto_Wash.Data
                 .WithMany(v => v.Bookings)
                 .HasForeignKey(b => b.VehicleId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            builder.Entity<Booking>()
-                .HasOne(b => b.PromoCodeCampaign)
-                .WithMany(c => c.Bookings)
-                .HasForeignKey(b => b.PromoCodeId)
-                .OnDelete(DeleteBehavior.SetNull);
 
             builder.Entity<Booking>()
                 .HasOne(b => b.AppliedRedemption)

@@ -114,31 +114,6 @@ export const adminService = {
     return response.data;
   },
 
-  getPromotions: async () => {
-    const response = await api.get('/api/admin/promotions');
-    return response.data;
-  },
-
-  createPromotion: async (data) => {
-    const response = await api.post('/api/admin/promotions', data);
-    return response.data;
-  },
-
-  updatePromotion: async (id, data) => {
-    const response = await api.put(`/api/admin/promotions/${id}`, data);
-    return response.data;
-  },
-
-  togglePromotionStatus: async (id) => {
-    const response = await api.patch(`/api/admin/promotions/${id}/toggle`);
-    return response.data;
-  },
-
-  deletePromotion: async (id) => {
-    const response = await api.delete(`/api/admin/promotions/${id}`);
-    return response.data;
-  },
-
   getBookings: async () => {
     const response = await api.get('/api/admin/bookings');
     return response.data;
