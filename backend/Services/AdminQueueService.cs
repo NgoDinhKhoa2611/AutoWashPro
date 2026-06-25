@@ -583,9 +583,16 @@ namespace Auto_Wash.Services
                 q.Booking.CheckedOutBy = performerName ?? "Staff";
                 q.Booking.Status = BookingStatus.Completed;
 
-                if (q.Booking.PaidAt == null)
+                // Guard against double-awarding: the background auto-complete service may have
+                // already awarded points (it writes an EARN LoyaltyTransaction but never sets PaidAt).
+                // Use the same DB-backed check here so points are credited exactly once regardless
+                // of which path completes the booking first.
+                var alreadyAwarded = await _context.LoyaltyTransactions
+                    .AnyAsync(lt => lt.BookingId == q.BookingId && lt.TransactionType == "EARN");
+
+                if (!alreadyAwarded)
                 {
-                    q.Booking.PaidAt = now;
+                    q.Booking.PaidAt ??= now;
                     q.Booking.CompletedAt ??= now;
 
                     _context.BookingAuditLogs.Add(new BookingAuditLog
