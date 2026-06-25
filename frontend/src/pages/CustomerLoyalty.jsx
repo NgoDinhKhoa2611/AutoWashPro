@@ -8,6 +8,7 @@ const TIER_DATA = {
   "Standard Member": {
     color: "#64748b",
     cardClass: "tier-member",
+    dbName: "Member",
     multiplier: "x1.0",
     queuePerk: "Xếp hàng theo thứ tự thông thường.",
     birthday: "Không có ưu đãi sinh nhật.",
@@ -17,6 +18,7 @@ const TIER_DATA = {
   "Silver Member": {
     color: "#94a3b8",
     cardClass: "tier-silver",
+    dbName: "Silver",
     multiplier: "x1.2",
     queuePerk: "Ưu tiên hàng đợi trước khách thường.",
     birthday: "Tặng 01 lần rửa xe phổ thông miễn phí.",
@@ -26,6 +28,7 @@ const TIER_DATA = {
   "Gold Member": {
     color: "#ffcf33",
     cardClass: "tier-gold",
+    dbName: "Gold",
     multiplier: "x1.5",
     queuePerk: "Bypass hàng rửa xe thường. Vào thẳng ô rửa VIP.",
     birthday:
@@ -36,6 +39,7 @@ const TIER_DATA = {
   "Platinum Member": {
     color: "#0ea5e9",
     cardClass: "tier-platinum",
+    dbName: "Platinum",
     multiplier: "x2.0",
     queuePerk: "Ưu tiên TUYỆT ĐỐI. Phục vụ ngay không chờ đợi.",
     birthday: "Tặng gói chăm sóc xe toàn diện + bộ quà VIP tháng sinh nhật.",
@@ -189,13 +193,36 @@ export const CustomerLoyalty = () => {
     TIER_DATA[currentTier] || TIER_DATA["Standard Member"];
 
   // Ranking is driven by spend within a rolling 6-month window (from the backend),
-  // not by loyalty points. These power the member-card progress bar.
+  // not by loyalty points. The "spend to rank up" amount + progress are computed
+  // against the tier currently shown, so the simulator buttons below update the
+  // figure live — using the full tier ladder returned by the backend.
   const windowMonths = loyalty?.windowMonths ?? 6;
   const windowedSpend = loyalty?.windowedSpend ?? 0;
-  const nextTierMin = loyalty?.nextTierMin ?? null;
-  const nextTierName = loyalty?.nextTierName ?? nextTierDetails.nextTier;
-  const amountToNext = loyalty?.amountToNextTier ?? 0;
+  const tierLadder = loyalty?.tiers ?? [];
+
+  const currentLadderIdx = tierLadder.findIndex(
+    (t) => t.name === nextTierDetails.dbName,
+  );
+  const ladderResolved = currentLadderIdx >= 0;
+  const nextLadderTier = ladderResolved
+    ? tierLadder[currentLadderIdx + 1] ?? null
+    : null;
+
+  // Prefer the ladder (reactive to the previewed tier); fall back to the
+  // backend's current/next pair when the ladder isn't available.
+  const nextTierMin = ladderResolved
+    ? nextLadderTier
+      ? nextLadderTier.minRankingBalance
+      : null
+    : loyalty?.nextTierMin ?? null;
+  const nextTierName = ladderResolved
+    ? nextLadderTier
+      ? nextLadderTier.name
+      : null
+    : loyalty?.nextTierName ?? nextTierDetails.nextTier;
   const isMaxTier = !nextTierMin;
+  const amountToNext =
+    nextTierMin != null ? Math.max(0, nextTierMin - windowedSpend) : 0;
   const spendProgressPct = nextTierMin
     ? Math.min(100, Math.round((windowedSpend / nextTierMin) * 100))
     : 100;
@@ -246,21 +273,34 @@ export const CustomerLoyalty = () => {
                 AutoWash Loyalty Points · dùng để đổi quà
               </p>
 
-              {/* Rolling 6-month ranking-spend progress toward next tier */}
+              {/* Spend-to-rank-up amount (reactive to the previewed tier) + progress */}
               <div className="mb-2">
                 <div
+                  className="text-white mb-2"
+                  style={{ fontSize: "0.98rem", fontWeight: 600, opacity: 0.95 }}
+                >
+                  {isMaxTier ? (
+                    <>Bạn đang ở hạng cao nhất 🎉</>
+                  ) : (
+                    <>
+                      Thanh toán thêm{" "}
+                      <strong style={{ fontWeight: 800 }}>
+                        {fmtVnd(amountToNext)}
+                      </strong>{" "}
+                      để thăng hạng{nextTierName ? ` ${nextTierName}` : ""} ›
+                    </>
+                  )}
+                </div>
+                <div
                   className="d-flex justify-content-between mb-1 text-white"
-                  style={{ fontSize: "0.68rem", opacity: 0.85, fontWeight: 700 }}
+                  style={{ fontSize: "0.66rem", opacity: 0.8, fontWeight: 700 }}
                 >
                   <span
                     style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}
                   >
-                    Chi tiêu {windowMonths} tháng
+                    Chi tiêu {windowMonths} tháng: {fmtVnd(windowedSpend)}
                   </span>
-                  <span>
-                    {fmtVnd(windowedSpend)}
-                    {!isMaxTier && ` / ${fmtVnd(nextTierMin)}`}
-                  </span>
+                  {!isMaxTier && <span>{fmtVnd(nextTierMin)}</span>}
                 </div>
                 <div
                   style={{
@@ -279,14 +319,6 @@ export const CustomerLoyalty = () => {
                       transition: "width .4s ease",
                     }}
                   />
-                </div>
-                <div
-                  className="text-white mt-1"
-                  style={{ fontSize: "0.66rem", opacity: 0.8 }}
-                >
-                  {isMaxTier
-                    ? "Bạn đang ở hạng cao nhất 🎉"
-                    : `Còn ${fmtVnd(amountToNext)} để lên hạng ${nextTierName}`}
                 </div>
               </div>
 
