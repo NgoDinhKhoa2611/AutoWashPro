@@ -649,6 +649,15 @@ namespace Auto_Wash.Services
             }
 
             await _context.SaveChangesAsync();
+
+            // Re-evaluate membership tier now that this completed booking counts
+            // toward the rolling ranking window (booking is persisted above).
+            if (q.Booking?.Customer != null)
+            {
+                await TierHelper.RecalculateTierAsync(_context, q.Booking.Customer, now);
+                await _context.SaveChangesAsync();
+            }
+
             return (true, "Thanh toán & checkout thành công!", finalPrice, pointsEarned);
         }
 
