@@ -131,5 +131,10 @@ namespace Auto_Wash.Services
                 throw;
             }
         }
+
+        public async Task SendEmailAsync(string toEmail, string subject, string body)
+        {
+            await SendEmailOtpAsync(toEmail, subject, body);
+        }
     }
 }

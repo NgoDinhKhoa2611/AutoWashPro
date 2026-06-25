@@ -96,7 +96,8 @@ namespace Auto_Wash.Controllers
 
             try
             {
-                var result = await _adminQueueService.CheckoutQueueAsync(id);
+                var performer = HttpContext.Session.GetString("UserName") ?? "Staff";
+                var result = await _adminQueueService.CheckoutQueueAsync(id, performer);
                 if (!result.success)
                 {
                     return BadRequest(new { success = false, message = result.message });

@@ -35,6 +35,9 @@ namespace Auto_Wash.Data.Entities
 
         public DateTime? CompletedAt { get; set; }
 
+        [MaxLength(50)]
+        public string? CurrentStage { get; set; }
+
         [MaxLength(300)]
         public string? StaffNote { get; set; }
 

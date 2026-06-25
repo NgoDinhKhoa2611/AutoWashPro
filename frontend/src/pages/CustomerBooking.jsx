@@ -1,16 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { customerService } from '../services/customerService';
+import Modal from '../components/Modal';
 import '../styles/shared.css';
 import '../styles/customer/booking.css';
 
 const DEFAULT_TIME_SLOTS = [
   '08:00', '09:00', '10:00', '11:00', '12:00', 
-  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
+  '19:00', '20:00', '21:00', '22:00', '23:00'
 ];
-
-
 
 export const CustomerBooking = () => {
   const { user } = useAuth();
@@ -18,16 +18,10 @@ export const CustomerBooking = () => {
 
   const [vehicles, setVehicles] = useState([]);
   const [mainServices, setMainServices] = useState([]);
-  const [addonServices, setAddonServices] = useState([]);
   
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-
-  useEffect(() => {
-    setSelectedAddons({});
-  }, [selectedVehicle]);
   
   const [selectedMain, setSelectedMain] = useState(null);
-  const [selectedAddons, setSelectedAddons] = useState({});
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('');
   
@@ -35,12 +29,32 @@ export const CustomerBooking = () => {
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [voucherModalOpen, setVoucherModalOpen] = useState(false);
   const [myVouchers, setMyVouchers] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [bookingDaysWindow, setBookingDaysWindow] = useState(7);
   const [minDateStr, setMinDateStr] = useState('');
   const [maxDateStr, setMaxDateStr] = useState('');
 
+  const [slotsStatus, setSlotsStatus] = useState({});
+  const [occupiedSlots, setOccupiedSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [earliestAvailableDate, setEarliestAvailableDate] = useState(null);
+  const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
+
   useEffect(() => {
+    // Fetch dynamic slots configuration
+    const fetchConfig = async () => {
+      try {
+        const res = await customerService.getBookingConfig();
+        if (res.success && res.slots) {
+          setTimeSlots(res.slots);
+        }
+      } catch (err) {
+        console.error("Error loading booking config:", err);
+      }
+    };
+    fetchConfig();
+
     // Determine booking days window based on membership tier
     const tier = (user?.tier || 'Standard Member').toUpperCase();
     let days = 7;
@@ -99,45 +113,53 @@ export const CustomerBooking = () => {
 
     fetchVehicles();
 
-    // Set default main service
-    // Load services (checking Custom services in DB)
+    // Set default main service (Standard Car Wash ID 999)
     const fetchServices = async () => {
       try {
         const response = await customerService.getServices();
         if (response.success && response.services && response.services.length > 0) {
-          const mains = response.services.filter(s => s.isAddon === false && s.isActive === true)
-            .map(s => ({
-              id: s.id,
-              name: s.name,
-              desc: s.desc,
-              price: s.price,
-              time: s.estimatedMinutes + ' phút',
-              icon: 'fa-soap'
-            }));
-          setMainServices(mains);
-          if (mains.length > 0) {
-            setSelectedMain(mains[0]);
-          }
-
-          const addons = response.services.filter(s => s.isAddon === true && s.isActive === true)
-            .map(s => ({
-              id: s.id,
-              name: s.name,
-              desc: s.desc,
-              price: s.price,
-              icon: 'fa-plus-circle'
-            }));
-          setAddonServices(addons);
+          const standard = response.services.find(s => s.id === "999" || s.name === "Standard Car Wash");
+          const standardMapped = standard ? {
+            id: standard.id,
+            name: standard.name,
+            desc: standard.desc,
+            price: standard.price,
+            time: standard.estimatedMinutes + ' phút',
+            icon: 'fa-soap'
+          } : {
+            id: "999",
+            name: "Standard Car Wash",
+            desc: "Dịch vụ rửa xe tiêu chuẩn bao gồm: Rửa ngoại thất, vệ sinh bánh xe, hút bụi nội thất, lau kính, lau taplo, dưỡng nội thất cơ bản, kiểm tra cuối.",
+            price: 250000,
+            time: "60 phút",
+            icon: 'fa-soap'
+          };
+          setMainServices([standardMapped]);
+          setSelectedMain(standardMapped);
         } else {
-          setMainServices([]);
-          setAddonServices([]);
-          setSelectedMain(null);
+          const fallback = {
+            id: "999",
+            name: "Standard Car Wash",
+            desc: "Dịch vụ rửa xe tiêu chuẩn bao gồm: Rửa ngoại thất, vệ sinh bánh xe, hút bụi nội thất, lau kính, lau taplo, dưỡng nội thất cơ bản, kiểm tra cuối.",
+            price: 250000,
+            time: "60 phút",
+            icon: 'fa-soap'
+          };
+          setMainServices([fallback]);
+          setSelectedMain(fallback);
         }
       } catch (err) {
         console.error(err);
-        setMainServices([]);
-        setAddonServices([]);
-        setSelectedMain(null);
+        const fallback = {
+          id: "999",
+          name: "Standard Car Wash",
+          desc: "Dịch vụ rửa xe tiêu chuẩn bao gồm: Rửa ngoại thất, vệ sinh bánh xe, hút bụi nội thất, lau kính, lau taplo, dưỡng nội thất cơ bản, kiểm tra cuối.",
+          price: 250000,
+          time: "60 phút",
+          icon: 'fa-soap'
+        };
+        setMainServices([fallback]);
+        setSelectedMain(fallback);
       }
     };
 
@@ -172,23 +194,76 @@ export const CustomerBooking = () => {
     fetchVouchers();
   }, [user]);
 
+  // Load occupied slots for selected date
+  const fetchSlots = useCallback(async () => {
+    if (!bookingDate) return;
+    setLoadingSlots(true);
+    setEarliestAvailableDate(null);
+    try {
+      const res = await customerService.getOccupiedSlots(bookingDate);
+      if (res.success) {
+        setSlotsStatus(res.slotsStatus || {});
+        setOccupiedSlots(res.occupiedSlots || []);
+      }
+    } catch (err) {
+      console.error("Error fetching slots status:", err);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, [bookingDate]);
+
+  useEffect(() => {
+    fetchSlots();
+    // 30s Polling
+    const interval = setInterval(() => {
+      if (bookingDate) {
+        customerService.getOccupiedSlots(bookingDate).then(res => {
+          if (res.success) {
+            setSlotsStatus(res.slotsStatus || {});
+            setOccupiedSlots(res.occupiedSlots || []);
+          }
+        });
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [bookingDate, fetchSlots]);
+
   const availableTimeSlots = useMemo(() => {
     const today = new Date();
     const todayStr = today.getFullYear() + '-' + 
       String(today.getMonth() + 1).padStart(2, '0') + '-' + 
       String(today.getDate()).padStart(2, '0');
 
+    let slots = timeSlots;
     if (bookingDate === todayStr) {
       const minAllowedTime = new Date(today.getTime() + 15 * 60 * 1000);
-      return DEFAULT_TIME_SLOTS.filter(t => {
+      slots = timeSlots.filter(t => {
         const [hours, minutes] = t.split(':').map(Number);
         const slotDate = new Date();
         slotDate.setHours(hours, minutes, 0, 0);
         return slotDate > minAllowedTime;
       });
     }
-    return DEFAULT_TIME_SLOTS;
-  }, [bookingDate]);
+    // Filter out occupied slots
+    return slots.filter(t => !occupiedSlots.includes(t));
+  }, [bookingDate, occupiedSlots, timeSlots]);
+
+  // Find earliest available date if this date has no slots
+  useEffect(() => {
+    if (!loadingSlots && bookingDate && availableTimeSlots.length === 0) {
+      const fetchEarliestDate = async () => {
+        try {
+          const res = await customerService.getEarliestAvailableDate(bookingDate, bookingDaysWindow);
+          if (res.success && res.earliestDate) {
+            setEarliestAvailableDate(res.earliestDate);
+          }
+        } catch (err) {
+          console.error("Error fetching earliest available date:", err);
+        }
+      };
+      fetchEarliestDate();
+    }
+  }, [bookingDate, availableTimeSlots, loadingSlots, bookingDaysWindow]);
 
   useEffect(() => {
     if (bookingTime && bookingDate) {
@@ -198,26 +273,16 @@ export const CustomerBooking = () => {
     }
   }, [availableTimeSlots, bookingDate, bookingTime]);
 
-  const handleSelectVehicle = (plate) => {
+  const handleSelectVehicle = useCallback((plate) => {
     setSelectedVehicle(plate);
-  };
+  }, []);
 
-  const handleSelectMain = (svc) => {
+  const handleSelectMain = useCallback((svc) => {
     setSelectedMain(svc);
-  };
-
-  const handleToggleAddon = (addon) => {
-    const updated = { ...selectedAddons };
-    if (updated[addon.id]) {
-      delete updated[addon.id];
-    } else {
-      updated[addon.id] = addon;
-    }
-    setSelectedAddons(updated);
-  };
+  }, []);
 
   // Promo operations
-  const applyPromo = (codeStr = promoCode) => {
+  const applyPromo = useCallback((codeStr = promoCode) => {
     const code = codeStr.trim().toUpperCase();
     if (!code) {
       if (window.showToast) window.showToast('Vui lòng nhập mã ưu đãi!', 'warning');
@@ -244,26 +309,25 @@ export const CustomerBooking = () => {
     } else {
       if (window.showToast) window.showToast('Mã ưu đãi không hợp lệ hoặc đã hết hạn trong ví.', 'warning');
     }
-  };
+  }, [promoCode, myVouchers]);
 
-  const handleSelectVoucherFromModal = (code) => {
+  const handleSelectVoucherFromModal = useCallback((code) => {
     setPromoCode(code);
     applyPromo(code);
     setVoucherModalOpen(false);
-  };
+  }, [applyPromo]);
 
-  const handleRemoveVoucher = () => {
+  const handleRemoveVoucher = useCallback(() => {
     setAppliedVoucher(null);
     setPromoCode('');
     if (window.showToast) {
       window.showToast('Đã hủy voucher.', 'success');
     }
-  };
+  }, []);
 
   // Pricing calculations
-  const addonTotal = Object.values(selectedAddons).reduce((s, a) => s + Number(a.price), 0);
   const mainPrice = selectedMain ? Number(selectedMain.price) : 0;
-  const baseTotal = mainPrice + addonTotal;
+  const baseTotal = mainPrice;
 
   // Voucher discount
   const promoDiscountAmount = appliedVoucher && baseTotal > 0
@@ -278,7 +342,9 @@ export const CustomerBooking = () => {
   const earnedPoints = Math.round(finalTotal / 10000);
 
   // Confirm booking
-  const handleConfirmBooking = async () => {
+  const handleConfirmBooking = useCallback(async () => {
+    if (isSubmitting) return;
+
     if (!selectedVehicle) {
       if (window.showToast) window.showToast('Vui lòng chọn phương tiện!', 'warning');
       return;
@@ -292,31 +358,44 @@ export const CustomerBooking = () => {
       return;
     }
 
+    if (bookingDate) {
+      const selDate = new Date(bookingDate + 'T00:00:00');
+      const minD = new Date(minDateStr + 'T00:00:00');
+      const maxD = new Date(maxDateStr + 'T00:00:00');
+      if (selDate < minD || selDate > maxD) {
+        if (window.showToast) {
+          window.showToast(`Ngày chọn không hợp lệ. Hạng thành viên của bạn chỉ được đặt lịch từ ${minD.toLocaleDateString('vi-VN')} đến ${maxD.toLocaleDateString('vi-VN')}.`, 'warning');
+        }
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+
     try {
-      // Call real backend booking API (do not send final price or points earned)
       const result = await customerService.createBooking({
         LicensePlate: selectedVehicle,
         MainServiceName: selectedMain.name,
-        AddonServiceNames: Object.values(selectedAddons).map(a => a.name),
         BookingDate: bookingDate,
         BookingTime: bookingTime,
         AppliedRedemptionId: appliedVoucher ? appliedVoucher.redemptionId : null,
+        VoucherCode: promoCode,
         Notes: ''
       });
 
       if (result.success) {
         if (window.showToast) window.showToast(`Đặt lịch thành công cho xe ${selectedVehicle}!`, 'success');
-        setTimeout(() => {
-          navigate('/customer/dashboard');
-        }, 1200);
+        navigate('/customer/dashboard');
       } else {
         if (window.showToast) window.showToast(result.message || 'Đặt lịch thất bại!', 'warning');
+        setIsSubmitting(false);
       }
     } catch (err) {
       console.error(err);
       if (window.showToast) window.showToast('Đặt lịch thất bại. Vui lòng thử lại!', 'warning');
+      setIsSubmitting(false);
     }
-  };
+  }, [isSubmitting, selectedVehicle, selectedMain, bookingDate, bookingTime, minDateStr, maxDateStr, appliedVoucher, promoCode, navigate]);
 
   return (
     <div className="container-fluid py-4 text-start">
@@ -325,10 +404,10 @@ export const CustomerBooking = () => {
         <div className="col-lg-8">
           
           {/* Step 1: Chọn phương tiện */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">1</span> Chọn phương tiện rửa
-            </h5>
+          <div className="app-card border-0 shadow-sm p-3 bg-white rounded-4 mb-3">
+            <h6 className="fw-bold mb-3" style={{ color: 'var(--navy-dark)', fontSize: '0.92rem' }}>
+              <span className="step-num-badge" style={{ width: '22px', height: '22px', fontSize: '0.75rem', marginRight: '6px' }}>1</span> Chọn phương tiện rửa
+            </h6>
             <div className="row g-3" id="vehicles-list">
               {vehicles.length === 0 ? (
                 <div className="col-12 text-center py-4">
@@ -368,85 +447,33 @@ export const CustomerBooking = () => {
             </div>
           </div>
 
-          {/* Step 2: Chọn gói chính */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">2</span> Chọn gói dịch vụ chính
-            </h5>
-            <div className="row g-3" id="main-services-list">
-              {mainServices.map((s) => {
-                const isSelected = selectedMain?.id === s.id;
-                return (
-                  <div key={s.id} className="col-md-6">
-                    <div
-                      className={`service-selectable-card ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleSelectMain(s)}
-                    >
-                      <div className="selected-tick-badge">
-                        <i className="fas fa-check-circle"></i>
-                      </div>
-                      <div className="d-flex align-items-start gap-3">
-                        <div className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style={{ background: 'rgba(15,23,42,0.06)', width: '42px', height: '42px' }}>
-                          <i className={`fas ${s.icon || 'fa-soap'} text-cyan`}></i>
-                        </div>
-                        <div className="flex-grow-1">
-                          <div className="fw-bold small" style={{ color: 'var(--navy-dark)' }}>{s.name}</div>
-                          <div className="text-muted" style={{ fontSize: '0.72rem', lineHeight: '1.3' }}>{s.desc}</div>
-                          <div className="d-flex justify-content-between align-items-center mt-2">
-                            <span className="fw-bold text-cyan" style={{ fontSize: '0.85rem' }}>{Number(s.price).toLocaleString()}đ</span>
-                            <span className="text-muted small" style={{ fontSize: '0.7rem' }}><i className="far fa-clock me-1"></i>{s.time}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Step 2: Thông tin dịch vụ (Read-Only) */}
+          <div className="app-card border-0 shadow-sm p-3 bg-white rounded-4 mb-3">
+            <h6 className="fw-bold mb-2.5" style={{ color: 'var(--navy-dark)', fontSize: '0.92rem' }}>
+              <span className="step-num-badge" style={{ width: '22px', height: '22px', fontSize: '0.75rem', marginRight: '6px' }}>2</span> Thông tin gói dịch vụ
+            </h6>
+            <div className="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
+              <div className="text-start">
+                <strong className="text-dark" style={{ fontSize: '0.88rem' }}>
+                  {selectedMain ? selectedMain.name : 'Standard Car Wash'}
+                </strong>
+                <p className="mb-0 text-muted" style={{ fontSize: '0.75rem', lineHeight: '1.4', marginTop: '2px' }}>
+                  {selectedMain ? selectedMain.desc : 'Dịch vụ rửa xe tiêu chuẩn'}
+                </p>
+              </div>
+              <div className="text-end flex-shrink-0 ms-3">
+                <span className="badge bg-white text-dark border fw-bold px-2.5 py-1.5 rounded-pill" style={{ fontSize: '0.78rem' }}>
+                  {selectedMain ? selectedMain.time : '60 phút'} • {selectedMain ? Number(selectedMain.price).toLocaleString() : '250.000'}đ
+                </span>
+              </div>
             </div>
           </div>
-
-          {/* Step 3: Chọn dịch vụ đi kèm (Add-ons Cards Grid) */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">3</span> Chọn dịch vụ đi kèm
-            </h5>
-            <div className="addons-grid-layout" id="addon-services-list">
-              {addonServices.map((a) => {
-                const isSelected = !!selectedAddons[a.id];
-                return (
-                  <div
-                    key={a.id}
-                    className={`addon-selectable-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => handleToggleAddon(a)}
-                  >
-                    <div>
-                      <div className="addon-card-header">
-                        <div className="addon-card-icon">
-                          <i className={`fas ${a.icon || 'fa-plus-circle'}`}></i>
-                        </div>
-                        <div className="addon-card-checkbox">
-                          {isSelected ? (
-                            <i className="fas fa-check-circle"></i>
-                          ) : (
-                            <i className="far fa-circle text-muted"></i>
-                          )}
-                        </div>
-                      </div>
-                      <div className="addon-card-name">{a.name}</div>
-                      <div className="addon-card-desc">{a.desc}</div>
-                    </div>
-                    <div className="addon-card-price">+{Number(a.price).toLocaleString()}đ</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Step 4: Chọn ngày & giờ */}
-          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 mb-4">
-            <h5 className="fw-bold mb-4" style={{ color: 'var(--navy-dark)' }}>
-              <span className="step-num-badge">4</span> Chọn ngày & khung giờ hẹn
-            </h5>
+          
+          {/* Step 3: Chọn ngày & giờ */}
+          <div className="app-card border-0 shadow-sm p-3 bg-white rounded-4 mb-3">
+            <h6 className="fw-bold mb-3" style={{ color: 'var(--navy-dark)', fontSize: '0.92rem' }}>
+              <span className="step-num-badge" style={{ width: '22px', height: '22px', fontSize: '0.75rem', marginRight: '6px' }}>3</span> Chọn ngày & khung giờ hẹn
+            </h6>
             <div className="row g-3">
               <div className="col-md-6">
                 <label className="form-label small fw-bold text-secondary">NGÀY HẸN RỬA</label>
@@ -466,24 +493,54 @@ export const CustomerBooking = () => {
               <div className="col-md-6">
                 <label className="form-label small fw-bold text-secondary mb-2">KHUNG GIỜ</label>
                 <div className="row g-2" id="time-slots">
-                  {availableTimeSlots.length === 0 ? (
-                    <div className="col-12 text-center text-danger py-2 small fw-bold">
-                      Không còn khung giờ trống cho hôm nay. Vui lòng chọn ngày khác!
+                  {loadingSlots ? (
+                    <div className="col-12 text-center py-4 small text-secondary">
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Đang tải danh sách slot...
+                    </div>
+                  ) : availableTimeSlots.length === 0 ? (
+                    <div className="col-12 text-start">
+                      <div className="text-danger py-3 px-3 bg-danger bg-opacity-10 border border-danger border-opacity-20 rounded-3 small fw-bold mb-2">
+                        <i className="fas fa-exclamation-triangle me-1.5 animate-bounce"></i>
+                        {bookingDate === minDateStr 
+                          ? "Hôm nay đã hết slot. Vui lòng chọn ngày khác." 
+                          : "Tất cả khung giờ ngày này đã được đặt. Vui lòng chọn ngày khác."}
+                      </div>
+                      {earliestAvailableDate && (
+                        <div className="p-3 bg-info bg-opacity-10 border border-info border-opacity-20 rounded-3 small text-secondary">
+                          <i className="fas fa-info-circle text-info me-1.5"></i>
+                          Ngày sớm nhất có slot trống: <strong className="text-dark">{earliestAvailableDate.split('-').reverse().join('/')}</strong>.
+                          <button 
+                            type="button" 
+                            className="btn btn-link p-0 ms-2 text-cyan fw-bold text-decoration-none small align-baseline"
+                            style={{ fontSize: '0.78rem' }}
+                            onClick={() => setBookingDate(earliestAvailableDate)}
+                          >
+                            [Chọn ngày này]
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    availableTimeSlots.map((t) => (
-                      <div key={t} className="col-4">
-                        <div
-                          className={`text-center py-2.5 rounded-3 border fw-bold selectable-card ${
-                            bookingTime === t ? 'selected' : 'bg-light border-light text-muted'
-                          }`}
-                          style={{ cursor: 'pointer', fontSize: '0.8rem' }}
-                          onClick={() => setBookingTime(t)}
-                        >
-                          {t}
+                    availableTimeSlots.map((t) => {
+                      const remaining = slotsStatus[t] ?? 3;
+                      return (
+                        <div key={t} className="col-4">
+                          <div
+                            className={`text-center py-2 rounded-3 border fw-bold selectable-card ${
+                              bookingTime === t ? 'selected' : 'bg-light border-light text-muted'
+                            }`}
+                            style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '2px' }}
+                            onClick={() => setBookingTime(t)}
+                          >
+                            <span style={{ fontSize: '0.82rem' }}>{t}</span>
+                            <span style={{ fontSize: '0.62rem', fontWeight: 'normal', opacity: 0.75 }}>
+                              {remaining > 0 ? `Còn ${remaining} slot` : 'Hết slot'}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -518,20 +575,6 @@ export const CustomerBooking = () => {
                 </span>
               </div>
 
-              {Object.values(selectedAddons).length > 0 && (
-                <div className="text-start" id="summary-addons-block">
-                  <span className="text-muted small d-block mb-1">Dịch vụ đi kèm (Add-ons):</span>
-                  <div id="summary-addons-list" className="d-flex flex-column gap-1 border-start ps-3">
-                    {Object.values(selectedAddons).map((a, idx) => (
-                      <div key={idx} className="d-flex justify-content-between" style={{ fontSize: '0.78rem', color: '#475569' }}>
-                        <span>✓ {a.name}</span>
-                        <span>+{Number(a.price).toLocaleString()}đ</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               <hr className="my-0 opacity-5" />
               
               <div className="d-flex justify-content-between align-items-center">
@@ -550,7 +593,7 @@ export const CustomerBooking = () => {
 
             {/* Discounts and Loyalty calculations */}
             <div className="d-flex flex-column gap-2 mb-4 bg-light p-3 rounded-3" style={{ background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-              {appliedVoucher && baseTotal > 0 && (
+              {appliedVoucher && (
                 <div className="d-flex justify-content-between align-items-center" id="promo-applied-msg">
                   <small className="text-muted fw-bold d-flex align-items-center gap-1" style={{ fontSize: '0.68rem' }}>
                     VOUCHER ({appliedVoucher.code}):
@@ -612,7 +655,7 @@ export const CustomerBooking = () => {
                   <input
                     type="text"
                     id="promo-code-input"
-                    className="form-control font-monospace promo-code-input"
+                    className="form-control font-monospace promo-code-input text-dark fw-bold"
                     placeholder="VÍ DỤ: WASH10K"
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
@@ -643,75 +686,103 @@ export const CustomerBooking = () => {
 
             <button
               onClick={handleConfirmBooking}
-              disabled={vehicles.length === 0}
-              className="app-btn-primary w-100 border-0 fw-bold"
+              disabled={vehicles.length === 0 || isSubmitting}
+              className="app-btn-primary w-100 border-0 fw-bold text-dark"
               style={{
                 borderRadius: '12px',
                 padding: '14px',
                 fontSize: '0.88rem',
                 letterSpacing: '0.5px',
-                opacity: vehicles.length === 0 ? 0.45 : 1,
-                cursor: vehicles.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: (vehicles.length === 0 || isSubmitting) ? 0.45 : 1,
+                cursor: (vehicles.length === 0 || isSubmitting) ? 'not-allowed' : 'pointer',
                 boxShadow: '0 6px 20px rgba(14,165,233,0.28)'
               }}
             >
-              XÁC NHẬN ĐẶT LỊCH <i className="fas fa-arrow-right ms-2"></i>
+              {isSubmitting ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  ĐANG TẠO LỊCH...
+                </>
+              ) : (
+                <>
+                  XÁC NHẬN ĐẶT LỊCH <i className="fas fa-arrow-right ms-2"></i>
+                </>
+              )}
             </button>
           </div>
         </div>
       </div>
 
       {/* Voucher Selector Modal */}
-      {voucherModalOpen && (
-        <div id="voucher-modal-backdrop" className="confirm-modal-backdrop show" style={{ display: 'flex' }}>
-          <div className="confirm-modal-card animate-confirm-in" style={{ maxWidth: '440px', width: '100%' }}>
-            <div className="confirm-modal-header">
-              <h5 className="confirm-modal-title"><i className="fas fa-ticket-alt text-cyan me-2"></i>Ví Voucher của bạn</h5>
-              <button type="button" className="confirm-modal-close-btn" onClick={() => setVoucherModalOpen(false)}>
-                <i className="fas fa-times"></i>
-              </button>
+      <Modal
+        isOpen={voucherModalOpen}
+        onClose={() => setVoucherModalOpen(false)}
+        title="Ví Voucher của bạn"
+        maxWidth="440px"
+      >
+        <div className="text-center" id="voucher-selector-list">
+          {myVouchers.length === 0 ? (
+            <div className="text-center py-4 text-muted small">
+              <i className="fas fa-info-circle mb-2 fa-lg d-block" style={{ color: 'var(--cyan-electric)' }}></i>
+              Bạn không có voucher khả dụng nào trong ví.<br />
+              Hãy tích điểm để đổi quà nhé!
             </div>
-            <div className="confirm-modal-body text-center" id="voucher-selector-list">
-              {myVouchers.length === 0 ? (
-                <div className="text-center py-4 text-muted small">
-                  <i className="fas fa-info-circle mb-2 fa-lg d-block" style={{ color: 'var(--cyan-electric)' }}></i>
-                  Bạn không có voucher khả dụng nào trong ví.<br />
-                  Hãy tích điểm để đổi quà nhé!
+          ) : (
+            myVouchers.map((v, i) => {
+              let badgeText = v.rewardType === 'DiscountPercent' ? `Giảm ${v.rewardValue}%` : `Giảm ₫${Number(v.rewardValue).toLocaleString()}`;
+              return (
+                <div
+                  key={i}
+                  className="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between mb-2 select-voucher-item"
+                  style={{ transition: 'all 0.2s ease' }}
+                >
+                  <div className="text-start">
+                    <div className="fw-bold text-dark small mb-0.5">{v.title}</div>
+                    <div className="font-monospace text-secondary small" style={{ fontSize: '0.7rem' }}>Mã: {v.code}</div>
+                    <span className="badge bg-cyan text-dark small mt-1" style={{ fontSize: '0.6rem', fontWeight: 700 }}>{badgeText}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="ticket-btn"
+                    style={{ padding: '4px 10px', fontSize: '0.68rem', borderRadius: '8px' }}
+                    onClick={() => handleSelectVoucherFromModal(v.code)}
+                  >
+                    Chọn
+                  </button>
                 </div>
-              ) : (
-                myVouchers.map((v, i) => {
-                  let badgeText = v.rewardType === 'DiscountPercent' ? `Giảm ${v.rewardValue}%` : `Giảm ₫${Number(v.rewardValue).toLocaleString()}`;
-                  return (
-                    <div
-                      key={i}
-                      className="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between mb-2 select-voucher-item"
-                      style={{ transition: 'all 0.2s ease' }}
-                    >
-                      <div className="text-start">
-                        <div className="fw-bold text-dark small mb-0.5">{v.title}</div>
-                        <div className="font-monospace text-secondary small" style={{ fontSize: '0.7rem' }}>Mã: {v.code}</div>
-                        <span className="badge bg-cyan text-dark small mt-1" style={{ fontSize: '0.6rem', fontWeight: 700 }}>{badgeText}</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="ticket-btn"
-                        style={{ padding: '4px 10px', fontSize: '0.68rem', borderRadius: '8px' }}
-                        onClick={() => handleSelectVoucherFromModal(v.code)}
-                      >
-                        Chọn
-                      </button>
-                    </div>
-                  );
-                })
-              )}
+              );
+            })
+          )}
+        </div>
+        <div className="d-flex justify-content-center mt-3 pt-3 border-top">
+          <button className="confirm-cancel-btn w-50" onClick={() => setVoucherModalOpen(false)}>ĐÓNG</button>
+        </div>
+      </Modal>
+
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div 
+          className="confirm-modal-backdrop show" 
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            zIndex: 9999,
+            backgroundColor: 'rgba(15, 23, 42, 0.85)'
+          }}
+        >
+          <div className="text-center p-4 bg-white rounded-4 shadow-lg animate-confirm-in" style={{ maxWidth: '400px', width: '90%' }}>
+            <div className="spinner-border text-info mb-4" role="status" style={{ width: '3.5rem', height: '3.5rem', borderWidth: '4px' }}>
+              <span className="visually-hidden">Loading...</span>
             </div>
-            <div className="confirm-modal-footer justify-content-center">
-              <button className="confirm-cancel-btn w-50" onClick={() => setVoucherModalOpen(false)}>ĐÓNG</button>
-            </div>
+            <h4 className="fw-bold text-dark mb-2">Đang tạo lịch hẹn...</h4>
+            <p className="text-secondary small mb-0">Vui lòng không đóng trình duyệt.</p>
           </div>
         </div>
       )}
     </div>
   );
 };
+
 export default CustomerBooking;

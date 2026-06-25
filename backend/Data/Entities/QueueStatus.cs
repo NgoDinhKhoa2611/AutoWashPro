@@ -8,6 +8,7 @@ namespace Auto_Wash.Data.Entities
         Addon_Processing,
         Drying,
         Completed,
-        Cancelled
+        Cancelled,
+        Archived
     }
 }

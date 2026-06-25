@@ -44,6 +44,18 @@ namespace Auto_Wash.Data.Entities
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        public DateTime? CheckInAt { get; set; }
+
+        public DateTime? ConfirmedAt { get; set; }
+
+        public DateTime? WashingAt { get; set; }
+
+        public DateTime? CompletedAt { get; set; }
+
+        public DateTime? NoShowAt { get; set; }
+
+        public int FixedDurationMinutes { get; set; } = 60;
+
         // Payment (nullable, filled on payment)
         public int PaymentMethod { get; set; } = 1;
 
@@ -65,6 +77,23 @@ namespace Auto_Wash.Data.Entities
         public string? RatingTags { get; set; }
 
         public int? RatingBonusPoints { get; set; }
+
+        [MaxLength(500)]
+        public string? CancelReason { get; set; }
+
+        [MaxLength(100)]
+        public string? CancelledBy { get; set; }
+
+        public DateTime? CancelledAt { get; set; }
+
+        public bool Reminder1Sent { get; set; } = false;
+        public bool Reminder2Sent { get; set; } = false;
+        public bool NoShowEmailSent { get; set; } = false;
+
+        public DateTime? CheckedOutAt { get; set; }
+
+        [MaxLength(100)]
+        public string? CheckedOutBy { get; set; }
 
         // Navigation properties
         [ForeignKey("CustomerId")]

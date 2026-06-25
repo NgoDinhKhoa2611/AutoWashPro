@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import '../styles/shared.css';
 import '../styles/admin/services.css';
 import { adminService } from '../services/adminService';
+import Modal from '../components/Modal';
+import SearchInput from '../components/SearchInput';
+import Table from '../components/Table';
 
 export const AdminServices = () => {
   const [services, setServices] = useState([]);
@@ -22,11 +25,7 @@ export const AdminServices = () => {
   const [svcActive, setSvcActive] = useState(true);
   const [svcFeatured, setSvcFeatured] = useState(false);
 
-  useEffect(() => {
-    loadServices();
-  }, []);
-
-  const loadServices = async () => {
+  const loadServices = useCallback(async () => {
     try {
       const res = await adminService.getServices();
       if (res && res.success) {
@@ -38,9 +37,13 @@ export const AdminServices = () => {
       console.error('Failed to parse app_services', e);
       if (window.showToast) window.showToast('Lỗi tải danh sách dịch vụ', 'error');
     }
-  };
+  }, []);
 
-  const openAddServiceModal = () => {
+  useEffect(() => {
+    loadServices();
+  }, [loadServices]);
+
+  const openAddServiceModal = useCallback(() => {
     setModalMode('add');
     setEditingId(null);
     setSvcName('');
@@ -51,9 +54,9 @@ export const AdminServices = () => {
     setSvcActive(true);
     setSvcFeatured(false);
     setShowModal(true);
-  };
+  }, []);
 
-  const openEditServiceModal = (s) => {
+  const openEditServiceModal = useCallback((s) => {
     setModalMode('edit');
     setEditingId(s.id);
     setSvcName(s.name || '');
@@ -64,13 +67,13 @@ export const AdminServices = () => {
     setSvcActive(s.isActive !== undefined ? s.isActive : s.status === 'Active');
     setSvcFeatured(!!s.isFeatured);
     setShowModal(true);
-  };
+  }, []);
 
-  const closeServiceModal = () => {
+  const closeServiceModal = useCallback(() => {
     setShowModal(false);
-  };
+  }, []);
 
-  const saveService = async (e) => {
+  const saveService = useCallback(async (e) => {
     e.preventDefault();
     if (!svcName.trim()) {
       if (window.showToast) window.showToast('Vui lòng điền tên dịch vụ', 'error');
@@ -91,7 +94,9 @@ export const AdminServices = () => {
     try {
       const res = await adminService.saveService(payload);
       if (res && res.success) {
-        if (window.showToast) window.showToast(modalMode === 'add' ? `Đã thêm dịch vụ "${payload.name}" thành công!` : 'Cập nhật thông tin dịch vụ thành công!', 'success');
+        if (window.showToast) {
+          window.showToast(modalMode === 'add' ? `Đã thêm dịch vụ "${payload.name}" thành công!` : 'Cập nhật thông tin dịch vụ thành công!', 'success');
+        }
         loadServices();
         closeServiceModal();
       } else {
@@ -101,9 +106,9 @@ export const AdminServices = () => {
       console.error('Failed to save service', e);
       if (window.showToast) window.showToast('Lỗi lưu dịch vụ', 'error');
     }
-  };
+  }, [modalMode, editingId, svcName, svcDesc, svcCategory, svcPrice, svcMinutes, svcActive, svcFeatured, loadServices, closeServiceModal]);
 
-  const toggleServiceActive = async (id) => {
+  const toggleServiceActive = useCallback(async (id) => {
     const s = services.find(sv => sv.id === id);
     if (!s) return;
     try {
@@ -122,9 +127,9 @@ export const AdminServices = () => {
       console.error('Failed to toggle status', e);
       if (window.showToast) window.showToast('Lỗi thay đổi trạng thái', 'error');
     }
-  };
+  }, [services, loadServices]);
 
-  const deleteService = async (id) => {
+  const deleteService = useCallback(async (id) => {
     const s = services.find(sv => sv.id === id);
     if (!s) return;
     
@@ -151,7 +156,7 @@ export const AdminServices = () => {
         performDelete();
       }
     }
-  };
+  }, [services, loadServices]);
 
   const filteredServices = services.filter(s => {
     const active = s.isActive !== undefined ? s.isActive : s.status === 'Active';
@@ -183,24 +188,16 @@ export const AdminServices = () => {
       {/* Filters */}
       <div className="row g-3 mb-4 animate-up">
         <div className="col-md-5">
-          <div className="input-group shadow-sm" style={{ borderRadius: '10px', overflow: 'hidden' }}>
-            <span className="input-group-text bg-white border-0 ps-3 text-muted">
-              <i className="fas fa-search"></i>
-            </span>
-            <input
-              type="text"
-              className="form-control bg-white border-0 py-2.5 ps-2"
-              placeholder="Tìm dịch vụ theo tên, mô tả..."
-              style={{ outline: 'none', boxShadow: 'none' }}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Tìm dịch vụ theo tên, mô tả..."
+          />
         </div>
         <div className="col-md-4 col-sm-6">
           <select
-            className="form-select bg-white border-0 py-2.5 shadow-sm fw-semibold"
-            style={{ borderRadius: '10px', outline: 'none', boxShadow: 'none', cursor: 'pointer', color: 'var(--navy-dark)' }}
+            className="form-select bg-white border-0 py-2.5 shadow-sm fw-semibold text-dark"
+            style={{ borderRadius: '10px', outline: 'none', boxShadow: 'none', cursor: 'pointer' }}
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
@@ -211,8 +208,8 @@ export const AdminServices = () => {
         </div>
         <div className="col-md-3 col-sm-6">
           <select
-            className="form-select bg-white border-0 py-2.5 shadow-sm fw-semibold"
-            style={{ borderRadius: '10px', outline: 'none', boxShadow: 'none', cursor: 'pointer', color: 'var(--navy-dark)' }}
+            className="form-select bg-white border-0 py-2.5 shadow-sm fw-semibold text-dark"
+            style={{ borderRadius: '10px', outline: 'none', boxShadow: 'none', cursor: 'pointer' }}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -231,202 +228,189 @@ export const AdminServices = () => {
           <p className="text-muted small mb-0">Hãy thử đổi từ khóa tìm kiếm hoặc điều chỉnh lại các bộ lọc ở trên.</p>
         </div>
       ) : (
-        <div className="app-card p-0 overflow-hidden border-0 shadow-sm bg-white rounded-4 animate-up">
-          <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0">
-              <thead className="bg-light">
-                <tr className="small text-uppercase text-muted" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
-                  <th className="ps-4 py-3">Tên dịch vụ</th>
-                  <th>Loại dịch vụ</th>
-                  <th>Giá tiền</th>
-                  <th>Thời gian ước tính</th>
-                  <th>Nổi bật</th>
-                  <th>Trạng thái</th>
-                  <th className="text-end pe-4">Hành động</th>
-                </tr>
-              </thead>
-              <tbody className="small fw-semibold">
-                {filteredServices.map(s => {
-                  const active = s.isActive !== undefined ? s.isActive : s.status === 'Active';
-                  return (
-                    <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td className="ps-4 py-3">
-                        <span className="fw-bold d-block text-dark" style={{ fontSize: '0.85rem' }}>{s.name}</span>
-                        <small className="text-muted d-block text-truncate" style={{ maxWidth: '300px' }}>{s.description || ''}</small>
-                      </td>
-                      <td>
-                        <span className={`badge rounded-pill px-3 py-1.5 border-0 ${s.category === 'Dịch vụ chính' ? 'bg-info bg-opacity-10 text-cyan' : 'bg-secondary bg-opacity-10 text-secondary'}`} style={{ fontSize: '0.62rem' }}>
-                          {s.category || 'Dịch vụ đi kèm'}
-                        </span>
-                      </td>
-                      <td><span className="fw-bold text-dark">{Number(s.price).toLocaleString()}đ</span></td>
-                      <td>
-                        <span className="fw-bold text-cyan">
-                          <i className="far fa-clock me-1"></i>{s.estimatedMinutes || 15} phút
-                        </span>
-                      </td>
-                      <td>
-                        {s.isFeatured ? (
-                          <span className="badge bg-warning bg-opacity-10 text-warning px-3 py-1 rounded-pill fw-bold" style={{ fontSize: '0.6rem' }}>
-                            <i className="fas fa-star me-1"></i> Nổi bật
-                          </span>
-                        ) : (
-                          <span className="text-muted" style={{ opacity: 0.4 }}>-</span>
-                        )}
-                      </td>
-                      <td>
-                        {active ? (
-                          <span className="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1.5 fw-bold" style={{ fontSize: '0.6rem' }}>Hoạt động</span>
-                        ) : (
-                          <span className="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-1.5 fw-bold" style={{ fontSize: '0.6rem' }}>Tạm ẩn</span>
-                        )}
-                      </td>
-                      <td className="text-end pe-4">
-                        <div className="d-flex justify-content-end gap-1.5">
-                          <button
-                            className="btn btn-sm btn-light py-1.5 px-2.5 font-bold border rounded-3 shadow-sm"
-                            style={{ fontSize: '0.65rem' }}
-                            onClick={() => openEditServiceModal(s)}
-                          >
-                            <i className="fas fa-edit me-1"></i> SỬA
-                          </button>
-                          <button
-                            className={`btn btn-sm py-1.5 px-2.5 font-bold border rounded-3 shadow-sm ${active ? 'btn-outline-warning text-warning' : 'btn-outline-success text-success'}`}
-                            style={{ fontSize: '0.65rem' }}
-                            onClick={() => toggleServiceActive(s.id)}
-                          >
-                            {active ? <><i className="fas fa-eye-slash me-1"></i> ẨN</> : <><i className="fas fa-eye me-1"></i> HIỆN</>}
-                          </button>
-                          <button
-                            className="btn btn-sm btn-outline-danger py-1.5 px-2.5 font-bold border-0 rounded-circle"
-                            onClick={() => deleteService(s.id)}
-                          >
-                            <i className="fas fa-trash-alt"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Table
+          headers={[
+            { label: 'Tên dịch vụ', className: 'ps-4 py-3' },
+            { label: 'Loại dịch vụ' },
+            { label: 'Giá tiền' },
+            { label: 'Thời gian ước tính' },
+            { label: 'Nổi bật' },
+            { label: 'Trạng thái' },
+            { label: 'Hành động', className: 'text-end pe-4' }
+          ]}
+          emptyMessage="Không tìm thấy dịch vụ nào"
+        >
+          {filteredServices.map(s => {
+            const active = s.isActive !== undefined ? s.isActive : s.status === 'Active';
+            return (
+              <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td className="ps-4 py-3">
+                  <span className="fw-bold d-block text-dark" style={{ fontSize: '0.85rem' }}>{s.name}</span>
+                  <small className="text-muted d-block text-truncate" style={{ maxWidth: '300px' }}>{s.description || ''}</small>
+                </td>
+                <td>
+                  <span className={`badge rounded-pill px-3 py-1.5 border-0 ${s.category === 'Dịch vụ chính' ? 'bg-info bg-opacity-10 text-cyan' : 'bg-secondary bg-opacity-10 text-secondary'}`} style={{ fontSize: '0.62rem' }}>
+                    {s.category || 'Dịch vụ đi kèm'}
+                  </span>
+                </td>
+                <td><span className="fw-bold text-dark">{Number(s.price).toLocaleString()}đ</span></td>
+                <td>
+                  <span className="fw-bold text-cyan">
+                    <i className="far fa-clock me-1"></i>{s.estimatedMinutes || 15} phút
+                  </span>
+                </td>
+                <td>
+                  {s.isFeatured ? (
+                    <span className="badge bg-warning bg-opacity-10 text-warning px-3 py-1 rounded-pill fw-bold" style={{ fontSize: '0.6rem' }}>
+                      <i className="fas fa-star me-1"></i> Nổi bật
+                    </span>
+                  ) : (
+                    <span className="text-muted" style={{ opacity: 0.4 }}>-</span>
+                  )}
+                </td>
+                <td>
+                  {active ? (
+                    <span className="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1.5 fw-bold" style={{ fontSize: '0.6rem' }}>Hoạt động</span>
+                  ) : (
+                    <span className="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-1.5 fw-bold" style={{ fontSize: '0.6rem' }}>Tạm ẩn</span>
+                  )}
+                </td>
+                <td className="text-end pe-4">
+                  <div className="d-flex justify-content-end gap-1.5">
+                    <button
+                      className="btn btn-sm btn-light py-1.5 px-2.5 font-bold border rounded-3 shadow-sm text-dark"
+                      style={{ fontSize: '0.65rem' }}
+                      onClick={() => openEditServiceModal(s)}
+                    >
+                      <i className="fas fa-edit me-1"></i> SỬA
+                    </button>
+                    <button
+                      className={`btn btn-sm py-1.5 px-2.5 font-bold border rounded-3 shadow-sm ${active ? 'btn-outline-warning text-warning' : 'btn-outline-success text-success'}`}
+                      style={{ fontSize: '0.65rem' }}
+                      onClick={() => toggleServiceActive(s.id)}
+                    >
+                      {active ? <><i className="fas fa-eye-slash me-1"></i> ẨN</> : <><i className="fas fa-eye me-1"></i> HIỆN</>}
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger py-1.5 px-2.5 font-bold border-0 rounded-circle"
+                      onClick={() => deleteService(s.id)}
+                    >
+                      <i className="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </Table>
       )}
 
       {/* Add / Edit Service Modal Overlay */}
-      {showModal && (
-        <div className="confirm-modal-backdrop" style={{ display: 'flex', zIndex: 1050 }}>
-          <div className="confirm-modal-card animate-confirm-in" style={{ maxWidth: '600px', width: '90%', borderRadius: '24px' }}>
-            <div className="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom text-start">
-              <h5 className="fw-bold mb-0 text-dark">
-                <i className="fas fa-box me-2 text-cyan"></i>
-                <span>{modalMode === 'add' ? 'THÊM DỊCH VỤ MỚI' : 'SỬA THÔNG TIN DỊCH VỤ'}</span>
-              </h5>
-              <button className="btn btn-link text-muted p-0 fs-4 text-decoration-none" onClick={closeServiceModal}>&times;</button>
+      <Modal
+        isOpen={showModal}
+        onClose={closeServiceModal}
+        title={modalMode === 'add' ? 'THÊM DỊCH VỤ MỚI' : 'SỬA THÔNG TIN DỊCH VỤ'}
+        maxWidth="600px"
+      >
+        <form onSubmit={saveService} className="text-start">
+          <div className="row g-3 mb-3">
+            <div className="col-12">
+              <label className="form-label small fw-bold text-muted mb-1">Tên dịch vụ <span className="text-danger">*</span></label>
+              <input
+                type="text"
+                className="form-control border rounded-3 py-2 px-3 fw-semibold bg-light text-dark"
+                placeholder="Ví dụ: Rửa xe phổ thông"
+                value={svcName}
+                onChange={(e) => setSvcName(e.target.value)}
+                required
+              />
             </div>
-
-            <form onSubmit={saveService} className="text-start">
-              <div className="row g-3 mb-3">
-                <div className="col-12">
-                  <label className="form-label small fw-bold text-muted mb-1">Tên dịch vụ <span className="text-danger">*</span></label>
+            <div className="col-12">
+              <label className="form-label small fw-bold text-muted mb-1">Mô tả chi tiết</label>
+              <textarea
+                rows="3"
+                className="form-control border rounded-3 py-2 px-3 bg-light text-dark"
+                placeholder="Mô tả các công đoạn rửa..."
+                value={svcDesc}
+                onChange={(e) => setSvcDesc(e.target.value)}
+              ></textarea>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label small fw-bold text-muted mb-1">Loại dịch vụ</label>
+              <select
+                className="form-select border rounded-3 py-2 px-3 bg-light fw-bold text-dark"
+                value={svcCategory}
+                onChange={(e) => setSvcCategory(e.target.value)}
+              >
+                <option value="Dịch vụ chính">Dịch vụ chính (Main)</option>
+                <option value="Dịch vụ đi kèm">Dịch vụ đi kèm (Add-on)</option>
+              </select>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label small fw-bold text-muted mb-1">Giá tiền (VNĐ) <span className="text-danger">*</span></label>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                className="form-control border rounded-3 py-2 px-3 fw-semibold bg-light text-dark"
+                value={svcPrice}
+                onChange={(e) => setSvcPrice(Number(e.target.value))}
+                required
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label small fw-bold text-muted mb-1">Thời gian ước tính (phút) <span className="text-danger">*</span></label>
+              <input
+                type="number"
+                min="1"
+                className="form-control border rounded-3 py-2 px-3 fw-semibold bg-light text-dark"
+                value={svcMinutes}
+                onChange={(e) => setSvcMinutes(Number(e.target.value))}
+                required
+              />
+            </div>
+            <div className="col-md-6 d-flex align-items-end">
+              <div className="p-2.5 bg-light rounded-3 w-100 d-flex flex-column gap-2 border">
+                <div className="form-check form-switch m-0">
                   <input
-                    type="text"
-                    className="form-control border rounded-3 py-2 px-3 fw-semibold bg-light"
-                    placeholder="Ví dụ: Rửa xe phổ thông"
-                    value={svcName}
-                    onChange={(e) => setSvcName(e.target.value)}
-                    required
+                    className="form-check-input"
+                    type="checkbox"
+                    id="svc-active"
+                    style={{ cursor: 'pointer' }}
+                    checked={svcActive}
+                    onChange={(e) => setSvcActive(e.target.checked)}
                   />
+                  <label className="form-check-label small fw-bold text-dark" htmlFor="svc-active" style={{ cursor: 'pointer' }}>
+                    Hoạt động
+                  </label>
                 </div>
-                <div className="col-12">
-                  <label className="form-label small fw-bold text-muted mb-1">Mô tả chi tiết</label>
-                  <textarea
-                    rows="3"
-                    className="form-control border rounded-3 py-2 px-3 bg-light"
-                    placeholder="Mô tả các công đoạn rửa..."
-                    value={svcDesc}
-                    onChange={(e) => setSvcDesc(e.target.value)}
-                  ></textarea>
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label small fw-bold text-muted mb-1">Loại dịch vụ</label>
-                  <select
-                    className="form-select border rounded-3 py-2 px-3 bg-light fw-bold text-dark"
-                    value={svcCategory}
-                    onChange={(e) => setSvcCategory(e.target.value)}
-                  >
-                    <option value="Dịch vụ chính">Dịch vụ chính (Main)</option>
-                    <option value="Dịch vụ đi kèm">Dịch vụ đi kèm (Add-on)</option>
-                  </select>
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label small fw-bold text-muted mb-1">Giá tiền (VNĐ) <span className="text-danger">*</span></label>
+                <div className="form-check form-switch m-0">
                   <input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    className="form-control border rounded-3 py-2 px-3 fw-semibold bg-light"
-                    value={svcPrice}
-                    onChange={(e) => setSvcPrice(Number(e.target.value))}
-                    required
+                    className="form-check-input"
+                    type="checkbox"
+                    id="svc-featured"
+                    style={{ cursor: 'pointer' }}
+                    checked={svcFeatured}
+                    onChange={(e) => setSvcFeatured(e.target.checked)}
                   />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label small fw-bold text-muted mb-1">Thời gian ước tính (phút) <span className="text-danger">*</span></label>
-                  <input
-                    type="number"
-                    min="1"
-                    className="form-control border rounded-3 py-2 px-3 fw-semibold bg-light"
-                    value={svcMinutes}
-                    onChange={(e) => setSvcMinutes(Number(e.target.value))}
-                    required
-                  />
-                </div>
-                <div className="col-md-6 d-flex align-items-end">
-                  <div className="p-2.5 bg-light rounded-3 w-100 d-flex flex-column gap-2 border">
-                    <div className="form-check form-switch m-0">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="svc-active"
-                        style={{ cursor: 'pointer' }}
-                        checked={svcActive}
-                        onChange={(e) => setSvcActive(e.target.checked)}
-                      />
-                      <label className="form-check-label small fw-bold text-dark" htmlFor="svc-active" style={{ cursor: 'pointer' }}>
-                        Hoạt động
-                      </label>
-                    </div>
-                    <div className="form-check form-switch m-0">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="svc-featured"
-                        style={{ cursor: 'pointer' }}
-                        checked={svcFeatured}
-                        onChange={(e) => setSvcFeatured(e.target.checked)}
-                      />
-                      <label className="form-check-label small fw-bold text-dark" htmlFor="svc-featured" style={{ cursor: 'pointer' }}>
-                        Dịch vụ nổi bật
-                      </label>
-                    </div>
-                  </div>
+                  <label className="form-check-label small fw-bold text-dark" htmlFor="svc-featured" style={{ cursor: 'pointer' }}>
+                    Dịch vụ nổi bật
+                  </label>
                 </div>
               </div>
-
-              <div className="d-flex gap-3 pt-3 border-top justify-content-end">
-                <button type="button" className="confirm-cancel-btn py-2 text-decoration-none border-0 w-25" onClick={closeServiceModal}>
-                  Hủy bỏ
-                </button>
-                <button type="submit" className="confirm-ok-btn confirm-btn-cyan py-2 border-0 w-25" style={{ background: 'var(--cyan-electric)' }}>
-                  Lưu lại
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="d-flex gap-3 pt-3 border-top justify-content-end">
+            <button type="button" className="confirm-cancel-btn py-2 text-decoration-none border-0 w-25" onClick={closeServiceModal}>
+              Hủy bỏ
+            </button>
+            <button type="submit" className="confirm-ok-btn confirm-btn-cyan py-2 border-0 w-25" style={{ background: 'var(--cyan-electric)' }}>
+              Lưu lại
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

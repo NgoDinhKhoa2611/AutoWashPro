@@ -15,6 +15,7 @@ const CustomerDashboard = lazy(() => import('./pages/CustomerDashboard'));
 const CustomerBooking = lazy(() => import('./pages/CustomerBooking'));
 const CustomerLoyalty = lazy(() => import('./pages/CustomerLoyalty'));
 const CustomerHistory = lazy(() => import('./pages/CustomerHistory'));
+const CustomerBookings = lazy(() => import('./pages/CustomerBookings'));
 const CustomerProfile = lazy(() => import('./pages/CustomerProfile'));
 const CustomerVehicles = lazy(() => import('./pages/CustomerVehicles'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
@@ -22,6 +23,7 @@ const AdminQueue = lazy(() => import('./pages/AdminQueue'));
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
 const AdminServices = lazy(() => import('./pages/AdminServices'));
 const AdminPromotions = lazy(() => import('./pages/AdminPromotions'));
+const AdminBookings = lazy(() => import('./pages/AdminBookings'));
 
 const PageLoader = () => (
   <div className="d-flex align-items-center justify-content-center vh-100 bg-light">
@@ -58,6 +60,8 @@ function App() {
             <Route path="booking" element={<CustomerBooking />} />
             <Route path="loyalty" element={<CustomerLoyalty />} />
             <Route path="history" element={<CustomerHistory />} />
+            <Route path="bookings" element={<CustomerBookings />} />
+            <Route path="bookings/:id" element={<CustomerBookings />} />
             <Route path="profile" element={<CustomerProfile />} />
             <Route path="vehicles" element={<CustomerVehicles />} />
           </Route>
@@ -74,6 +78,7 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="queue" element={<AdminQueue />} />
+            <Route path="bookings" element={<AdminBookings />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="services" element={<AdminServices />} />
             <Route path="promotions" element={<AdminPromotions />} />

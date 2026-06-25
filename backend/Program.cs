@@ -82,6 +82,10 @@ namespace Auto_Wash
             builder.Services.AddScoped<AdminQueueService>();
             builder.Services.AddScoped<CustomerService>();
             builder.Services.AddScoped<AdminService>();
+            builder.Services.AddScoped<AdminBookingService>();
+            builder.Services.AddScoped<BookingNotificationService>();
+            builder.Services.AddHostedService<BookingWorkflowBackgroundService>();
+
 
             // Session support
             builder.Services.AddDistributedMemoryCache();

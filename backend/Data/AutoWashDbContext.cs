@@ -25,6 +25,9 @@ namespace Auto_Wash.Data
         public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; } = null!;
         public DbSet<Queue> Queues { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
+        public DbSet<Review> Reviews { get; set; } = null!;
+        public DbSet<BookingAuditLog> BookingAuditLogs { get; set; } = null!;
+        public DbSet<BookingRescheduleHistory> BookingRescheduleHistories { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -185,6 +188,12 @@ namespace Auto_Wash.Data
                 .HasDatabaseName("idx_bookings_status");
 
             builder.Entity<Booking>()
+                .HasIndex(b => new { b.VehicleId, b.ScheduledAt })
+                .IsUnique()
+                .HasFilter("status != 4 AND status != 5 AND status != 7")
+                .HasDatabaseName("uq_bookings_vehicle_scheduledat_active");
+
+            builder.Entity<Booking>()
                 .HasOne(b => b.Customer)
                 .WithMany(c => c.Bookings)
                 .HasForeignKey(b => b.CustomerId)
@@ -343,6 +352,53 @@ namespace Auto_Wash.Data
                 .WithMany(c => c.Notifications)
                 .HasForeignKey(n => n.CustomerId)
                 .OnDelete(DeleteBehavior.Cascade);            
+
+            // 17. Reviews
+            builder.Entity<Review>()
+                .HasIndex(r => r.BookingId)
+                .IsUnique()
+                .HasDatabaseName("uq_reviews_bookingid");
+
+            builder.Entity<Review>()
+                .HasOne(r => r.Booking)
+                .WithOne()
+                .HasForeignKey<Review>(r => r.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Review>()
+                .HasOne(r => r.Customer)
+                .WithMany()
+                .HasForeignKey(r => r.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 18. BookingAuditLogs
+            builder.Entity<BookingAuditLog>()
+                .HasOne(al => al.Booking)
+                .WithMany()
+                .HasForeignKey(al => al.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 19. BookingRescheduleHistories
+            builder.Entity<BookingRescheduleHistory>()
+                .HasOne(rh => rh.Booking)
+                .WithMany()
+                .HasForeignKey(rh => rh.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Service>().HasData(
+                new Service
+                {
+                    ServiceId = 999,
+                    ServiceName = "Standard Car Wash",
+                    Description = "Dịch vụ rửa xe tiêu chuẩn bao gồm: Rửa ngoại thất, vệ sinh bánh xe, hút bụi nội thất, lau kính, lau taplo, dưỡng nội thất cơ bản, kiểm tra cuối.",
+                    Category = ServiceCategory.Basic,
+                    BasePrice = 250000,
+                    EstimatedMinutes = 60,
+                    IsAddOn = false,
+                    IsActive = true,
+                    IsFeatured = true
+                }
+            );
 
             // Configure all tables and columns to be lowercase for Supabase PostgreSQL compatibility
             foreach (var entity in builder.Model.GetEntityTypes())
