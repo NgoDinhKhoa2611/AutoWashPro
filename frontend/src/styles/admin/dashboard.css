@@ -5,20 +5,81 @@
 
 /* ── Stat Cards ───────────────────────────────────────────── */
 .admin-stat-icon {
-    background: var(--navy-dark);
-    padding: 0.75rem;
-    border-radius: 20px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  background: var(--navy-dark);
+  padding: 0.75rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
 }
-.admin-stat-icon i { color: var(--cyan-electric); }
+.admin-stat-icon i {
+  color: var(--cyan-electric);
+}
 
 /* ── Tier Review Table ────────────────────────────────────── */
 .tier-change-badge {
-    font-size: 0.65rem; font-weight: 800;
-    padding: 3px 10px; border-radius: 20px;
-    text-transform: uppercase; letter-spacing: 0.3px;
-    display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
-.tier-change-up     { background: rgba(25,135,84,0.1);  color: #198754; }
-.tier-change-down   { background: rgba(239,68,68,0.1);  color: #dc2626; }
-.tier-change-stable { background: rgba(14,165,233,0.1); color: #0284c7; }
+.tier-change-up {
+  background: rgba(25, 135, 84, 0.1);
+  color: #198754;
+}
+.tier-change-down {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+.tier-change-stable {
+  background: rgba(14, 165, 233, 0.1);
+  color: #0284c7;
+}
+/* ===== Dashboard Tabs ===== */
+
+.dashboard-tabs .dashboard-tab {
+  background: white;
+  color: #000 !important;
+  border-radius: 16px;
+  padding: 12px 22px;
+  transition: all 0.25s ease;
+}
+
+.dashboard-tabs .dashboard-tab i {
+  color: inherit;
+}
+
+.dashboard-tabs .dashboard-tab:hover,
+.dashboard-tabs .dashboard-tab:focus-visible {
+  background: #000;
+  color: white !important;
+}
+
+.dashboard-tabs .dashboard-tab:hover i,
+.dashboard-tabs .dashboard-tab:focus-visible i {
+  color: white !important;
+}
+
+.dashboard-tabs .dashboard-tab.active {
+  background: white;
+  color: #000 !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.dashboard-tabs .dashboard-tab.active i {
+  color: #000 !important;
+}
+
+.dashboard-tabs .dashboard-tab.active:hover,
+.dashboard-tabs .dashboard-tab.active:focus-visible {
+  background: #000;
+  color: white !important;
+}
+
+.dashboard-tabs .dashboard-tab.active:hover i,
+.dashboard-tabs .dashboard-tab.active:focus-visible i {
+  color: white !important;
+}

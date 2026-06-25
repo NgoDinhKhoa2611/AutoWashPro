@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { adminService } from '../services/adminService';
+import Modal from '../components/Modal';
 
 const AdminPromotions = () => {
   const [campaigns, setCampaigns] = useState([]);
@@ -13,11 +14,7 @@ const AdminPromotions = () => {
   const [promoMax, setPromoMax] = useState(500);
   const [promoDesc, setPromoDesc] = useState('');
 
-  useEffect(() => {
-    loadCampaigns();
-  }, []);
-
-  const loadCampaigns = async () => {
+  const loadCampaigns = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -30,9 +27,13 @@ const AdminPromotions = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const launchCampaign = async (e) => {
+  useEffect(() => {
+    loadCampaigns();
+  }, [loadCampaigns]);
+
+  const launchCampaign = useCallback(async (e) => {
     e.preventDefault();
     if (!promoName.trim()) {
       if (window.showToast) window.showToast('Vui lòng nhập tên chiến dịch!', 'warning');
@@ -67,9 +68,9 @@ const AdminPromotions = () => {
       console.error('Failed to launch campaign:', err);
       if (window.showToast) window.showToast('Lỗi kết nối khi phát hành chiến dịch!', 'error');
     }
-  };
+  }, [promoName, promoDesc, promoTarget, promoMax, loadCampaigns]);
 
-  const toggleCampaignStatus = async (id) => {
+  const toggleCampaignStatus = useCallback(async (id) => {
     try {
       const response = await adminService.togglePromotionStatus(id);
       if (response.success) {
@@ -82,9 +83,9 @@ const AdminPromotions = () => {
       console.error('Failed to toggle campaign status:', err);
       if (window.showToast) window.showToast('Lỗi kết nối khi đổi trạng thái!', 'error');
     }
-  };
+  }, [loadCampaigns]);
 
-  const deleteCampaign = (id) => {
+  const deleteCampaign = useCallback((id) => {
     const performDelete = async () => {
       try {
         const response = await adminService.deletePromotion(id);
@@ -108,17 +109,17 @@ const AdminPromotions = () => {
         performDelete();
       }
     }
-  };
+  }, [loadCampaigns]);
 
   return (
     <div className="container-fluid py-4">
-      <header className="d-flex justify-content-between align-items-center mb-5 animate-up">
+      <header className="d-flex justify-content-between align-items-center mb-5 animate-up text-start">
         <div>
           <h4 className="fw-bold mb-1" style={{ color: 'var(--navy-dark)' }}>Campaigns</h4>
           <p className="text-muted small mb-0 fw-medium">Manage premium promotions and customer rewards.</p>
         </div>
         <button
-          className="app-btn-primary w-auto px-4 shadow-none"
+          className="app-btn-primary w-auto px-4 shadow-none text-dark fw-bold border-0"
           style={{ fontSize: '0.8rem', borderRadius: '12px' }}
           onClick={() => setShowModal(true)}
         >
@@ -127,7 +128,7 @@ const AdminPromotions = () => {
       </header>
 
       {/* Campaign Cards Grid */}
-      <div className="row g-4">
+      <div className="row g-4 text-start">
         {loading ? (
           <div className="col-12 text-center py-5">
             <div className="spinner-border text-info" role="status">
@@ -229,84 +230,74 @@ const AdminPromotions = () => {
       </div>
 
       {/* Create Promo Modal */}
-      {showModal && (
-        <>
-          <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }} tabIndex="-1">
-            <div className="modal-dialog modal-lg modal-dialog-centered">
-              <div className="modal-content border-0 overflow-hidden" style={{ borderRadius: '24px' }}>
-                <div className="modal-header text-white border-0 px-4 pt-4" style={{ background: 'var(--navy-dark)' }}>
-                  <h6 className="fw-bold mb-0" style={{ color: 'var(--cyan-electric)' }}>CREATE NEW CAMPAIGN</h6>
-                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
-                </div>
-                <form onSubmit={launchCampaign}>
-                  <div className="modal-body p-4">
-                    <div className="row g-3">
-                      <div className="col-md-6">
-                        <label className="form-label small fw-bold text-muted">CAMPAIGN NAME</label>
-                        <input
-                          type="text"
-                          className="form-control bg-light border-0 py-2"
-                          placeholder="e.g. VIP Summer Wash Discount"
-                          value={promoName}
-                          onChange={(e) => setPromoName(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label small fw-bold text-muted">TARGET MEMBER TIER</label>
-                        <select
-                          className="form-select bg-light border-0 py-2 text-muted fw-semibold"
-                          value={promoTarget}
-                          onChange={(e) => setPromoTarget(e.target.value)}
-                        >
-                          <option value="All Customers">All Customers</option>
-                          <option value="Platinum">Platinum</option>
-                          <option value="Gold">Gold</option>
-                          <option value="Silver">Silver</option>
-                          <option value="Standard Member">Standard Member</option>
-                        </select>
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label small fw-bold text-muted">MAX REDEMPTIONS</label>
-                        <input
-                          type="number"
-                          className="form-control bg-light border-0 py-2"
-                          value={promoMax}
-                          onChange={(e) => setPromoMax(Number(e.target.value))}
-                          required
-                        />
-                      </div>
-                      <div className="col-12">
-                        <label className="form-label small fw-bold text-muted">DESCRIPTION & TERMS</label>
-                        <textarea
-                          className="form-control bg-light border-0 py-2"
-                          rows="3"
-                          placeholder="Enter description..."
-                          value={promoDesc}
-                          onChange={(e) => setPromoDesc(e.target.value)}
-                        ></textarea>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 pt-0">
-                    <button type="submit" className="app-btn-primary shadow-none py-3 border-0">
-                      LAUNCH CAMPAIGN
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-link text-muted w-100 mt-2 text-decoration-none small fw-bold"
-                      onClick={() => setShowModal(false)}
-                    >
-                      CANCEL
-                    </button>
-                  </div>
-                </form>
-              </div>
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="CREATE NEW CAMPAIGN"
+        maxWidth="650px"
+      >
+        <form onSubmit={launchCampaign} className="text-start">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label small fw-bold text-muted">CAMPAIGN NAME</label>
+              <input
+                type="text"
+                className="form-control bg-light border-0 py-2 text-dark fw-bold"
+                placeholder="e.g. VIP Summer Wash Discount"
+                value={promoName}
+                onChange={(e) => setPromoName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label small fw-bold text-muted">TARGET MEMBER TIER</label>
+              <select
+                className="form-select bg-light border-0 py-2 text-dark fw-bold"
+                value={promoTarget}
+                onChange={(e) => setPromoTarget(e.target.value)}
+              >
+                <option value="All Customers">All Customers</option>
+                <option value="Platinum">Platinum</option>
+                <option value="Gold">Gold</option>
+                <option value="Silver">Silver</option>
+                <option value="Standard Member">Standard Member</option>
+              </select>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label small fw-bold text-muted">MAX REDEMPTIONS</label>
+              <input
+                type="number"
+                className="form-control bg-light border-0 py-2 text-dark fw-bold"
+                value={promoMax}
+                onChange={(e) => setPromoMax(Number(e.target.value))}
+                required
+              />
+            </div>
+            <div className="col-12">
+              <label className="form-label small fw-bold text-muted">DESCRIPTION & TERMS</label>
+              <textarea
+                className="form-control bg-light border-0 py-2 text-dark"
+                rows="3"
+                placeholder="Enter description..."
+                value={promoDesc}
+                onChange={(e) => setPromoDesc(e.target.value)}
+              ></textarea>
             </div>
           </div>
-          <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
-        </>
-      )}
+          <div className="d-flex gap-3 pt-3 mt-3 border-top justify-content-end">
+            <button
+              type="button"
+              className="confirm-cancel-btn py-2.5 border-0 w-25"
+              onClick={() => setShowModal(false)}
+            >
+              CANCEL
+            </button>
+            <button type="submit" className="confirm-ok-btn confirm-btn-cyan py-2.5 border-0 w-25">
+              LAUNCH
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

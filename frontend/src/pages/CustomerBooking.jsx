@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { customerService } from '../services/customerService';
+import Modal from '../components/Modal';
 import '../styles/shared.css';
 import '../styles/customer/booking.css';
 
@@ -10,8 +11,6 @@ const DEFAULT_TIME_SLOTS = [
   '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
   '19:00', '20:00', '21:00', '22:00', '23:00'
 ];
-
-
 
 export const CustomerBooking = () => {
   const { user } = useAuth();
@@ -196,7 +195,7 @@ export const CustomerBooking = () => {
   }, [user]);
 
   // Load occupied slots for selected date
-  const fetchSlots = async () => {
+  const fetchSlots = useCallback(async () => {
     if (!bookingDate) return;
     setLoadingSlots(true);
     setEarliestAvailableDate(null);
@@ -211,7 +210,7 @@ export const CustomerBooking = () => {
     } finally {
       setLoadingSlots(false);
     }
-  };
+  }, [bookingDate]);
 
   useEffect(() => {
     fetchSlots();
@@ -227,7 +226,7 @@ export const CustomerBooking = () => {
       }
     }, 30000);
     return () => clearInterval(interval);
-  }, [bookingDate]);
+  }, [bookingDate, fetchSlots]);
 
   const availableTimeSlots = useMemo(() => {
     const today = new Date();
@@ -274,18 +273,16 @@ export const CustomerBooking = () => {
     }
   }, [availableTimeSlots, bookingDate, bookingTime]);
 
-  const handleSelectVehicle = (plate) => {
+  const handleSelectVehicle = useCallback((plate) => {
     setSelectedVehicle(plate);
-  };
+  }, []);
 
-  const handleSelectMain = (svc) => {
+  const handleSelectMain = useCallback((svc) => {
     setSelectedMain(svc);
-  };
-
-  // Selected addons removed
+  }, []);
 
   // Promo operations
-  const applyPromo = (codeStr = promoCode) => {
+  const applyPromo = useCallback((codeStr = promoCode) => {
     const code = codeStr.trim().toUpperCase();
     if (!code) {
       if (window.showToast) window.showToast('Vui lòng nhập mã ưu đãi!', 'warning');
@@ -312,21 +309,21 @@ export const CustomerBooking = () => {
     } else {
       if (window.showToast) window.showToast('Mã ưu đãi không hợp lệ hoặc đã hết hạn trong ví.', 'warning');
     }
-  };
+  }, [promoCode, myVouchers]);
 
-  const handleSelectVoucherFromModal = (code) => {
+  const handleSelectVoucherFromModal = useCallback((code) => {
     setPromoCode(code);
     applyPromo(code);
     setVoucherModalOpen(false);
-  };
+  }, [applyPromo]);
 
-  const handleRemoveVoucher = () => {
+  const handleRemoveVoucher = useCallback(() => {
     setAppliedVoucher(null);
     setPromoCode('');
     if (window.showToast) {
       window.showToast('Đã hủy voucher.', 'success');
     }
-  };
+  }, []);
 
   // Pricing calculations
   const mainPrice = selectedMain ? Number(selectedMain.price) : 0;
@@ -345,7 +342,7 @@ export const CustomerBooking = () => {
   const earnedPoints = Math.round(finalTotal / 10000);
 
   // Confirm booking
-  const handleConfirmBooking = async () => {
+  const handleConfirmBooking = useCallback(async () => {
     if (isSubmitting) return;
 
     if (!selectedVehicle) {
@@ -398,7 +395,7 @@ export const CustomerBooking = () => {
       if (window.showToast) window.showToast('Đặt lịch thất bại. Vui lòng thử lại!', 'warning');
       setIsSubmitting(false);
     }
-  };
+  }, [isSubmitting, selectedVehicle, selectedMain, bookingDate, bookingTime, minDateStr, maxDateStr, appliedVoucher, promoCode, navigate]);
 
   return (
     <div className="container-fluid py-4 text-start">
@@ -471,6 +468,7 @@ export const CustomerBooking = () => {
               </div>
             </div>
           </div>
+          
           {/* Step 3: Chọn ngày & giờ */}
           <div className="app-card border-0 shadow-sm p-3 bg-white rounded-4 mb-3">
             <h6 className="fw-bold mb-3" style={{ color: 'var(--navy-dark)', fontSize: '0.92rem' }}>
@@ -577,8 +575,6 @@ export const CustomerBooking = () => {
                 </span>
               </div>
 
-              {/* Selected addons display removed */}
-
               <hr className="my-0 opacity-5" />
               
               <div className="d-flex justify-content-between align-items-center">
@@ -659,7 +655,7 @@ export const CustomerBooking = () => {
                   <input
                     type="text"
                     id="promo-code-input"
-                    className="form-control font-monospace promo-code-input"
+                    className="form-control font-monospace promo-code-input text-dark fw-bold"
                     placeholder="VÍ DỤ: WASH10K"
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
@@ -691,7 +687,7 @@ export const CustomerBooking = () => {
             <button
               onClick={handleConfirmBooking}
               disabled={vehicles.length === 0 || isSubmitting}
-              className="app-btn-primary w-100 border-0 fw-bold"
+              className="app-btn-primary w-100 border-0 fw-bold text-dark"
               style={{
                 borderRadius: '12px',
                 padding: '14px',
@@ -718,55 +714,50 @@ export const CustomerBooking = () => {
       </div>
 
       {/* Voucher Selector Modal */}
-      {voucherModalOpen && (
-        <div id="voucher-modal-backdrop" className="confirm-modal-backdrop show" style={{ display: 'flex' }}>
-          <div className="confirm-modal-card animate-confirm-in" style={{ maxWidth: '440px', width: '100%' }}>
-            <div className="confirm-modal-header">
-              <h5 className="confirm-modal-title"><i className="fas fa-ticket-alt text-cyan me-2"></i>Ví Voucher của bạn</h5>
-              <button type="button" className="confirm-modal-close-btn" onClick={() => setVoucherModalOpen(false)}>
-                <i className="fas fa-times"></i>
-              </button>
+      <Modal
+        isOpen={voucherModalOpen}
+        onClose={() => setVoucherModalOpen(false)}
+        title="Ví Voucher của bạn"
+        maxWidth="440px"
+      >
+        <div className="text-center" id="voucher-selector-list">
+          {myVouchers.length === 0 ? (
+            <div className="text-center py-4 text-muted small">
+              <i className="fas fa-info-circle mb-2 fa-lg d-block" style={{ color: 'var(--cyan-electric)' }}></i>
+              Bạn không có voucher khả dụng nào trong ví.<br />
+              Hãy tích điểm để đổi quà nhé!
             </div>
-            <div className="confirm-modal-body text-center" id="voucher-selector-list">
-              {myVouchers.length === 0 ? (
-                <div className="text-center py-4 text-muted small">
-                  <i className="fas fa-info-circle mb-2 fa-lg d-block" style={{ color: 'var(--cyan-electric)' }}></i>
-                  Bạn không có voucher khả dụng nào trong ví.<br />
-                  Hãy tích điểm để đổi quà nhé!
+          ) : (
+            myVouchers.map((v, i) => {
+              let badgeText = v.rewardType === 'DiscountPercent' ? `Giảm ${v.rewardValue}%` : `Giảm ₫${Number(v.rewardValue).toLocaleString()}`;
+              return (
+                <div
+                  key={i}
+                  className="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between mb-2 select-voucher-item"
+                  style={{ transition: 'all 0.2s ease' }}
+                >
+                  <div className="text-start">
+                    <div className="fw-bold text-dark small mb-0.5">{v.title}</div>
+                    <div className="font-monospace text-secondary small" style={{ fontSize: '0.7rem' }}>Mã: {v.code}</div>
+                    <span className="badge bg-cyan text-dark small mt-1" style={{ fontSize: '0.6rem', fontWeight: 700 }}>{badgeText}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="ticket-btn"
+                    style={{ padding: '4px 10px', fontSize: '0.68rem', borderRadius: '8px' }}
+                    onClick={() => handleSelectVoucherFromModal(v.code)}
+                  >
+                    Chọn
+                  </button>
                 </div>
-              ) : (
-                myVouchers.map((v, i) => {
-                  let badgeText = v.rewardType === 'DiscountPercent' ? `Giảm ${v.rewardValue}%` : `Giảm ₫${Number(v.rewardValue).toLocaleString()}`;
-                  return (
-                    <div
-                      key={i}
-                      className="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between mb-2 select-voucher-item"
-                      style={{ transition: 'all 0.2s ease' }}
-                    >
-                      <div className="text-start">
-                        <div className="fw-bold text-dark small mb-0.5">{v.title}</div>
-                        <div className="font-monospace text-secondary small" style={{ fontSize: '0.7rem' }}>Mã: {v.code}</div>
-                        <span className="badge bg-cyan text-dark small mt-1" style={{ fontSize: '0.6rem', fontWeight: 700 }}>{badgeText}</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="ticket-btn"
-                        style={{ padding: '4px 10px', fontSize: '0.68rem', borderRadius: '8px' }}
-                        onClick={() => handleSelectVoucherFromModal(v.code)}
-                      >
-                        Chọn
-                      </button>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <div className="confirm-modal-footer justify-content-center">
-              <button className="confirm-cancel-btn w-50" onClick={() => setVoucherModalOpen(false)}>ĐÓNG</button>
-            </div>
-          </div>
+              );
+            })
+          )}
         </div>
-      )}
+        <div className="d-flex justify-content-center mt-3 pt-3 border-top">
+          <button className="confirm-cancel-btn w-50" onClick={() => setVoucherModalOpen(false)}>ĐÓNG</button>
+        </div>
+      </Modal>
 
       {/* Loading Overlay */}
       {isSubmitting && (
@@ -793,4 +784,5 @@ export const CustomerBooking = () => {
     </div>
   );
 };
+
 export default CustomerBooking;
