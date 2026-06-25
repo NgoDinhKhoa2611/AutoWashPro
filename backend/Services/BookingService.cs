@@ -277,10 +277,14 @@ namespace Auto_Wash.Services
                         finalPrice = calculatedBasePrice - promoDiscount;
                     }
 
-                    // Backend loyalty points calculation
+                    // Backend loyalty points calculation.
+                    // Points are multiplied by the customer's tier PointMultiplier
+                    // (e.g. Silver x1.2, Gold x1.5, Platinum x2.0), using the tier at booking time.
                     var config = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
                     int pointsPerThousand = config?.PointsPerThousandVND ?? 1;
-                    int pointsEarned = (finalPrice / 1000) * pointsPerThousand;
+                    decimal tierMultiplier = customerWithTier?.Tier?.PointMultiplier ?? 1.0m;
+                    int basePoints = (finalPrice / 1000) * pointsPerThousand;
+                    int pointsEarned = (int)Math.Floor(basePoints * tierMultiplier);
 
                     // Create Booking
                     var booking = new Booking
