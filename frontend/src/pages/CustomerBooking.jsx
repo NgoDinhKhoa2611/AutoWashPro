@@ -75,10 +75,10 @@ export const CustomerBooking = () => {
     const fetchLoyaltyStatus = async () => {
       try {
         const res = await customerService.getLoyaltyStatus();
-        if (res.success && res.bookingWindowDays) {
-          setBookingDaysWindow(res.bookingWindowDays);
+        if (res.success && res.status?.bookingWindowDays) {
+          setBookingDaysWindow(res.status.bookingWindowDays);
           const maxDate = new Date();
-          maxDate.setDate(today.getDate() + res.bookingWindowDays);
+          maxDate.setDate(today.getDate() + res.status.bookingWindowDays);
           const maxYear = maxDate.getFullYear();
           const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
           const maxDay = String(maxDate.getDate()).padStart(2, '0');
