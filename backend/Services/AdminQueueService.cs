@@ -582,6 +582,7 @@ namespace Auto_Wash.Services
                 q.Booking.CheckedOutAt = now;
                 q.Booking.CheckedOutBy = performerName ?? "Staff";
                 q.Booking.Status = BookingStatus.Completed;
+                q.Booking.CompletedAt ??= now;
 
                 // Guard against double-awarding: the background auto-complete service may have
                 // already awarded points (it writes an EARN LoyaltyTransaction but never sets PaidAt).
@@ -605,22 +606,38 @@ namespace Auto_Wash.Services
                     });
 
                     var customer = q.Booking.Customer;
+
+                    // Points are computed authoritatively at checkout using the tier
+                    // multiplier in effect right now, and that multiplier + tier are
+                    // snapshotted onto the booking for historical accuracy (doc §3, §7, §10).
+                    decimal multiplier = 1.0m;
+                    if (customer != null)
+                    {
+                        var tier = await _context.Tiers.FindAsync(customer.TierId);
+                        multiplier = tier?.PointMultiplier ?? 1.0m;
+                    }
+                    pointsEarned = LoyaltyPointsHelper.ComputeEarnedPoints(q.Booking.FinalPrice, multiplier);
+                    q.Booking.PointsEarned = pointsEarned;
+                    q.Booking.TierIdSnapshot = customer?.TierId;
+                    q.Booking.PointMultiplierSnapshot = multiplier;
+
                     if (customer != null)
                     {
                         customer.TotalVisits += 1;
                         customer.TotalSpend += q.Booking.FinalPrice;
                         customer.RankingBalance += q.Booking.FinalPrice;
-                        customer.PointBalance += q.Booking.PointsEarned;
-                        customer.LifetimePoints += q.Booking.PointsEarned;
+                        customer.PointBalance += pointsEarned;
+                        customer.LifetimePoints += pointsEarned;
                         customer.LastVisitAt = now;
                     }
 
                     _context.LoyaltyTransactions.Add(new LoyaltyTransaction
                     {
                         CustomerId = q.Booking.CustomerId,
-                        Points = q.Booking.PointsEarned,
+                        Points = pointsEarned,
                         TransactionType = "EARN",
                         BookingId = q.BookingId,
+                        Amount = q.Booking.FinalPrice,
                         Note = $"Tích điểm dịch vụ rửa xe {q.LicensePlate}",
                         CreatedAt = now
                     });
@@ -629,7 +646,7 @@ namespace Auto_Wash.Services
                     {
                         CustomerId = q.Booking.CustomerId,
                         Title = $"Lịch hẹn #{q.BookingId} đã được checkout thành công.",
-                        Message = $"Xe của bạn đã hoàn tất thanh toán & checkout. Bạn nhận +{q.Booking.PointsEarned} điểm!",
+                        Message = $"Xe của bạn đã hoàn tất thanh toán & checkout. Bạn nhận +{pointsEarned} điểm!",
                         Type = "points",
                         IsRead = false,
                         CreatedAt = now
@@ -650,11 +667,12 @@ namespace Auto_Wash.Services
 
             await _context.SaveChangesAsync();
 
-            // Re-evaluate membership tier now that this completed booking counts
-            // toward the rolling ranking window (booking is persisted above).
+            // Real-time UPGRADE check now that this completed booking counts toward
+            // the 6-month ranking window (doc §4). Downgrades are handled only by the
+            // monthly maintenance job, never here.
             if (q.Booking?.Customer != null)
             {
-                await TierHelper.RecalculateTierAsync(_context, q.Booking.Customer, now);
+                await TierHelper.EvaluateUpgradeAsync(_context, q.Booking.Customer, now);
                 await _context.SaveChangesAsync();
             }
 

@@ -16,6 +16,13 @@ namespace Auto_Wash.Data.Entities
 
         public int MinRankingBalance { get; set; } = 0;
 
+        /// <summary>
+        /// Minimum 6-month spend required to KEEP this tier (doc §5.2).
+        /// Lower than MinRankingBalance so customers have a grace margin.
+        /// Used only by the monthly maintenance/downgrade job.
+        /// </summary>
+        public int MaintainBalance { get; set; } = 0;
+
         public int BookingWindowDays { get; set; }
 
         public int QueuePriority { get; set; }
