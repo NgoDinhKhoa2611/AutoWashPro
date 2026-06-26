@@ -196,8 +196,8 @@ namespace Auto_Wash.Services
                 }
             }
 
-            // 2. Auto NoShow Detection (Threshold: 15 minutes)
-            int noShowThreshold = 15; // as per Phase 2 requirements
+            // 2. Auto NoShow Detection (Threshold configurable)
+            int noShowThreshold = _configuration.GetValue<int>("BookingCapacityConfig:CheckInWindowMinutes", 15);
             var noShowCutoff = now.AddMinutes(-noShowThreshold);
             var overdueBookings = await context.Bookings
                 .Include(b => b.Customer)
@@ -228,7 +228,7 @@ namespace Auto_Wash.Services
                 {
                     BookingId = booking.BookingId,
                     Action = "NoShow",
-                    Description = "Tự động đánh dấu Không Đến (No-Show) do quá hạn check-in 15 phút.",
+                    Description = $"Tự động đánh dấu Không Đến (No-Show) do quá hạn check-in {noShowThreshold} phút.",
                     PerformedBy = "System",
                     CreatedAt = now
                 });
@@ -238,7 +238,7 @@ namespace Auto_Wash.Services
                 {
                     CustomerId = booking.CustomerId,
                     Title = "Lịch hẹn quá hạn (No-Show)",
-                    Message = $"Lịch hẹn #{booking.BookingId} cho xe {booking.Vehicle?.LicensePlate} lúc {booking.ScheduledAt:HH:mm} đã tự động chuyển thành No-Show do trễ check-in 15 phút.",
+                    Message = $"Lịch hẹn #{booking.BookingId} cho xe {booking.Vehicle?.LicensePlate} lúc {booking.ScheduledAt:HH:mm} đã tự động chuyển thành No-Show do trễ check-in {noShowThreshold} phút.",
                     Type = "Booking",
                     IsRead = false,
                     CreatedAt = now

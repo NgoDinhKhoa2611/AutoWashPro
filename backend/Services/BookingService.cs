@@ -116,6 +116,16 @@ namespace Auto_Wash.Services
                 return (false, "Phương tiện không tồn tại hoặc không thuộc sở hữu của bạn. Vui lòng kiểm tra lại.", 0);
             }
 
+            // 1b. Validate active booking check
+            var hasActiveBooking = await _context.Bookings.AnyAsync(b => b.VehicleId == vehicle.VehicleId
+                && b.Status != BookingStatus.Completed
+                && b.Status != BookingStatus.Cancelled
+                && b.Status != BookingStatus.NoShow);
+            if (hasActiveBooking)
+            {
+                return (false, "This vehicle has an unfinished booking. Please complete or cancel the current booking before creating a new one.", 0);
+            }
+
             // 2. Validate time format
             DateTime scheduledAt;
             bool timeParsed = false;
@@ -161,17 +171,10 @@ namespace Auto_Wash.Services
             // 4. Validate booking window based on loyalty tier
             var customerWithTier = await _context.Customers
                 .Include(c => c.Tier)
+                .Include(c => c.Account)
                 .FirstOrDefaultAsync(c => c.CustomerId == customer.CustomerId);
             
             int bookingWindowDays = customerWithTier?.Tier?.BookingWindowDays ?? 7;
-            if (bookingWindowDays == 0)
-            {
-                string tierName = customerWithTier?.Tier?.TierName ?? "Member";
-                if (tierName.Contains("Platinum", StringComparison.OrdinalIgnoreCase)) bookingWindowDays = 14;
-                else if (tierName.Contains("Gold", StringComparison.OrdinalIgnoreCase)) bookingWindowDays = 12;
-                else if (tierName.Contains("Silver", StringComparison.OrdinalIgnoreCase)) bookingWindowDays = 10;
-                else bookingWindowDays = 7;
-            }
 
             if (scheduledAt.Date > DateTime.Today.AddDays(bookingWindowDays))
             {
@@ -209,7 +212,7 @@ namespace Auto_Wash.Services
                                       && b.ScheduledAt.Hour == scheduledAt.Hour);
                     if (slotCount >= maxVehicles)
                     {
-                        return (false, "This time slot is fully booked. Please select another time.", 0);
+                        return (false, "Khung giờ này đã đầy. Vui lòng chọn khung giờ khác.", 0);
                     }
 
                     // 7. Enforce exactly one default Standard Car Wash service (ID 999)
@@ -217,7 +220,7 @@ namespace Auto_Wash.Services
                         .FirstOrDefaultAsync(s => s.ServiceId == 999 && s.IsActive);
                     if (mainService == null)
                     {
-                        return (false, "Standard Car Wash service is not active or not seeded in the database.", 0);
+                        return (false, "Dịch vụ rửa xe tiêu chuẩn không hoạt động hoặc chưa được thiết lập.", 0);
                     }
 
                     int calculatedBasePrice = mainService.BasePrice;
@@ -292,7 +295,7 @@ namespace Auto_Wash.Services
                         CustomerId = customer.CustomerId,
                         VehicleId = vehicle.VehicleId,
                         ScheduledAt = scheduledAt,
-                        Status = BookingStatus.Pending,
+                        Status = BookingStatus.Confirmed,
                         BasePrice = calculatedBasePrice,
                         PromoDiscount = promoDiscount,
                         FinalPrice = finalPrice,
@@ -347,6 +350,23 @@ namespace Auto_Wash.Services
 
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
+
+                    // Trigger confirmation email immediately
+                    var emailModel = new BookingEmailModel
+                    {
+                        BookingId = booking.BookingId,
+                        CustomerName = customerWithTier?.Account?.FullName ?? "Khách hàng",
+                        Email = customerWithTier?.Account?.Email ?? "",
+                        LicensePlate = vehicle.LicensePlate,
+                        ScheduledAt = booking.ScheduledAt,
+                        FinalPrice = booking.FinalPrice,
+                        ServiceName = mainService.ServiceName
+                    };
+
+                    if (!string.IsNullOrWhiteSpace(emailModel.Email))
+                    {
+                        _bookingNotificationService.SendBookingConfirmedEmailInBackground(emailModel);
+                    }
 
                     // Audit Event Logging
                     _logger.LogInformation("[AUDIT EVENT] Booking Created: BookingId={BookingId}, CustomerId={CustomerId}, VehicleId={VehicleId}, ScheduledAt={ScheduledAt}, FinalPrice={FinalPrice}",
@@ -491,8 +511,11 @@ namespace Auto_Wash.Services
         {
             var booking = await _context.Bookings
                 .Include(b => b.Customer)
+                    .ThenInclude(c => c.Account)
                 .Include(b => b.Vehicle)
                 .Include(b => b.AppliedRedemption)
+                .Include(b => b.BookingServices)
+                    .ThenInclude(bs => bs.Service)
                 .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.CustomerId == customerId);
 
             if (booking == null)
@@ -551,6 +574,30 @@ namespace Auto_Wash.Services
 
             await _context.SaveChangesAsync();
 
+            // Load main service name
+            var mainService = booking.BookingServices
+                .Where(bs => !bs.Service.IsAddOn)
+                .Select(bs => bs.Service.ServiceName)
+                .FirstOrDefault() ?? "Dịch vụ rửa xe";
+
+            // Trigger background email
+            var emailModel = new BookingEmailModel
+            {
+                BookingId = booking.BookingId,
+                CustomerName = booking.Customer?.Account?.FullName ?? "Khách hàng",
+                Email = booking.Customer?.Account?.Email ?? "",
+                LicensePlate = booking.Vehicle?.LicensePlate ?? "",
+                ScheduledAt = booking.ScheduledAt,
+                FinalPrice = booking.FinalPrice,
+                ServiceName = mainService,
+                CancelReason = reason
+            };
+
+            if (!string.IsNullOrWhiteSpace(emailModel.Email))
+            {
+                _bookingNotificationService.SendBookingCancelledEmailInBackground(emailModel);
+            }
+
             return (true, "Hủy đơn đặt lịch thành công!");
         }
 
@@ -584,10 +631,6 @@ namespace Auto_Wash.Services
             {
                 return (false, "Lịch hẹn đã qua, không thể đổi lịch.");
             }
-            if ((booking.ScheduledAt - now).TotalMinutes < 60)
-            {
-                return (false, "Không thể đổi lịch hẹn trong vòng 60 phút trước giờ hẹn.");
-            }
 
             if (newScheduledAt < now)
             {
@@ -617,14 +660,6 @@ namespace Auto_Wash.Services
                 .FirstOrDefaultAsync(c => c.CustomerId == customerId);
             
             int bookingWindowDays = customerWithTier?.Tier?.BookingWindowDays ?? 7;
-            if (bookingWindowDays == 0)
-            {
-                string tierName = customerWithTier?.Tier?.TierName ?? "Member";
-                if (tierName.Contains("Platinum", StringComparison.OrdinalIgnoreCase)) bookingWindowDays = 14;
-                else if (tierName.Contains("Gold", StringComparison.OrdinalIgnoreCase)) bookingWindowDays = 12;
-                else if (tierName.Contains("Silver", StringComparison.OrdinalIgnoreCase)) bookingWindowDays = 10;
-                else bookingWindowDays = 7;
-            }
 
             if (newScheduledAt.Date > DateTime.Today.AddDays(bookingWindowDays))
             {

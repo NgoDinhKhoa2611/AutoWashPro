@@ -55,15 +55,7 @@ export const CustomerBooking = () => {
     };
     fetchConfig();
 
-    // Determine booking days window based on membership tier
-    const tier = (user?.tier || 'Standard Member').toUpperCase();
-    let days = 7;
-    if (tier.includes('PLATINUM')) days = 14;
-    else if (tier.includes('GOLD')) days = 12;
-    else if (tier.includes('SILVER')) days = 10;
-    setBookingDaysWindow(days);
-
-    // Calculate min/max dates
+    // Calculate min/max dates with a fallback booking window of 7 days
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -72,13 +64,31 @@ export const CustomerBooking = () => {
     setMinDateStr(todayStr);
     setBookingDate(todayStr);
 
-    const maxDate = new Date();
-    maxDate.setDate(today.getDate() + days);
-    const maxYear = maxDate.getFullYear();
-    const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
-    const maxDay = String(maxDate.getDate()).padStart(2, '0');
-    const maxDateStr = `${maxYear}-${maxMonth}-${maxDay}`;
-    setMaxDateStr(maxDateStr);
+    const fallbackMaxDate = new Date();
+    fallbackMaxDate.setDate(today.getDate() + 7);
+    const fallbackMaxYear = fallbackMaxDate.getFullYear();
+    const fallbackMaxMonth = String(fallbackMaxDate.getMonth() + 1).padStart(2, '0');
+    const fallbackMaxDay = String(fallbackMaxDate.getDate()).padStart(2, '0');
+    setMaxDateStr(`${fallbackMaxYear}-${fallbackMaxMonth}-${fallbackMaxDay}`);
+
+    // Determine booking days window dynamically from backend
+    const fetchLoyaltyStatus = async () => {
+      try {
+        const res = await customerService.getLoyaltyStatus();
+        if (res.success && res.bookingWindowDays) {
+          setBookingDaysWindow(res.bookingWindowDays);
+          const maxDate = new Date();
+          maxDate.setDate(today.getDate() + res.bookingWindowDays);
+          const maxYear = maxDate.getFullYear();
+          const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
+          const maxDay = String(maxDate.getDate()).padStart(2, '0');
+          setMaxDateStr(`${maxYear}-${maxMonth}-${maxDay}`);
+        }
+      } catch (err) {
+        console.error("Error loading loyalty status:", err);
+      }
+    };
+    fetchLoyaltyStatus();
 
     // Load vehicles
     const fetchVehicles = async () => {
@@ -95,10 +105,12 @@ export const CustomerBooking = () => {
               plate: v.licensePlate,
               type: `${v.brand} ${v.model} (${v.vehicleClass})`,
               lastWash: 'Vừa xong',
-              totalWashes: 0
+              totalWashes: 0,
+              hasActiveBooking: v.hasActiveBooking
             }));
             setVehicles(list);
-            setSelectedVehicle(list[0].plate);
+            const firstAvailable = list.find(v => !v.hasActiveBooking);
+            setSelectedVehicle(firstAvailable ? firstAvailable.plate : null);
           } else {
             setVehicles([]);
             setSelectedVehicle(null);
@@ -392,7 +404,8 @@ export const CustomerBooking = () => {
       }
     } catch (err) {
       console.error(err);
-      if (window.showToast) window.showToast('Đặt lịch thất bại. Vui lòng thử lại!', 'warning');
+      const errMsg = err.response?.data?.message || 'Đặt lịch thất bại. Vui lòng thử lại!';
+      if (window.showToast) window.showToast(errMsg, 'warning');
       setIsSubmitting(false);
     }
   }, [isSubmitting, selectedVehicle, selectedMain, bookingDate, bookingTime, minDateStr, maxDateStr, appliedVoucher, promoCode, navigate]);
@@ -424,25 +437,40 @@ export const CustomerBooking = () => {
                   </button>
                 </div>
               ) : (
-                vehicles.map((v, i) => (
-                  <div key={i} className="col-md-6">
-                    <div
-                      className={`selectable-card p-3 rounded-4 border h-100 ${selectedVehicle === v.plate ? 'selected' : 'bg-light border-light'}`}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleSelectVehicle(v.plate)}
-                    >
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="rounded-3 d-flex align-items-center justify-content-center bg-white border shadow-sm" style={{ width: '44px', height: '44px' }}>
-                          <i className="fas fa-car-side text-muted"></i>
-                        </div>
-                        <div>
-                          <div className="fw-bold" style={{ color: 'var(--navy-dark)', fontSize: '0.9rem' }}>{v.plate}</div>
-                          <small className="text-muted">{v.type}</small>
+                vehicles.map((v, i) => {
+                  const isDisabled = v.hasActiveBooking;
+                  return (
+                    <div key={i} className="col-md-6">
+                      <div
+                        className={`selectable-card p-3 rounded-4 border h-100 ${
+                          selectedVehicle === v.plate 
+                            ? 'selected' 
+                            : isDisabled 
+                              ? 'border-light bg-light opacity-60' 
+                              : 'bg-light border-light'
+                        }`}
+                        style={{ cursor: isDisabled ? 'not-allowed' : 'pointer' }}
+                        onClick={() => !isDisabled && handleSelectVehicle(v.plate)}
+                      >
+                        <div className="d-flex align-items-start gap-3">
+                          <div className="rounded-3 d-flex align-items-center justify-content-center bg-white border shadow-sm" style={{ width: '44px', height: '44px', flexShrink: 0 }}>
+                            <i className="fas fa-car-side text-muted"></i>
+                          </div>
+                          <div className="flex-grow-1">
+                            <div className="fw-bold" style={{ color: 'var(--navy-dark)', fontSize: '0.9rem' }}>{v.plate}</div>
+                            <small className="text-muted d-block">{v.type}</small>
+                            {isDisabled && (
+                              <div className="text-danger small mt-2 fw-medium" style={{ fontSize: '0.75rem', lineHeight: '1.3' }}>
+                                <i className="fas fa-exclamation-circle me-1"></i>
+                                This vehicle has an unfinished booking. Please complete or cancel the current booking before creating a new one.
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
