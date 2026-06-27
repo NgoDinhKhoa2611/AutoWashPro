@@ -205,7 +205,7 @@ export const CustomerLoyalty = () => {
   );
   const ladderResolved = currentLadderIdx >= 0;
   const nextLadderTier = ladderResolved
-    ? tierLadder[currentLadderIdx + 1] ?? null
+    ? (tierLadder[currentLadderIdx + 1] ?? null)
     : null;
 
   // Prefer the ladder (reactive to the previewed tier); fall back to the
@@ -214,12 +214,12 @@ export const CustomerLoyalty = () => {
     ? nextLadderTier
       ? nextLadderTier.minRankingBalance
       : null
-    : loyalty?.nextTierMin ?? null;
+    : (loyalty?.nextTierMin ?? null);
   const nextTierName = ladderResolved
     ? nextLadderTier
       ? nextLadderTier.name
       : null
-    : loyalty?.nextTierName ?? nextTierDetails.nextTier;
+    : (loyalty?.nextTierName ?? nextTierDetails.nextTier);
   const isMaxTier = !nextTierMin;
   const amountToNext =
     nextTierMin != null ? Math.max(0, nextTierMin - windowedSpend) : 0;
@@ -277,7 +277,11 @@ export const CustomerLoyalty = () => {
               <div className="mb-2">
                 <div
                   className="text-white mb-2"
-                  style={{ fontSize: "0.98rem", fontWeight: 600, opacity: 0.95 }}
+                  style={{
+                    fontSize: "0.98rem",
+                    fontWeight: 600,
+                    opacity: 0.95,
+                  }}
                 >
                   {isMaxTier ? (
                     <>Bạn đang ở hạng cao nhất 🎉</>
@@ -296,7 +300,10 @@ export const CustomerLoyalty = () => {
                   style={{ fontSize: "0.66rem", opacity: 0.8, fontWeight: 700 }}
                 >
                   <span
-                    style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}
+                    style={{
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
                   >
                     Chi tiêu {windowMonths} tháng: {fmtVnd(windowedSpend)}
                   </span>
@@ -379,20 +386,20 @@ export const CustomerLoyalty = () => {
               style={{ fontSize: "0.85rem" }}
             >
               <div className="d-flex align-items-start gap-2.5">
-                <i className="fas fa-check-circle text-cyan mt-1"></i>
+                <i className="fas fa-check-circle text-cyan mt-1 me-2"></i>
                 <span id="perk-queue">
                   <strong>Ưu tiên hàng đợi:</strong> {nextTierDetails.queuePerk}
                 </span>
               </div>
               <div className="d-flex align-items-start gap-2.5">
-                <i className="fas fa-check-circle text-cyan mt-1"></i>
+                <i className="fas fa-check-circle text-cyan mt-1 me-2"></i>
                 <span id="perk-multiplier">
                   <strong>Hệ số tích điểm:</strong> Nhân hệ số{" "}
                   {nextTierDetails.multiplier} điểm thưởng.
                 </span>
               </div>
               <div className="d-flex align-items-start gap-2.5">
-                <i className="fas fa-check-circle text-cyan mt-1"></i>
+                <i className="fas fa-check-circle text-cyan mt-1 me-2"></i>
                 <span id="perk-birthday">
                   <strong>Quà sinh nhật:</strong> {nextTierDetails.birthday}
                 </span>
