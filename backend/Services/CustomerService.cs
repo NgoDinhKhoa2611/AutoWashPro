@@ -64,7 +64,9 @@ namespace Auto_Wash.Services
             {
                 redemptionId = r.RedemptionId,
                 title = r.Reward.RewardName,
-                code = r.Reward.PointCost == 0 ? $"WELCOME10-{customerId}" : $"AW-RED-{r.RedemptionId}",
+                code = !string.IsNullOrEmpty(r.VoucherCode)
+                    ? r.VoucherCode
+                    : (r.Reward.PointCost == 0 ? $"WELCOME10-{customerId}" : $"AW-RED-{r.RedemptionId}"),
                 rewardType = r.Reward.RewardType,
                 rewardValue = r.Reward.DiscountValue,
                 status = r.Status == RedemptionStatus.Active ? 1 : 2, // 1 = Available, 2 = Used
@@ -125,6 +127,7 @@ namespace Auto_Wash.Services
                 return (false, $"Bạn không đủ điểm để đổi phần thưởng này (Cần {reward.PointCost} PTS, hiện có {customer.PointBalance} PTS).");
             }
 
+            var now = DateTime.Now;
             customer.PointBalance -= reward.PointCost;
 
             var redemption = new RewardRedemption
@@ -132,18 +135,23 @@ namespace Auto_Wash.Services
                 CustomerId = customerId,
                 RewardId = rewardId,
                 Status = RedemptionStatus.Active,
-                ExpiresAt = DateTime.Now.AddDays(reward.ValidDays),
-                RedeemedAt = DateTime.Now
+                ExpiresAt = now.AddDays(reward.ValidDays),
+                RedeemedAt = now
             };
             _context.RewardRedemptions.Add(redemption);
+            await _context.SaveChangesAsync(); // assigns RedemptionId
+
+            // Persist the unique voucher code "AW-RED-{id}" (doc §6.2).
+            redemption.VoucherCode = $"AW-RED-{redemption.RedemptionId}";
 
             _context.LoyaltyTransactions.Add(new LoyaltyTransaction
             {
                 CustomerId = customerId,
                 Points = -reward.PointCost,
                 TransactionType = "REDEEM",
+                RedemptionId = redemption.RedemptionId,
                 Note = $"Đổi điểm nhận quà: {reward.RewardName}",
-                CreatedAt = DateTime.Now
+                CreatedAt = now
             });
 
             _context.Notifications.Add(new Notification
@@ -153,7 +161,7 @@ namespace Auto_Wash.Services
                 Message = $"Bạn đã đổi thành công {reward.PointCost} điểm lấy voucher '{reward.RewardName}'.",
                 Type = "Voucher",
                 IsRead = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = now
             });
 
             await _context.SaveChangesAsync();
@@ -187,7 +195,7 @@ namespace Auto_Wash.Services
             var customer = await _context.Customers.FirstOrDefaultAsync(c => c.CustomerId == customerId);
             if (customer == null) return null;
 
-            int windowedSpend = await TierHelper.RecalculateTierAsync(_context, customer, now);
+            int windowedSpend = await TierHelper.EvaluateUpgradeAsync(_context, customer, now);
             await _context.SaveChangesAsync();
 
             var tiers = await _context.Tiers.OrderBy(t => t.MinRankingBalance).ToListAsync();

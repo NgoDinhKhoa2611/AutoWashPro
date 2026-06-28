@@ -59,6 +59,10 @@ namespace Auto_Wash.Services
             var now = DateTime.Now;
             var today = DateTime.Today;
 
+            // Customers whose booking is auto-completed this tick — re-checked for
+            // a real-time tier upgrade after the batch is persisted (doc §4).
+            var awardedCustomerIds = new HashSet<int>();
+
             // 1. Fetch active queue items for today that are not completed, cancelled, or archived
             var activeQueues = await context.Queues
                 .Include(q => q.Booking)
@@ -364,6 +368,57 @@ namespace Auto_Wash.Services
             {
                 await context.SaveChangesAsync();
             }
+
+            // Real-time UPGRADE re-check for just-completed customers. Runs after the
+            // save above so the new Completed booking counts in the 6-month window (doc §4).
+            if (awardedCustomerIds.Count > 0)
+            {
+                bool tierChanged = false;
+                foreach (var custId in awardedCustomerIds)
+                {
+                    var cust = await context.Customers.FirstOrDefaultAsync(c => c.CustomerId == custId);
+                    if (cust != null)
+                    {
+                        await TierHelper.EvaluateUpgradeAsync(context, cust, now);
+                        tierChanged = true;
+                    }
+                }
+                if (tierChanged) await context.SaveChangesAsync();
+            }
+
+            // 4. Monthly tier maintenance / downgrade review (doc §5, §9).
+            await ProcessMonthlyTierReviewAsync(context, now);
+        }
+
+        /// <summary>
+        /// Monthly maintenance job (doc §9). On/after the configured review day, scans
+        /// customers not yet reviewed this month and demotes any whose 6-month spend is
+        /// below their tier's MaintainBalance. LastTierReviewAt makes it idempotent and
+        /// lets it catch up if the server was down on the 1st. Batched to stay light.
+        /// </summary>
+        private async Task ProcessMonthlyTierReviewAsync(AutoWashDbContext context, DateTime now)
+        {
+            var config = await context.LoyaltyConfigs.FirstOrDefaultAsync();
+            int reviewDay = config?.TierReviewDayOfMonth ?? 1;
+            if (now.Day < reviewDay) return;
+
+            var firstOfMonth = new DateTime(now.Year, now.Month, 1);
+            var due = await context.Customers
+                .Where(c => c.LastTierReviewAt == null || c.LastTierReviewAt < firstOfMonth)
+                .OrderBy(c => c.CustomerId)
+                .Take(25)
+                .ToListAsync();
+            if (due.Count == 0) return;
+
+            int downgrades = 0;
+            foreach (var c in due)
+            {
+                if (await TierHelper.RunMaintenanceAsync(context, c, now)) downgrades++;
+            }
+            await context.SaveChangesAsync();
+
+            _logger.LogInformation("[TIER REVIEW] Reviewed {Count} customer(s); {Downgrades} downgraded.",
+                due.Count, downgrades);
         }
     }
 }

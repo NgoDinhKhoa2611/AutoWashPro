@@ -240,14 +240,14 @@ namespace Auto_Wash.Services
             int upgrades = 0, downgrades = 0;
             var now = DateTime.Now;
 
-            // Tier is driven by spend within the rolling ranking window
-            // (see TierHelper). Re-evaluate every customer against that window.
+            // Manual admin trigger of the monthly maintenance review (doc §5, §9):
+            // each customer is kept or demoted based on their tier's MaintainBalance.
+            // Upgrades happen in real time at checkout, not here.
             foreach (var c in customers)
             {
                 int oldTierId = c.TierId;
-                await TierHelper.RecalculateTierAsync(_context, c, now);
-                if (c.TierId > oldTierId) upgrades++;
-                else if (c.TierId < oldTierId) downgrades++;
+                await TierHelper.RunMaintenanceAsync(_context, c, now);
+                if (c.TierId < oldTierId) downgrades++;
             }
 
             await _context.SaveChangesAsync();

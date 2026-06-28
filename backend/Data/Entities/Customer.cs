@@ -35,6 +35,12 @@ namespace Auto_Wash.Data.Entities
 
         public DateTime? LastVisitAt { get; set; }
 
+        /// <summary>
+        /// Last time this customer was scanned by the monthly tier-review job.
+        /// Used to make the job idempotent (review each customer once per month).
+        /// </summary>
+        public DateTime? LastTierReviewAt { get; set; }
+
         // Navigation properties
         [ForeignKey("AccountId")]
         public virtual Account Account { get; set; } = null!;

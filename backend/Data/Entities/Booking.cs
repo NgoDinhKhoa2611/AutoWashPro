@@ -91,6 +91,13 @@ namespace Auto_Wash.Data.Entities
         [MaxLength(100)]
         public string? CheckedOutBy { get; set; }
 
+        /// <summary>Customer's tier at the moment of checkout — frozen so historical reports stay accurate if tier config changes (doc §10).</summary>
+        public int? TierIdSnapshot { get; set; }
+
+        /// <summary>Point multiplier applied to this invoice, frozen at checkout (doc §10).</summary>
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? PointMultiplierSnapshot { get; set; }
+
         // Navigation properties
         [ForeignKey("CustomerId")]
         public virtual Customer Customer { get; set; } = null!;

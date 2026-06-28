@@ -30,6 +30,13 @@ namespace Auto_Wash.Data.Entities
 
         public int? ToTierId { get; set; }
 
+        /// <summary>Actual booking amount (FinalPrice) tied to an EARN transaction, for accounting reconciliation (doc §10).</summary>
+        public int? Amount { get; set; }
+
+        /// <summary>The 6-month window scanned when a tier change occurred, e.g. "26/12/2025 - 26/06/2026" (doc §10).</summary>
+        [MaxLength(100)]
+        public string? SpendingWindow { get; set; }
+
         [MaxLength(300)]
         public string? Note { get; set; }
 

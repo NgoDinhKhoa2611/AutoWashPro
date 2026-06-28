@@ -282,14 +282,11 @@ namespace Auto_Wash.Services
                         finalPrice = calculatedBasePrice - promoDiscount;
                     }
 
-                    // Backend loyalty points calculation.
-                    // Points are multiplied by the customer's tier PointMultiplier
-                    // (e.g. Silver x1.2, Gold x1.5, Platinum x2.0), using the tier at booking time.
-                    var config = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
-                    int pointsPerThousand = config?.PointsPerThousandVND ?? 1;
+                    // Estimated loyalty points for display at booking time (doc §3.2:
+                    // 10.000 VNĐ = 1 base point × tier multiplier). The authoritative
+                    // award is recomputed at checkout against the then-current tier.
                     decimal tierMultiplier = customerWithTier?.Tier?.PointMultiplier ?? 1.0m;
-                    int basePoints = (finalPrice / 1000) * pointsPerThousand;
-                    int pointsEarned = (int)Math.Floor(basePoints * tierMultiplier);
+                    int pointsEarned = LoyaltyPointsHelper.ComputeEarnedPoints(finalPrice, tierMultiplier);
 
                     // Create Booking
                     var booking = new Booking

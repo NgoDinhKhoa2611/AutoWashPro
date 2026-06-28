@@ -27,6 +27,10 @@ namespace Auto_Wash.Data.Entities
 
         public DateTime? UsedAt { get; set; }
 
+        /// <summary>Unique voucher identifier presented at checkout, format "AW-RED-{RedemptionId}" (doc §6.2, §10).</summary>
+        [MaxLength(50)]
+        public string? VoucherCode { get; set; }
+
         // Navigation properties
         [ForeignKey("CustomerId")]
         public virtual Customer Customer { get; set; } = null!;
