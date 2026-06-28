@@ -103,6 +103,8 @@ export const CustomerBookings = () => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
   const [maxVehiclesPerSlot, setMaxVehiclesPerSlot] = useState(3);
+  const [bookingDaysWindow, setBookingDaysWindow] = useState(7);
+  const [maxDateStr, setMaxDateStr] = useState('');
 
   useEffect(() => {
     customerService.getBookingConfig()
@@ -118,6 +120,22 @@ export const CustomerBookings = () => {
         }
       })
       .catch(err => console.error("Error loading booking config:", err));
+
+    customerService.getLoyaltyStatus()
+      .then(res => {
+        if (res.success && res.status?.bookingWindowDays) {
+          setBookingDaysWindow(res.status.bookingWindowDays);
+          
+          const today = new Date();
+          const maxDate = new Date();
+          maxDate.setDate(today.getDate() + res.status.bookingWindowDays);
+          const maxYear = maxDate.getFullYear();
+          const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
+          const maxDay = String(maxDate.getDate()).padStart(2, '0');
+          setMaxDateStr(`${maxYear}-${maxMonth}-${maxDay}`);
+        }
+      })
+      .catch(err => console.error("Error loading loyalty status:", err));
   }, []);
 
   useEffect(() => {
@@ -307,6 +325,20 @@ export const CustomerBookings = () => {
       return;
     }
 
+    if (rescheduleDate) {
+      const selDate = new Date(rescheduleDate + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const maxDate = new Date(today.getTime() + bookingDaysWindow * 24 * 60 * 60 * 1000);
+      maxDate.setHours(23, 59, 59, 999);
+      if (selDate < today || selDate > maxDate) {
+        if (window.showToast) {
+          window.showToast(`Ngày chọn không hợp lệ. Hạng thành viên của bạn chỉ được đổi lịch từ ngày hôm nay đến ${maxDate.toLocaleDateString('vi-VN')}.`, 'warning');
+        }
+        return;
+      }
+    }
+
     const scheduledAt = `${rescheduleDate}T${rescheduleTime}:00`;
     try {
       const res = await customerService.rescheduleBooking(detailModalBooking.bookingId, scheduledAt, rescheduleReason.trim());
@@ -323,7 +355,7 @@ export const CustomerBookings = () => {
       const errMsg = err.response?.data?.message || 'Đã xảy ra lỗi khi đổi lịch hẹn.';
       if (window.showToast) window.showToast(errMsg, 'danger');
     }
-  }, [rescheduleDate, rescheduleTime, rescheduleReason, detailModalBooking, loadData, handleOpenDetail]);
+  }, [rescheduleDate, rescheduleTime, rescheduleReason, detailModalBooking, loadData, handleOpenDetail, bookingDaysWindow]);
 
   // Cancel Booking
   const handleOpenCancel = useCallback((bookingId, e) => {
@@ -920,6 +952,7 @@ export const CustomerBookings = () => {
                       style={{ fontSize: '0.82rem', borderRadius: '8px' }}
                       value={rescheduleDate}
                       min={new Date().toLocaleDateString('sv-SE')}
+                      max={maxDateStr}
                       onChange={e => setRescheduleDate(e.target.value)}
                     />
                   </div>

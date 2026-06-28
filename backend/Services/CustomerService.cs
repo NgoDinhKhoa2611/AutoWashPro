@@ -175,5 +175,53 @@ namespace Auto_Wash.Services
                 icon = r.RewardType == "DiscountPercent" ? "fa-percent" : r.RewardType == "Free_Wash" ? "fa-soap" : "fa-gift"
             }).Cast<object>().ToList();
         }
+
+        /// <summary>
+        /// Loyalty status for the member card: redemption points plus rolling
+        /// ranking-window spend and progress toward the next tier. Lazily
+        /// re-evaluates the customer's tier from their windowed spend.
+        /// </summary>
+        public async Task<object?> GetLoyaltyStatusAsync(int customerId)
+        {
+            var now = DateTime.Now;
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.CustomerId == customerId);
+            if (customer == null) return null;
+
+            int windowedSpend = await TierHelper.RecalculateTierAsync(_context, customer, now);
+            await _context.SaveChangesAsync();
+
+            var tiers = await _context.Tiers.OrderBy(t => t.MinRankingBalance).ToListAsync();
+            var current = tiers.FirstOrDefault(t => t.TierId == customer.TierId) ?? tiers.First();
+            var next = tiers
+                .Where(t => t.MinRankingBalance > current.MinRankingBalance)
+                .OrderBy(t => t.MinRankingBalance)
+                .FirstOrDefault();
+
+            return new
+            {
+                points = customer.PointBalance,
+                lifetimePoints = customer.LifetimePoints,
+                totalVisits = customer.TotalVisits,
+                tierName = current.TierName,
+                bookingWindowDays = current.BookingWindowDays,
+                multiplier = current.PointMultiplier,
+                discountPercent = current.DiscountPercent,
+                windowMonths = TierHelper.RankingWindowMonths,
+                windowedSpend = windowedSpend,
+                currentTierMin = current.MinRankingBalance,
+                nextTierName = next?.TierName,
+                nextTierMin = next?.MinRankingBalance,
+                amountToNextTier = next != null ? Math.Max(0, next.MinRankingBalance - windowedSpend) : 0,
+                // Full tier ladder so the UI can compute the spend-to-rank-up gap
+                // for any tier the user previews (ascending by threshold).
+                tiers = tiers.Select(t => new
+                {
+                    tierId = t.TierId,
+                    name = t.TierName,
+                    minRankingBalance = t.MinRankingBalance,
+                    bookingWindowDays = t.BookingWindowDays
+                }).ToList()
+            };
+        }
     }
 }

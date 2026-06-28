@@ -8,6 +8,7 @@ const TIER_DATA = {
   "Standard Member": {
     color: "#64748b",
     cardClass: "tier-member",
+    dbName: "Member",
     multiplier: "x1.0",
     queuePerk: "Xếp hàng theo thứ tự thông thường.",
     birthday: "Không có ưu đãi sinh nhật.",
@@ -17,7 +18,8 @@ const TIER_DATA = {
   "Silver Member": {
     color: "#94a3b8",
     cardClass: "tier-silver",
-    multiplier: "x1.1",
+    dbName: "Silver",
+    multiplier: "x1.2",
     queuePerk: "Ưu tiên hàng đợi trước khách thường.",
     birthday: "Tặng 01 lần rửa xe phổ thông miễn phí.",
     nextTier: "Gold",
@@ -26,7 +28,8 @@ const TIER_DATA = {
   "Gold Member": {
     color: "#ffcf33",
     cardClass: "tier-gold",
-    multiplier: "x1.2",
+    dbName: "Gold",
+    multiplier: "x1.5",
     queuePerk: "Bypass hàng rửa xe thường. Vào thẳng ô rửa VIP.",
     birthday:
       "Tặng 01 combo cao cấp rửa xe + hút bụi nội thất miễn phí vào tháng sinh nhật.",
@@ -36,7 +39,8 @@ const TIER_DATA = {
   "Platinum Member": {
     color: "#0ea5e9",
     cardClass: "tier-platinum",
-    multiplier: "x1.5",
+    dbName: "Platinum",
+    multiplier: "x2.0",
     queuePerk: "Ưu tiên TUYỆT ĐỐI. Phục vụ ngay không chờ đợi.",
     birthday: "Tặng gói chăm sóc xe toàn diện + bộ quà VIP tháng sinh nhật.",
     nextTier: "Diamond Ultimate",
@@ -52,6 +56,18 @@ export const CustomerLoyalty = () => {
 
   const [pendingRedeem, setPendingRedeem] = useState(null);
   const [redeemModalOpen, setRedeemModalOpen] = useState(false);
+  const [loyalty, setLoyalty] = useState(null);
+
+  const loadLoyaltyStatus = async () => {
+    try {
+      const res = await customerService.getLoyaltyStatus();
+      if (res && res.success && res.status) {
+        setLoyalty(res.status);
+      }
+    } catch (e) {
+      console.error("Failed to load loyalty status", e);
+    }
+  };
 
   const fetchClaimedVouchers = async () => {
     try {
@@ -78,6 +94,7 @@ export const CustomerLoyalty = () => {
   useEffect(() => {
     fetchClaimedVouchers();
     loadRewards();
+    loadLoyaltyStatus();
 
     const query = new URLSearchParams(window.location.search);
     const tab = query.get("tab");
@@ -171,12 +188,45 @@ export const CustomerLoyalty = () => {
   } else if (rawTier === "Platinum" || rawTier === "Platinum Member") {
     currentTier = "Platinum Member";
   }
-  const pts = user?.points ?? 0;
+  const pts = loyalty?.points ?? user?.points ?? 0;
   const nextTierDetails =
     TIER_DATA[currentTier] || TIER_DATA["Standard Member"];
-  const remaining = nextTierDetails.neededPts
-    ? Math.max(0, nextTierDetails.neededPts - pts) + " PTS"
-    : "Tối cao";
+
+  // Ranking is driven by spend within a rolling 6-month window (from the backend),
+  // not by loyalty points. The "spend to rank up" amount + progress are computed
+  // against the tier currently shown, so the simulator buttons below update the
+  // figure live — using the full tier ladder returned by the backend.
+  const windowMonths = loyalty?.windowMonths ?? 6;
+  const windowedSpend = loyalty?.windowedSpend ?? 0;
+  const tierLadder = loyalty?.tiers ?? [];
+
+  const currentLadderIdx = tierLadder.findIndex(
+    (t) => t.name === nextTierDetails.dbName,
+  );
+  const ladderResolved = currentLadderIdx >= 0;
+  const nextLadderTier = ladderResolved
+    ? tierLadder[currentLadderIdx + 1] ?? null
+    : null;
+
+  // Prefer the ladder (reactive to the previewed tier); fall back to the
+  // backend's current/next pair when the ladder isn't available.
+  const nextTierMin = ladderResolved
+    ? nextLadderTier
+      ? nextLadderTier.minRankingBalance
+      : null
+    : loyalty?.nextTierMin ?? null;
+  const nextTierName = ladderResolved
+    ? nextLadderTier
+      ? nextLadderTier.name
+      : null
+    : loyalty?.nextTierName ?? nextTierDetails.nextTier;
+  const isMaxTier = !nextTierMin;
+  const amountToNext =
+    nextTierMin != null ? Math.max(0, nextTierMin - windowedSpend) : 0;
+  const spendProgressPct = nextTierMin
+    ? Math.min(100, Math.round((windowedSpend / nextTierMin) * 100))
+    : 100;
+  const fmtVnd = (n) => "₫" + Number(n || 0).toLocaleString("vi-VN");
 
   return (
     <div className="container-fluid py-4">
@@ -220,8 +270,58 @@ export const CustomerLoyalty = () => {
                 className="text-white mb-3"
                 style={{ opacity: 0.7, fontSize: "0.85rem" }}
               >
-                AutoWash Loyalty Points
+                AutoWash Loyalty Points · dùng để đổi quà
               </p>
+
+              {/* Spend-to-rank-up amount (reactive to the previewed tier) + progress */}
+              <div className="mb-2">
+                <div
+                  className="text-white mb-2"
+                  style={{ fontSize: "0.98rem", fontWeight: 600, opacity: 0.95 }}
+                >
+                  {isMaxTier ? (
+                    <>Bạn đang ở hạng cao nhất 🎉</>
+                  ) : (
+                    <>
+                      Thanh toán thêm{" "}
+                      <strong style={{ fontWeight: 800 }}>
+                        {fmtVnd(amountToNext)}
+                      </strong>{" "}
+                      để thăng hạng{nextTierName ? ` ${nextTierName}` : ""} ›
+                    </>
+                  )}
+                </div>
+                <div
+                  className="d-flex justify-content-between mb-1 text-white"
+                  style={{ fontSize: "0.66rem", opacity: 0.8, fontWeight: 700 }}
+                >
+                  <span
+                    style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}
+                  >
+                    Chi tiêu {windowMonths} tháng: {fmtVnd(windowedSpend)}
+                  </span>
+                  {!isMaxTier && <span>{fmtVnd(nextTierMin)}</span>}
+                </div>
+                <div
+                  style={{
+                    height: 8,
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.22)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${spendProgressPct}%`,
+                      height: "100%",
+                      borderRadius: 999,
+                      background: "var(--cyan-electric, #0ea5e9)",
+                      transition: "width .4s ease",
+                    }}
+                  />
+                </div>
+              </div>
+
               <div className="d-flex justify-content-between align-items-center mt-4">
                 <div>
                   <small
@@ -239,7 +339,7 @@ export const CustomerLoyalty = () => {
                     className="fw-bold text-cyan mt-1"
                     style={{ fontSize: "0.88rem" }}
                   >
-                    {nextTierDetails.nextTier} — còn {remaining}
+                    {isMaxTier ? "Tối cao" : nextTierName}
                   </div>
                 </div>
                 <div className="text-end">
@@ -304,7 +404,7 @@ export const CustomerLoyalty = () => {
               onClick={() => {
                 if (window.showToast)
                   window.showToast(
-                    "Quy định: Mỗi 1.000đ chi tiêu = 1 PTS. Hạng VIP nhân hệ số: Bạc x1.1, Vàng x1.2, Kim Cương x1.5.",
+                    `Tích điểm: (chi tiêu ÷ 1.000đ) × hệ số hạng — Bạc x1.2, Vàng x1.5, Bạch Kim x2.0. Hạng được xét theo tổng chi tiêu trong ${windowMonths} tháng gần nhất (điểm dùng để đổi quà, không ảnh hưởng hạng).`,
                     "info",
                   );
               }}

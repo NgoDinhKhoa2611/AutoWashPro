@@ -239,6 +239,16 @@ namespace Auto_Wash.Services
                 booking.AppliedRedemption.BookingId = null;
             }
 
+            // Create Audit Log
+            _context.BookingAuditLogs.Add(new BookingAuditLog
+            {
+                BookingId = booking.BookingId,
+                Action = "Cancelled",
+                Description = $"Hủy lịch hẹn bởi Quản trị viên. Lý do: {reason}",
+                PerformedBy = "Admin",
+                CreatedAt = DateTime.Now
+            });
+
             // Create notification for customer
             _context.Notifications.Add(new Notification
             {
@@ -294,18 +304,19 @@ namespace Auto_Wash.Services
                 return (false, "Không tìm thấy đơn đặt lịch.", 0);
             }
 
-            // Check-in window validation (±15 minutes)
+            // Check-in window validation
             var now = DateTime.Now;
-            var earliestAllowed = booking.ScheduledAt.AddMinutes(-15);
-            var latestAllowed = booking.ScheduledAt.AddMinutes(15);
+            int checkInWindowMinutes = _configuration.GetValue<int>("BookingCapacityConfig:CheckInWindowMinutes", 15);
+            var earliestAllowed = booking.ScheduledAt.AddMinutes(-checkInWindowMinutes);
+            var latestAllowed = booking.ScheduledAt.AddMinutes(checkInWindowMinutes);
 
             if (now < earliestAllowed)
             {
-                return (false, $"Chưa đến thời gian check-in! Bạn chỉ có thể check-in sớm tối đa 15 phút (từ {earliestAllowed:HH:mm}).", 0);
+                return (false, $"Chưa đến thời gian check-in! Bạn chỉ có thể check-in sớm tối đa {checkInWindowMinutes} phút (từ {earliestAllowed:HH:mm}).", 0);
             }
             if (now > latestAllowed)
             {
-                return (false, $"Đã quá giờ check-in! Bạn chỉ có thể check-in trễ tối đa 15 phút (trước {latestAllowed:HH:mm}).", 0);
+                return (false, $"Đã quá giờ check-in! Bạn chỉ có thể check-in trễ tối đa {checkInWindowMinutes} phút (trước {latestAllowed:HH:mm}).", 0);
             }
 
             if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.WaitingCheckout)
@@ -425,6 +436,17 @@ namespace Auto_Wash.Services
             if (!allowedSlots.Contains(scheduledTimeStr))
             {
                 return (false, "Thời gian đặt lịch không hợp lệ. Vui lòng chọn đúng khung giờ hoạt động.");
+            }
+
+            var customerWithTier = await _context.Customers
+                .Include(c => c.Tier)
+                .FirstOrDefaultAsync(c => c.CustomerId == booking.CustomerId);
+            
+            int bookingWindowDays = customerWithTier?.Tier?.BookingWindowDays ?? 7;
+
+            if (newScheduledAt.Date > DateTime.Today.AddDays(bookingWindowDays))
+            {
+                return (false, $"Hạng thành viên của khách hàng chỉ được đặt trước tối đa {bookingWindowDays} ngày.");
             }
 
             var oldScheduledAt = booking.ScheduledAt;

@@ -162,6 +162,11 @@ export const customerService = {
     return response.data;
   },
 
+  getLoyaltyStatus: async () => {
+    const response = await api.get('/Customer/GetLoyaltyStatus');
+    return response.data;
+  },
+
   redeemReward: async (rewardId) => {
     const response = await api.post('/Customer/RedeemReward', {
       RewardId: rewardId
