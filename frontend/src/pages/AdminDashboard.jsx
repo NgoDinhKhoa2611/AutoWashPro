@@ -74,6 +74,12 @@ export const AdminDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
     calculateRealtimeStats();
+
+    const intervalId = setInterval(() => {
+      calculateRealtimeStats();
+    }, 10000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const calculateRealtimeStats = async () => {

@@ -308,9 +308,9 @@ namespace Auto_Wash.Services
                 return (false, $"Đã quá giờ check-in! Bạn chỉ có thể check-in trễ tối đa 15 phút (trước {latestAllowed:HH:mm}).", 0);
             }
 
-            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.WaitingCheckout)
             {
-                return (false, $"Không thể check-in lịch đặt đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}.", 0);
+                return (false, $"Không thể check-in lịch đặt đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : booking.Status == BookingStatus.WaitingCheckout ? "chờ thanh toán" : "hoàn thành")}.", 0);
             }
 
             if (booking.Status != BookingStatus.Confirmed)
@@ -397,9 +397,9 @@ namespace Auto_Wash.Services
                 return (false, "Không tìm thấy đơn đặt lịch.");
             }
 
-            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.WaitingCheckout)
             {
-                return (false, $"Không thể đổi lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}.");
+                return (false, $"Không thể đổi lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : booking.Status == BookingStatus.WaitingCheckout ? "chờ thanh toán" : "hoàn thành")}.");
             }
 
             if (booking.Status != BookingStatus.Pending && booking.Status != BookingStatus.Confirmed)

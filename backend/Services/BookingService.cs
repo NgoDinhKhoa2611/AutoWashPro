@@ -55,6 +55,7 @@ namespace Auto_Wash.Services
                 .Include(b => b.BookingServices)
                     .ThenInclude(bs => bs.Service)
                 .Include(b => b.Queues)
+                .Include(b => b.Payment)
                 .Where(b => b.CustomerId == customerId 
                     && b.CheckedOutAt == null
                     && b.Status != BookingStatus.Cancelled
@@ -63,7 +64,8 @@ namespace Auto_Wash.Services
                         || b.Status == BookingStatus.Confirmed 
                         || b.Status == BookingStatus.CheckedIn
                         || b.Status == BookingStatus.Washing
-                        || (b.Status == BookingStatus.Completed && b.PaidAt >= tenMinutesAgo)))
+                        || b.Status == BookingStatus.WaitingCheckout
+                        || (b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt >= tenMinutesAgo)))
                 .ToListAsync();
 
             if (!bookings.Any()) return null;
@@ -73,7 +75,7 @@ namespace Auto_Wash.Services
                     var queue = b.Queues.FirstOrDefault();
                     if (queue != null && queue.Status != QueueStatus.Completed && queue.Status != QueueStatus.Cancelled && queue.Status != QueueStatus.Archived)
                         return 1; // Priority 1: Active in Queue
-                    if (b.Status == BookingStatus.CheckedIn || b.Status == BookingStatus.Washing)
+                    if (b.Status == BookingStatus.CheckedIn || b.Status == BookingStatus.Washing || b.Status == BookingStatus.WaitingCheckout)
                         return 2; // Priority 2: Checked In / Washing
                     if (b.Status == BookingStatus.Confirmed)
                         return 3; // Priority 3: Confirmed
@@ -386,6 +388,7 @@ namespace Auto_Wash.Services
                 .Include(b => b.AppliedRedemption)
                     .ThenInclude(r => r!.Reward)
                 .Include(b => b.Queues)
+                .Include(b => b.Payment)
                 .FirstOrDefaultAsync(x => x.BookingId == bookingId && x.CustomerId == customerId);
 
             if (b == null) return null;
@@ -475,7 +478,11 @@ namespace Auto_Wash.Services
                 hasReview = hasReview,
                 rating = b.Stars,
                 reviewText = b.ReviewText,
-                paidAt = b.PaidAt,
+                paidAt = b.Payment?.PaidAt,
+                paymentMethod = b.Payment != null ? ((PaymentMethod)b.Payment.PaymentMethod).ToString() : null,
+                transactionNo = b.Payment?.TransactionNo,
+                paymentStatus = b.Payment != null ? ((PaymentStatus)b.Payment.Status).ToString() : null,
+                invoice = b.Payment != null && b.Payment.Status == (int)PaymentStatus.Paid ? new { invoiceNumber = $"INV-{b.BookingId}-{b.Payment.PaymentId}", amount = b.Payment.Amount, createdAt = b.Payment.PaidAt ?? b.Payment.CreatedAt } : null,
                 createdAt = b.CreatedAt,
                 timeline = timeline,
                 reschedules = reschedules,
@@ -565,9 +572,9 @@ namespace Auto_Wash.Services
                 return (false, "Không tìm thấy đơn đặt lịch hoặc bạn không có quyền đổi lịch.");
             }
 
-            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.WaitingCheckout)
             {
-                return (false, $"Không thể đổi lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}.");
+                return (false, $"Không thể đổi lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : booking.Status == BookingStatus.WaitingCheckout ? "chờ thanh toán" : "hoàn thành")}.");
             }
 
             if (booking.Status != BookingStatus.Pending && booking.Status != BookingStatus.Confirmed)

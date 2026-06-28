@@ -7,7 +7,7 @@ namespace Auto_Wash.Helpers
 {
     public static class BookingWorkflowConfig
     {
-        // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
+        // Workflow stage durations (in seconds)
         public const int CheckInSeconds = 15;
         public const int WashingSeconds = 20;
         public const int DryingSeconds = 15;
@@ -16,8 +16,9 @@ namespace Auto_Wash.Helpers
         private static readonly (string Key, string Name)[] OfficialStages = new[]
         {
             ("CheckIn", "Đã check-in"),
-            ("Washing", "Đang rửa xe"),
-            ("Drying", "Đang sấy khô"),
+            ("Washing", "Đang rửa"),
+            ("Drying", "Đã sấy khô"),
+            ("WaitingCheckout", "Chờ thanh toán"),
             ("Completed", "Hoàn tất")
         };
 
@@ -34,9 +35,10 @@ namespace Auto_Wash.Helpers
         {
             return stage switch
             {
-                "CheckIn" => 25,
-                "Washing" => 60,
-                "Drying" => 85,
+                "CheckIn" => 20,
+                "Washing" => 50,
+                "Drying" => 80,
+                "WaitingCheckout" => 95,
                 "Completed" => 100,
                 _ => 0
             };
@@ -56,6 +58,12 @@ namespace Auto_Wash.Helpers
             {
                 dto.CurrentStage = "Completed";
                 dto.Progress = 100;
+                dto.RemainingSeconds = 0;
+            }
+            else if (booking != null && booking.Status == BookingStatus.WaitingCheckout)
+            {
+                dto.CurrentStage = "WaitingCheckout";
+                dto.Progress = 95;
                 dto.RemainingSeconds = 0;
             }
             else if (booking != null && booking.Status == BookingStatus.Completed)
@@ -120,6 +128,10 @@ namespace Auto_Wash.Helpers
             if (dto.CurrentStage == "Completed")
             {
                 activeIndex = OfficialStages.Length;
+            }
+            else if (dto.CurrentStage == "WaitingCheckout")
+            {
+                activeIndex = 3;
             }
             else
             {

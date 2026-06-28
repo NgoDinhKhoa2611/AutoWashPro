@@ -182,7 +182,7 @@ namespace Auto_Wash.Controllers
                 }
 
                 var progressTracking = BookingWorkflowConfig.GetProgressForBooking(activeBooking, queue);
-                // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
+                // Calculate estimated completion time based on workflow config
                 string eta = (queue != null ? queue.CheckInAt : activeBooking.ScheduledAt).AddSeconds(BookingWorkflowConfig.TotalDurationSeconds).ToString("HH:mm:ss");
 
                 var bookingData = new
@@ -201,7 +201,7 @@ namespace Auto_Wash.Controllers
                     price = activeBooking.FinalPrice,
                     points = activeBooking.PointsEarned,
                     hasQueue = hasQueue,
-                    paidAt = activeBooking.PaidAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                    paidAt = activeBooking.Payment?.PaidAt?.ToString("yyyy-MM-dd HH:mm:ss"),
                     progressTracking = progressTracking,
                     eta = eta
                 };

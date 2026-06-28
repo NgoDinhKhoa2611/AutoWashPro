@@ -71,6 +71,16 @@ namespace Auto_Wash
                 .UseLowerCaseNamingConvention();
             });
 
+            // Configure PayOS Settings
+            builder.Services.Configure<Auto_Wash.Helpers.PayOSSettings>(builder.Configuration.GetSection("PayOSSettings"));
+
+            // Register PayOSClient Singleton
+            builder.Services.AddSingleton(provider =>
+            {
+                var settings = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Auto_Wash.Helpers.PayOSSettings>>().Value;
+                return new PayOS.PayOSClient(settings.ClientId, settings.ApiKey, settings.ChecksumKey);
+            });
+
             // Register HttpContextAccessor and Services
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<AuthContextService>();
@@ -84,6 +94,7 @@ namespace Auto_Wash
             builder.Services.AddScoped<AdminService>();
             builder.Services.AddScoped<AdminBookingService>();
             builder.Services.AddScoped<BookingNotificationService>();
+            builder.Services.AddScoped<IPaymentService, PaymentService>();
             builder.Services.AddHostedService<BookingWorkflowBackgroundService>();
 
 

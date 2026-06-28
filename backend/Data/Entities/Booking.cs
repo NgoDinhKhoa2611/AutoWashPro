@@ -54,16 +54,13 @@ namespace Auto_Wash.Data.Entities
 
         public int FixedDurationMinutes { get; set; } = 60;
 
-        // Payment (nullable, filled on payment)
-        public int PaymentMethod { get; set; } = 1;
-
-        public int? CashAmount { get; set; }
-
+        // Payment Discount details (filled when booking is created)
         public int? PointsUsed { get; set; }
 
         public int? PointsValueVND { get; set; }
 
-        public DateTime? PaidAt { get; set; }
+        // One-to-One Payment relationship
+        public virtual Payment? Payment { get; set; }
 
         // Rating (nullable, filled after completion)
         public byte? Stars { get; set; }
@@ -87,6 +84,7 @@ namespace Auto_Wash.Data.Entities
         public bool Reminder1Sent { get; set; } = false;
         public bool Reminder2Sent { get; set; } = false;
         public bool NoShowEmailSent { get; set; } = false;
+        public bool WaitingCheckoutEmailSent { get; set; } = false;
 
         public DateTime? CheckedOutAt { get; set; }
 
