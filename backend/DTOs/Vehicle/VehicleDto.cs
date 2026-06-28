@@ -11,5 +11,6 @@ namespace Auto_Wash.DTOs.Vehicle
         public string Model { get; set; } = string.Empty;
         public string VehicleClass { get; set; } = string.Empty;
         public DateTime RegisteredAt { get; set; }
+        public bool HasActiveBooking { get; set; }
     }
 }

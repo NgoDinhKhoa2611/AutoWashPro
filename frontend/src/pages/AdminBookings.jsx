@@ -283,6 +283,7 @@ export const AdminBookings = () => {
       case 'Completed': return 'Hoàn thành';
       case 'Cancelled': return 'Đã hủy';
       case 'NoShow': return 'Khách không đến';
+      case 'WaitingCheckout': return 'Chờ thanh toán';
       default: return status;
     }
   };
@@ -296,6 +297,7 @@ export const AdminBookings = () => {
       case 'Completed': return 'status-completed';
       case 'Cancelled': return 'status-cancelled';
       case 'NoShow': return 'status-noshow';
+      case 'WaitingCheckout': return 'status-waiting-checkout';
       default: return '';
     }
   };
@@ -316,6 +318,8 @@ export const AdminBookings = () => {
         return { backgroundColor: '#FEE2E2', color: '#DC2626', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
       case 'NoShow':
         return { backgroundColor: '#F3F4F6', color: '#4B5563', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
+      case 'WaitingCheckout':
+        return { backgroundColor: '#FFF7E6', color: '#FA8C16', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
       default:
         return {};
     }

@@ -23,6 +23,7 @@ const AdminQueue = lazy(() => import('./pages/AdminQueue'));
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
 const AdminServices = lazy(() => import('./pages/AdminServices'));
 const AdminBookings = lazy(() => import('./pages/AdminBookings'));
+const PaymentResult = lazy(() => import('./pages/PaymentResult'));
 
 const PageLoader = () => (
   <div className="d-flex align-items-center justify-content-center vh-100 bg-light">
@@ -81,6 +82,9 @@ function App() {
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="services" element={<AdminServices />} />
           </Route>
+
+          {/* Payment Result (accessible by all authenticated users) */}
+          <Route path="/payment/result" element={<PaymentResult />} />
 
           {/* Fallback routing */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -130,6 +130,7 @@
 .status-confirmed { background-color: #E6F4FF; color: #1677FF; }
 .status-checkedin { background-color: #F9F0FF; color: #722ED1; }
 .status-washing { background-color: #E0F2FE; color: #0284c7; }
+.status-waiting-checkout { background-color: #FFF7E6; color: #FA8C16; }
 .status-completed { background-color: #F6FFED; color: #52C41A; }
 .status-cancelled { background-color: #FFF1F0; color: #F5222D; }
 .status-noshow { background-color: #F1F5F9; color: #475569; }

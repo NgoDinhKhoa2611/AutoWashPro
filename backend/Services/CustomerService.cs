@@ -211,6 +211,7 @@ namespace Auto_Wash.Services
                 lifetimePoints = customer.LifetimePoints,
                 totalVisits = customer.TotalVisits,
                 tierName = current.TierName,
+                bookingWindowDays = current.BookingWindowDays,
                 multiplier = current.PointMultiplier,
                 discountPercent = current.DiscountPercent,
                 windowMonths = TierHelper.RankingWindowMonths,
@@ -225,7 +226,8 @@ namespace Auto_Wash.Services
                 {
                     tierId = t.TierId,
                     name = t.TierName,
-                    minRankingBalance = t.MinRankingBalance
+                    minRankingBalance = t.MinRankingBalance,
+                    bookingWindowDays = t.BookingWindowDays
                 }).ToList()
             };
         }

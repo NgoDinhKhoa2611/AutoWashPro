@@ -7,7 +7,7 @@ import '../styles/shared.css';
 import '../styles/customer/dashboard.css';
 
 export const CustomerDashboard = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState('Xin chào');
   const [weatherStatus, setWeatherStatus] = useState('');
@@ -106,6 +106,19 @@ export const CustomerDashboard = () => {
         }
       } catch (err) {
         console.error(err);
+      }
+
+      // Sync loyalty points & tier from backend (reflects webhook-awarded points)
+      try {
+        const loyaltyRes = await customerService.getLoyaltyStatus();
+        if (loyaltyRes && loyaltyRes.success) {
+          const updates = {};
+          if (loyaltyRes.pointBalance != null) updates.points = loyaltyRes.pointBalance;
+          if (loyaltyRes.tierName) updates.tier = loyaltyRes.tierName;
+          if (Object.keys(updates).length > 0) updateUser(updates);
+        }
+      } catch (err) {
+        console.error('Error syncing loyalty status:', err);
       }
     };
 
@@ -381,28 +394,27 @@ export const CustomerDashboard = () => {
           
           {/* 1. Live Progress Tracker (Active Booking Wash Progress) */}
           {/* 1. Live Progress Tracker (Active Booking Wash Progress) */}
-          {activeBooking && activeBooking.hasQueue && activeBooking.queueStatus === 'Completed' && (
-            <div className="app-card border-0 p-4 mb-4 text-center rounded-4 shadow-sm bg-white" style={{ borderLeft: '4px solid #10b981' }}>
+          {activeBooking && activeBooking.hasQueue && (activeBooking.queueStatus === 'Completed' || activeBooking.queueStatus === 'Archived') && (
+            <div className="app-card border-0 p-4 mb-4 text-center rounded-4 shadow-sm bg-white" style={{ 
+              borderLeft: '4px solid #f59e0b' 
+            }}>
               <div className="text-center mb-3">
-                <div className="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-2" style={{ width: '56px', height: '56px' }}>
-                  <i className="fas fa-check-circle fa-2x"></i>
+                <div className="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10 text-warning rounded-circle mb-2" style={{ width: '56px', height: '56px' }}>
+                  <i className="fas fa-file-invoice-dollar fa-2x"></i>
                 </div>
-                <h5 className="fw-bold text-dark mb-1">🎉 XE ĐÃ HOÀN TẤT</h5>
-                <p className="text-secondary small mb-0">Xe <strong className="font-monospace text-dark">{activeBooking.vehicle}</strong> đã hoàn thành dịch vụ.</p>
+                <h5 className="fw-bold text-dark mb-1">
+                  🚗 XE ĐÃ HOÀN TẤT DỊCH VỤ
+                </h5>
+                <p className="text-secondary small mb-0">
+                  Xe <strong className="font-monospace text-dark">{activeBooking.vehicle}</strong> đã hoàn tất quá trình rửa xe. Vui lòng đến quầy để thanh toán và nhận xe.
+                </p>
               </div>
 
               <div className="p-3 rounded-4 mb-3 text-start" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                 <div className="mb-2.5 d-flex align-items-center gap-2">
-                  <i className="fas fa-check-circle text-success fs-6"></i>
+                  <i className="fas fa-info-circle text-warning fs-6"></i>
                   <span className="small text-secondary">Dịch vụ chính:</span> <strong className="text-dark small">{activeBooking.mainService}</strong>
                 </div>
-                {/* Addons display removed */}
-                {activeBooking.paidAt && (
-                  <div className="text-secondary small d-flex align-items-center gap-2">
-                    <i className="far fa-clock text-muted fs-6"></i>
-                    <span>Thời gian hoàn thành: <strong className="text-dark">{new Date(activeBooking.paidAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ({new Date(activeBooking.paidAt).toLocaleDateString('vi-VN')})</strong></span>
-                  </div>
-                )}
               </div>
 
               <button 
@@ -445,6 +457,7 @@ export const CustomerDashboard = () => {
                        {activeBooking.progressTracking?.currentStage === 'CheckIn' ? 'Check-in' :
                         activeBooking.progressTracking?.currentStage === 'Washing' ? 'Rửa xe' :
                         activeBooking.progressTracking?.currentStage === 'Drying' ? 'Sấy khô' :
+                        activeBooking.progressTracking?.currentStage === 'WaitingCheckout' ? 'Chờ thanh toán' :
                         activeBooking.progressTracking?.currentStage === 'Completed' ? 'Hoàn tất' :
                         activeBooking.progressTracking?.currentStage || 'Đang chuẩn bị'}
                     </strong>
@@ -580,7 +593,7 @@ export const CustomerDashboard = () => {
               LỊCH HẸN TIẾP THEO
             </h5>
 
-            {activeBooking && !(activeBooking.hasQueue && activeBooking.queueStatus !== 'Completed' && activeBooking.queueStatus !== 'Cancelled') ? (
+            {activeBooking && (activeBooking.status === 'Pending' || activeBooking.status === 'Pending Confirmation' || activeBooking.status === 'Confirmed') ? (
               <div className="p-3 rounded-4 border bg-light bg-opacity-50">
                 <div className="d-flex align-items-start gap-2.5 mb-3">
                   <div className="appointment-badge-icon">

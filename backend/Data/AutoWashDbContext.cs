@@ -27,6 +27,7 @@ namespace Auto_Wash.Data
         public DbSet<Review> Reviews { get; set; } = null!;
         public DbSet<BookingAuditLog> BookingAuditLogs { get; set; } = null!;
         public DbSet<BookingRescheduleHistory> BookingRescheduleHistories { get; set; } = null!;
+        public DbSet<Payment> Payments { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -372,6 +373,21 @@ namespace Auto_Wash.Data
                 .WithMany()
                 .HasForeignKey(rh => rh.BookingId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // 20. Payments (One-to-One)
+            builder.Entity<Payment>()
+                .HasKey(p => p.PaymentId);
+
+            builder.Entity<Payment>()
+                .HasOne(p => p.Booking)
+                .WithOne(b => b.Payment)
+                .HasForeignKey<Payment>(p => p.BookingId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Payment>()
+                .HasIndex(p => p.TxnRef)
+                .IsUnique()
+                .HasDatabaseName("uq_payments_txnref");
 
             builder.Entity<Service>().HasData(
                 new Service

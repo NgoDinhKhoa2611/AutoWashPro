@@ -73,16 +73,18 @@ export const queueStatusMapper = {
   getTimelineSteps: (bookingStatus, queueStatus, currentStage) => {
     const steps = [
       { id: 'CheckedIn', name: 'Đã check-in' },
-      { id: 'Washing', name: 'Rửa xe' },
-      { id: 'Drying', name: 'Sấy khô' },
+      { id: 'Washing', name: 'Đang rửa' },
+      { id: 'Drying', name: 'Đã sấy khô' },
+      { id: 'WaitingCheckout', name: 'Chờ thanh toán' },
       { id: 'Completed', name: 'Hoàn tất' }
     ];
 
     let activeIndex = -1;
     
-    if (bookingStatus === 'Checkout' || queueStatus === 'Archived' || currentStage === 'Checkout' ||
-        bookingStatus === 'Completed' || queueStatus === 'Completed' || currentStage === 'Completed') {
-      activeIndex = 4;
+    if (bookingStatus === 'Completed' || bookingStatus === 'Checkout' || queueStatus === 'Archived' || currentStage === 'Checkout') {
+      activeIndex = 5;
+    } else if (bookingStatus === 'WaitingCheckout' || queueStatus === 'Completed' || currentStage === 'Completed') {
+      activeIndex = 3;
     } else {
       const stage = currentStage || '';
       if (stage === 'CheckIn' || stage === 'CheckedIn' || bookingStatus === 'CheckedIn') {

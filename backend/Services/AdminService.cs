@@ -33,8 +33,8 @@ namespace Auto_Wash.Services
 
             // 3. Revenue
             var completedBookingsGrouped = await _context.Bookings
-                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue && b.PaidAt.Value >= startDate)
-                .GroupBy(b => b.PaidAt!.Value.Date)
+                .Where(b => b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt != null && b.Payment.PaidAt.Value >= startDate)
+                .GroupBy(b => b.Payment.PaidAt!.Value.Date)
                 .Select(g => new { Date = g.Key, Total = g.Sum(b => b.FinalPrice) })
                 .ToListAsync();
 
@@ -47,17 +47,17 @@ namespace Auto_Wash.Services
                 }).ToArray();
 
             var totalRevenue = await _context.Bookings
-                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue && b.PaidAt.Value >= startDate)
+                .Where(b => b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt != null && b.Payment.PaidAt.Value >= startDate)
                 .SumAsync(b => (long)b.FinalPrice);
 
             var prevTotalRevenue = await _context.Bookings
-                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue
-                         && b.PaidAt.Value >= prevStart && b.PaidAt.Value < startDate)
+                .Where(b => b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt != null
+                         && b.Payment.PaidAt.Value >= prevStart && b.Payment.PaidAt.Value < startDate)
                 .SumAsync(b => (long)b.FinalPrice);
 
             // 4. Monthly Revenue (last 30 days)
             var monthlyRevenue = await _context.Bookings
-                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue && b.PaidAt.Value >= today.AddDays(-30))
+                .Where(b => b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt != null && b.Payment.PaidAt.Value >= today.AddDays(-30))
                 .SumAsync(b => (long)b.FinalPrice);
 
             // 5. Active Queue

@@ -33,7 +33,11 @@ namespace Auto_Wash.Services
                     Brand = v.Brand,
                     Model = v.Model,
                     VehicleClass = v.VehicleClass,
-                    RegisteredAt = v.RegisteredAt
+                    RegisteredAt = v.RegisteredAt,
+                    HasActiveBooking = _context.Bookings.Any(b => b.VehicleId == v.VehicleId 
+                        && b.Status != BookingStatus.Completed 
+                        && b.Status != BookingStatus.Cancelled 
+                        && b.Status != BookingStatus.NoShow)
                 })
                 .ToListAsync();
         }

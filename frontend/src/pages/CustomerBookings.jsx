@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { customerService } from '../services/customerService';
+import { useAuth } from '../hooks/useAuth';
 import { queueStatusMapper } from '../utils/queueStatusMapper';
 import Modal from '../components/Modal';
 import '../styles/shared.css';
@@ -40,6 +41,8 @@ const getStatusBorderClass = (status) => {
 export const CustomerBookings = () => {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { updateUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState('active'); // active, history, reviews
   const [reviewSubTab, setReviewSubTab] = useState('pending'); // pending, submitted
@@ -100,6 +103,8 @@ export const CustomerBookings = () => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
   const [maxVehiclesPerSlot, setMaxVehiclesPerSlot] = useState(3);
+  const [bookingDaysWindow, setBookingDaysWindow] = useState(7);
+  const [maxDateStr, setMaxDateStr] = useState('');
 
   useEffect(() => {
     customerService.getBookingConfig()
@@ -115,6 +120,22 @@ export const CustomerBookings = () => {
         }
       })
       .catch(err => console.error("Error loading booking config:", err));
+
+    customerService.getLoyaltyStatus()
+      .then(res => {
+        if (res.success && res.status?.bookingWindowDays) {
+          setBookingDaysWindow(res.status.bookingWindowDays);
+          
+          const today = new Date();
+          const maxDate = new Date();
+          maxDate.setDate(today.getDate() + res.status.bookingWindowDays);
+          const maxYear = maxDate.getFullYear();
+          const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
+          const maxDay = String(maxDate.getDate()).padStart(2, '0');
+          setMaxDateStr(`${maxYear}-${maxMonth}-${maxDay}`);
+        }
+      })
+      .catch(err => console.error("Error loading loyalty status:", err));
   }, []);
 
   useEffect(() => {
@@ -167,6 +188,33 @@ export const CustomerBookings = () => {
     showDetailModalRef.current = showDetailModal;
     detailModalBookingRef.current = detailModalBooking;
   }, [showDetailModal, detailModalBooking]);
+
+  // Handle payment redirect query params from PayOS return URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const paymentStatus = params.get('payment');
+    const bookingId = params.get('bookingId');
+
+    if (paymentStatus) {
+      if (paymentStatus === 'success') {
+        if (window.showToast) window.showToast(`Thanh toán thành công cho lịch đặt #${bookingId}!`, 'success');
+        // Sync loyalty points from backend
+        customerService.getLoyaltyStatus().then(res => {
+          if (res && res.success) {
+            const updates = {};
+            if (res.pointBalance != null) updates.points = res.pointBalance;
+            if (res.tierName) updates.tier = res.tierName;
+            if (Object.keys(updates).length > 0) updateUser(updates);
+          }
+        }).catch(err => console.error('Error syncing loyalty after payment:', err));
+      } else if (paymentStatus === 'cancel') {
+        if (window.showToast) window.showToast(`Giao dịch thanh toán #${bookingId} đã bị hủy.`, 'warning');
+      }
+      // Clean query params from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [location.search, updateUser]);
 
   useEffect(() => {
     loadData();
@@ -277,6 +325,20 @@ export const CustomerBookings = () => {
       return;
     }
 
+    if (rescheduleDate) {
+      const selDate = new Date(rescheduleDate + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const maxDate = new Date(today.getTime() + bookingDaysWindow * 24 * 60 * 60 * 1000);
+      maxDate.setHours(23, 59, 59, 999);
+      if (selDate < today || selDate > maxDate) {
+        if (window.showToast) {
+          window.showToast(`Ngày chọn không hợp lệ. Hạng thành viên của bạn chỉ được đổi lịch từ ngày hôm nay đến ${maxDate.toLocaleDateString('vi-VN')}.`, 'warning');
+        }
+        return;
+      }
+    }
+
     const scheduledAt = `${rescheduleDate}T${rescheduleTime}:00`;
     try {
       const res = await customerService.rescheduleBooking(detailModalBooking.bookingId, scheduledAt, rescheduleReason.trim());
@@ -293,7 +355,7 @@ export const CustomerBookings = () => {
       const errMsg = err.response?.data?.message || 'Đã xảy ra lỗi khi đổi lịch hẹn.';
       if (window.showToast) window.showToast(errMsg, 'danger');
     }
-  }, [rescheduleDate, rescheduleTime, rescheduleReason, detailModalBooking, loadData, handleOpenDetail]);
+  }, [rescheduleDate, rescheduleTime, rescheduleReason, detailModalBooking, loadData, handleOpenDetail, bookingDaysWindow]);
 
   // Cancel Booking
   const handleOpenCancel = useCallback((bookingId, e) => {
@@ -403,6 +465,7 @@ export const CustomerBookings = () => {
      b.status === 'Washing' ||
      b.status === 'InProgress' ||
      b.status === 'In Progress' ||
+     b.status === 'WaitingCheckout' ||
      b.status === 'Completed') && 
      b.status !== 'Cancelled' &&
      b.status !== 'NoShow' &&
@@ -455,6 +518,8 @@ export const CustomerBookings = () => {
       case 'NoShow':
       case 'No Show':
         return { label: 'Khách không đến', badgeClass: 'bg-danger bg-opacity-15 text-danger fw-bold', icon: 'fa-user-slash' };
+      case 'WaitingCheckout':
+        return { label: 'Chờ thanh toán', badgeClass: 'bg-warning bg-opacity-15 text-warning', icon: 'fa-file-invoice-dollar' };
       default:
         return { label: 'Đang xử lý', badgeClass: 'bg-secondary bg-opacity-10 text-secondary', icon: 'fa-cog fa-spin' };
     }
@@ -554,9 +619,11 @@ export const CustomerBookings = () => {
               ) : (
                 <div className="row g-3">
                   {activeBookings.map((b) => {
-                    const statusInfo = b.queueStatus
-                      ? { label: queueStatusMapper.getLabel(b.queueStatus), badgeClass: queueStatusMapper.getBadgeClass(b.queueStatus), icon: queueStatusMapper.getIcon(b.queueStatus) }
-                      : translateStatus(b.status);
+                    const statusInfo = (b.status === 'WaitingCheckout')
+                      ? translateStatus(b.status)
+                      : (b.queueStatus
+                        ? { label: queueStatusMapper.getLabel(b.queueStatus), badgeClass: queueStatusMapper.getBadgeClass(b.queueStatus), icon: queueStatusMapper.getIcon(b.queueStatus) }
+                        : translateStatus(b.status));
                     return (
                       <div key={b.id} className="col-md-6 col-lg-4">
                         <div className={`app-card border border-light p-4 bg-white rounded-4 shadow-sm hover-shadow transition-all ${getStatusBorderClass(b.status)}`} style={{ cursor: 'pointer' }} onClick={() => handleOpenDetail(b.id)}>
@@ -574,7 +641,14 @@ export const CustomerBookings = () => {
                             <div className="mb-1"><i className="far fa-calendar text-muted me-2"></i>Ngày hẹn: <strong className="text-dark">{b.bookingDate.split('-').reverse().join('/')}</strong></div>
                             <div className="mb-1"><i className="far fa-clock text-muted me-2"></i>Giờ hẹn: <strong className="text-dark">{b.bookingTime}</strong></div>
                             <div className="mb-1"><i className="fas fa-hands-wash text-muted me-2"></i>Dịch vụ chính: <strong className="text-dark">{b.mainService}</strong></div>
-                            <div><i className="fas fa-coins text-muted me-2"></i>Dịch vụ tích điểm: <strong className="text-warning">+{b.points} PTS</strong></div>
+                            <div>
+                              <i className="fas fa-coins text-muted me-2"></i>Dịch vụ tích điểm: {' '}
+                              {b.status === 'Completed' ? (
+                                <strong className="text-warning">+{b.points} PTS</strong>
+                              ) : (
+                                <span className="text-secondary" style={{ fontSize: '0.74rem' }}>Điểm sẽ được cộng sau khi thanh toán.</span>
+                              )}
+                            </div>
                           </div>
 
                           <div className="d-flex justify-content-between align-items-center pt-3 border-top">
@@ -643,9 +717,11 @@ export const CustomerBookings = () => {
                 <>
                   <div className="row g-3">
                     {paginatedHistory.map((b) => {
-                      const statusInfo = b.queueStatus
-                        ? { label: queueStatusMapper.getLabel(b.queueStatus), badgeClass: queueStatusMapper.getBadgeClass(b.queueStatus), icon: queueStatusMapper.getIcon(b.queueStatus) }
-                        : translateStatus(b.status);
+                      const statusInfo = (b.status === 'WaitingCheckout')
+                        ? translateStatus(b.status)
+                        : (b.queueStatus
+                          ? { label: queueStatusMapper.getLabel(b.queueStatus), badgeClass: queueStatusMapper.getBadgeClass(b.queueStatus), icon: queueStatusMapper.getIcon(b.queueStatus) }
+                          : translateStatus(b.status));
                       return (
                         <div key={b.id} className="col-md-6 col-lg-4">
                           <div className={`app-card border border-light p-4 bg-white rounded-4 shadow-sm hover-shadow transition-all ${getStatusBorderClass(b.status)}`} style={{ cursor: 'pointer' }} onClick={() => handleOpenDetail(b.id)}>
@@ -663,7 +739,14 @@ export const CustomerBookings = () => {
                               <div className="mb-1"><i className="far fa-calendar text-muted me-2"></i>Ngày hẹn: <strong className="text-dark">{b.bookingDate.split('-').reverse().join('/')}</strong></div>
                               <div className="mb-1"><i className="far fa-clock text-muted me-2"></i>Giờ hẹn: <strong className="text-dark">{b.bookingTime}</strong></div>
                               <div className="mb-1"><i className="fas fa-hands-wash text-muted me-2"></i>Dịch vụ chính: <strong className="text-dark">{b.mainService}</strong></div>
-                              <div><i className="fas fa-coins text-muted me-2"></i>Tích điểm: <strong className="text-warning">+{b.status === 'Completed' ? b.points : 0} PTS</strong></div>
+                              <div>
+                                <i className="fas fa-coins text-muted me-2"></i>Tích điểm: {' '}
+                                {b.status === 'Completed' ? (
+                                  <strong className="text-warning">+{b.points} PTS</strong>
+                                ) : (
+                                  <span className="text-secondary" style={{ fontSize: '0.74rem' }}>Điểm sẽ được cộng sau khi thanh toán.</span>
+                                )}
+                              </div>
                               {b.progressTracking?.stages && b.status === 'Completed' && (
                                 <div className="mt-2.5 pt-2.5 border-top text-start">
                                   <small className="text-muted fw-bold d-block mb-1.5" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>TIẾN TRÌNH CHI TIẾT</small>
@@ -869,6 +952,7 @@ export const CustomerBookings = () => {
                       style={{ fontSize: '0.82rem', borderRadius: '8px' }}
                       value={rescheduleDate}
                       min={new Date().toLocaleDateString('sv-SE')}
+                      max={maxDateStr}
                       onChange={e => setRescheduleDate(e.target.value)}
                     />
                   </div>
@@ -992,13 +1076,17 @@ export const CustomerBookings = () => {
                       <div className="col-6 pe-0">
                         <small className="text-secondary d-block mb-1" style={{ fontSize: '0.62rem', fontWeight: 600 }}>TRẠNG THÁI</small>
                         <span className={`badge px-2.5 py-1.5 rounded-pill small fw-bold d-inline-block mt-0.5 ${
-                          detailModalBooking.queueStatus
-                            ? queueStatusMapper.getBadgeClass(detailModalBooking.queueStatus)
-                            : translateStatus(detailModalBooking.status).badgeClass
+                          detailModalBooking.status === 'WaitingCheckout'
+                            ? translateStatus(detailModalBooking.status).badgeClass
+                            : (detailModalBooking.queueStatus
+                              ? queueStatusMapper.getBadgeClass(detailModalBooking.queueStatus)
+                              : translateStatus(detailModalBooking.status).badgeClass)
                         }`} style={{ fontSize: '0.68rem' }}>
-                          {detailModalBooking.queueStatus
-                            ? queueStatusMapper.getLabel(detailModalBooking.queueStatus)
-                            : translateStatus(detailModalBooking.status).label}
+                          {detailModalBooking.status === 'WaitingCheckout'
+                            ? translateStatus(detailModalBooking.status).label
+                            : (detailModalBooking.queueStatus
+                              ? queueStatusMapper.getLabel(detailModalBooking.queueStatus)
+                              : translateStatus(detailModalBooking.status).label)}
                         </span>
                       </div>
                       <div className="col-12 border-top pt-1.5 px-0 mt-1.5">
@@ -1123,18 +1211,36 @@ export const CustomerBookings = () => {
                         <strong className="text-cyan fs-5">{Number(detailModalBooking.finalPrice).toLocaleString()}đ</strong>
                       </div>
                       <div className="d-flex align-items-center justify-content-between border-top pt-1.5 mt-1.5" style={{ fontSize: '0.75rem' }}>
-                        <div>
-                          <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>TIÊU CHUẨN TÍCH ĐIỂM</small>
-                          <span className="font-semibold text-muted">Tích lũy điểm khi rửa xe hoàn tất.</span>
-                        </div>
-                        <div className="text-end">
-                          <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>ĐIỂM DỰ KIẾN</small>
-                          <strong className="text-warning font-monospace" style={{ fontSize: '0.9rem' }}>+{detailModalBooking.pointsEarned} PTS</strong>
-                        </div>
+                        {detailModalBooking.status === 'Completed' ? (
+                          <>
+                            <div>
+                              <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>TIÊU CHUẨN TÍCH ĐIỂM</small>
+                              <span className="font-semibold text-muted">Tích lũy điểm khi rửa xe hoàn tất.</span>
+                            </div>
+                            <div className="text-end">
+                              <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>ĐIỂM NHẬN</small>
+                              <strong className="text-warning font-monospace" style={{ fontSize: '0.9rem' }}>+{detailModalBooking.pointsEarned} PTS</strong>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-100 text-start">
+                            <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>TIÊU CHUẨN TÍCH ĐIỂM</small>
+                            <span className="text-secondary font-semibold">Điểm sẽ được cộng sau khi thanh toán.</span>
+                          </div>
+                        )}
                       </div>
                       {detailModalBooking.status === 'Completed' && (
                         <div className="border-top pt-1.5 mt-1.5" style={{ fontSize: '0.75rem' }}>
                           <small className="text-secondary d-block mb-1">Thời gian thanh toán: <strong>{detailModalBooking.paidAt ? new Date(detailModalBooking.paidAt).toLocaleString('vi-VN') : 'Đã thanh toán'}</strong></small>
+                          {detailModalBooking.paymentMethod && (
+                            <small className="text-secondary d-block mb-0.5">Phương thức: <strong>{detailModalBooking.paymentMethod === 'PayOS' ? 'Thanh toán trực tuyến (PayOS)' : detailModalBooking.paymentMethod}</strong></small>
+                          )}
+                          {detailModalBooking.transactionNo && (
+                            <small className="text-secondary d-block mb-0.5">Mã giao dịch: <strong className="font-monospace">{detailModalBooking.transactionNo}</strong></small>
+                          )}
+                          {detailModalBooking.invoice && (
+                            <small className="text-secondary d-block mb-0.5">Số hóa đơn: <strong className="font-monospace">{detailModalBooking.invoice.invoiceNumber}</strong></small>
+                          )}
                           <span className="badge bg-success bg-opacity-10 text-success fw-bold mt-1" style={{ fontSize: '0.62rem', padding: '4px 8px' }}>ĐH HOÀN TẤT & ĐÃ THANH TOÁN</span>
                         </div>
                       )}
