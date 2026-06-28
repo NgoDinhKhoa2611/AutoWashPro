@@ -83,6 +83,27 @@ export const AdminQueue = () => {
   };
 
   useEffect(() => {
+    // Check query parameters for payment success/cancel redirect
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment');
+    const bookingId = params.get('bookingId');
+    
+    if (paymentStatus) {
+      if (paymentStatus === 'success') {
+        if (window.showToast) {
+          window.showToast(`Thanh toán thành công cho lịch đặt #${bookingId}!`, 'success');
+        }
+      } else if (paymentStatus === 'cancel') {
+        if (window.showToast) {
+          window.showToast(`Giao dịch thanh toán #${bookingId} đã bị hủy.`, 'warning');
+        }
+      }
+      
+      // Clean query params from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+
     fetchQueue();
     let intervalId = null;
 
@@ -231,6 +252,39 @@ export const AdminQueue = () => {
     }
   };
 
+  const handleThanhToan = async (vehicle) => {
+    if (!vehicle || !vehicle.bookingId) {
+      if (window.showToast) window.showToast("Không tìm thấy thông tin lịch đặt để thanh toán.", "error");
+      return;
+    }
+    
+    setSubmittingIds(prev => {
+      const next = new Set(prev);
+      next.add(vehicle.queueId);
+      return next;
+    });
+
+    try {
+      if (window.showToast) window.showToast("Đang tạo liên kết thanh toán PayOS...", "info");
+      const res = await adminService.createPayment(vehicle.bookingId);
+      if (res && res.success && res.paymentUrl) {
+        window.location.href = res.paymentUrl;
+      } else {
+        if (window.showToast) window.showToast(res?.message || "Không thể tạo link thanh toán.", "error");
+      }
+    } catch (err) {
+      console.error("Lỗi khi tạo link thanh toán:", err);
+      const errMsg = err.response?.data?.message || "Đã xảy ra lỗi khi tạo link thanh toán.";
+      if (window.showToast) window.showToast(errMsg, "error");
+    } finally {
+      setSubmittingIds(prev => {
+        const next = new Set(prev);
+        next.delete(vehicle.queueId);
+        return next;
+      });
+    }
+  };
+
   const handleAssignStaff = async (staff) => {
     if (!selectedVehicle) return;
     const updatedItem = { ...selectedVehicle, staffName: staff, staffNote: staff };
@@ -361,15 +415,19 @@ export const AdminQueue = () => {
       tierName: 'Member'
     })), [bookings, todayStr]);
 
+  const waitingCheckoutItems = useMemo(() => completedItems.filter(item => item.bookingStatus === 'WaitingCheckout'), [completedItems]);
+  const trueCompletedItems = useMemo(() => completedItems.filter(item => item.bookingStatus !== 'WaitingCheckout'), [completedItems]);
+
   const stats = useMemo(() => {
     return {
       waitingCheckIn: waitingItems.length,
       processing: processingItems.length,
-      completedToday: completedItems.length,
+      waitingCheckout: waitingCheckoutItems.length,
+      completedToday: trueCompletedItems.length,
       noShow: noShowItems.length,
-      todaysRevenue: completedItems.reduce((sum, item) => sum + (Number(item.finalPrice) || 0), 0)
+      todaysRevenue: trueCompletedItems.reduce((sum, item) => sum + (Number(item.finalPrice) || 0), 0)
     };
-  }, [waitingItems, processingItems, completedItems, noShowItems]);
+  }, [waitingItems, processingItems, waitingCheckoutItems, trueCompletedItems, noShowItems]);
 
   // Filtered sections
   const filteredWaiting = useMemo(() => {
@@ -383,9 +441,11 @@ export const AdminQueue = () => {
   }, [processingItems, statusFilter]);
 
   const filteredCompleted = useMemo(() => {
-    if (statusFilter === 'ALL' || statusFilter === 'COMPLETED_TODAY') return completedItems;
+    if (statusFilter === 'ALL') return completedItems;
+    if (statusFilter === 'COMPLETED_TODAY') return trueCompletedItems;
+    if (statusFilter === 'WAITING_CHECKOUT') return waitingCheckoutItems;
     return [];
-  }, [completedItems, statusFilter]);
+  }, [completedItems, trueCompletedItems, waitingCheckoutItems, statusFilter]);
 
   const filteredNoShow = useMemo(() => {
     if (statusFilter === 'ALL' || statusFilter === 'NoShow') return noShowItems;
@@ -553,38 +613,39 @@ export const AdminQueue = () => {
 
   // ── Completed Card (even more compact) ──
   const renderCompletedCard = (item) => {
+    const isWaitingCheckout = item.bookingStatus === 'WaitingCheckout';
     return (
       <div
         key={item.queueId}
-        className="queue-card-compact queue-card-completed status-completed"
+        className={`queue-card-compact queue-card-completed ${isWaitingCheckout ? 'status-waiting-checkout border border-warning' : 'status-completed'}`}
       >
         <div className="queue-card-header">
           <span className="queue-card-id">#BK-{item.bookingId}</span>
-          <span className="queue-status-badge" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
-            XONG
+          <span className="queue-status-badge" style={isWaitingCheckout ? { background: 'rgba(245,158,11,0.1)', color: '#f59e0b' } : { background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
+            {isWaitingCheckout ? 'CHỜ THANH TOÁN' : 'XONG'}
           </span>
         </div>
         <div className="queue-card-plate" style={{ fontSize: '0.95rem' }}>{item.licensePlate}</div>
         
-        <div className="stage-badge" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontSize: '0.65rem', padding: '1px 6px' }}>
-          <span className="stage-dot" style={{ background: '#22c55e' }}></span>
-          Hoàn tất
+        <div className="stage-badge" style={isWaitingCheckout ? { background: 'rgba(245,158,11,0.1)', color: '#f59e0b', fontSize: '0.65rem', padding: '1px 6px' } : { background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontSize: '0.65rem', padding: '1px 6px' }}>
+          <span className="stage-dot" style={{ background: isWaitingCheckout ? '#f59e0b' : '#22c55e' }}></span>
+          {isWaitingCheckout ? 'Chờ thanh toán' : 'Hoàn tất'}
         </div>
 
         <div className="mt-2 mb-1">
           <div className="d-flex justify-content-between align-items-center mb-1">
             <span className="small text-secondary" style={{ fontSize: '0.68rem' }}>Tiến độ</span>
-            <span className="small fw-bold text-dark" style={{ fontSize: '0.68rem' }}>100%</span>
+            <span className="small fw-bold text-dark" style={{ fontSize: '0.68rem' }}>{isWaitingCheckout ? '95%' : '100%'}</span>
           </div>
           <div className="progress" style={{ height: '4px', background: '#e2e8f0', borderRadius: '10px' }}>
-            <div className="progress-bar" style={{ width: '100%', background: '#22c55e', borderRadius: '10px' }}></div>
+            <div className="progress-bar" style={{ width: isWaitingCheckout ? '95%' : '100%', background: isWaitingCheckout ? '#f59e0b' : '#22c55e', borderRadius: '10px' }}></div>
           </div>
         </div>
 
         <div className="queue-card-info-grid">
           <div className="queue-info-row">
-            <span className="queue-info-label">Hoàn thành</span>
-            <span className="queue-info-value font-monospace text-success" style={{ fontSize: '0.68rem' }}>{item.completedTime || '—'}</span>
+            <span className="queue-info-label">Rửa xong lúc</span>
+            <span className="queue-info-value font-monospace text-secondary" style={{ fontSize: '0.68rem' }}>{item.completedTime || '—'}</span>
           </div>
         </div>
         <div className="queue-card-actions">
@@ -659,6 +720,25 @@ export const AdminQueue = () => {
           </div>
         </div>
 
+        {/* Waiting Checkout */}
+        <div className="col-12 col-sm-6 col-lg">
+          <div 
+            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-pending ${statusFilter === 'WAITING_CHECKOUT' ? 'active' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'WAITING_CHECKOUT' ? 'ALL' : 'WAITING_CHECKOUT')}
+            style={statusFilter === 'WAITING_CHECKOUT' ? { borderLeft: '4px solid #FA8C16' } : {}}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#FA8C16' }}>{stats.waitingCheckout}</h3>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>CHỜ THANH TOÁN</small>
+              </div>
+              <div className="stat-icon-wrapper" style={{ background: '#FFF7E6', color: '#FA8C16' }}>
+                <i className="fas fa-file-invoice-dollar fa-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Completed Today */}
         <div className="col-12 col-sm-6 col-lg">
           <div 
@@ -668,7 +748,7 @@ export const AdminQueue = () => {
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <h3 className="fw-black mb-0 font-monospace" style={{ color: '#52C41A' }}>{stats.completedToday}</h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>HOÀN THÀNH HÔM NAY</small>
+                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>HOÀN TẤT DỊCH VỤ</small>
               </div>
               <div className="stat-icon-wrapper" style={{ background: '#F6FFED', color: '#52C41A' }}>
                 <i className="fas fa-check-circle fa-lg"></i>
@@ -764,7 +844,12 @@ export const AdminQueue = () => {
               {/* Section: Hoàn tất hôm nay */}
               {filteredCompleted.length > 0 && (
                 <div>
-                  {renderSectionHeader('fas fa-check-circle', 'Hoàn tất hôm nay', filteredCompleted.length, '#22c55e')}
+                  {renderSectionHeader(
+                    'fas fa-check-circle', 
+                    statusFilter === 'WAITING_CHECKOUT' ? 'Chờ thanh toán' : 'Hoàn tất dịch vụ', 
+                    filteredCompleted.length, 
+                    statusFilter === 'WAITING_CHECKOUT' ? '#FA8C16' : '#22c55e'
+                  )}
                   <div className="queue-grid">
                     {filteredCompleted.map(item => renderCompletedCard(item))}
                   </div>
@@ -926,9 +1011,9 @@ export const AdminQueue = () => {
                         className="confirm-ok-btn confirm-btn-cyan w-50 fw-bold border-0 text-dark"
                         style={{ background: 'var(--cyan-electric)' }}
                         disabled={submittingIds.has(selectedVehicle.queueId)}
-                        onClick={() => handleCheckoutVehicle(selectedVehicle.queueId, selectedVehicle.licensePlate)}
+                        onClick={() => handleThanhToan(selectedVehicle)}
                       >
-                        THANH TOÁN & CHECKOUT
+                        THANH TOÁN
                       </button>
                     )
                   ) : selectedVehicle.statusGroup === 'Processing' ? (
@@ -937,7 +1022,7 @@ export const AdminQueue = () => {
                       style={{ background: '#e2e8f0', cursor: 'not-allowed' }}
                       disabled={true}
                     >
-                      TỰ ĐỘNG CHUYỂN TIẾP (DEMO)
+                      TỰ ĐỘNG CHUYỂN TIẾP
                     </button>
                   ) : (
                     <button

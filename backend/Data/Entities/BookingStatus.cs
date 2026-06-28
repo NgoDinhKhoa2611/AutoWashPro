@@ -8,6 +8,7 @@ namespace Auto_Wash.Data.Entities
         Completed = 4,
         Cancelled = 5,
         Washing = 6,
-        NoShow = 7
+        NoShow = 7,
+        WaitingCheckout = 8
     }
 }

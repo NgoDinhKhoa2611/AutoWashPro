@@ -166,5 +166,10 @@ export const adminService = {
   getAdminReviews: async () => {
     const response = await api.get('/api/reviews/admin');
     return response.data;
+  },
+
+  createPayment: async (bookingId) => {
+    const response = await api.post('/api/payment/create', { BookingId: bookingId });
+    return response.data;
   }
 };

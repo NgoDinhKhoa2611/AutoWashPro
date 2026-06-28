@@ -45,7 +45,7 @@ namespace Auto_Wash.Services
                     _logger.LogError(ex, "Error occurred executing BookingWorkflowBackgroundService.");
                 }
 
-                // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
+                // Polling interval for queue workflow processing
                 await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
             }
 
@@ -139,65 +139,68 @@ namespace Auto_Wash.Services
                         q.CompletedAt ??= now;
                         changed = true;
 
-                        if (q.Booking != null && q.Booking.Status != BookingStatus.Completed)
+                        if (q.Booking != null && q.Booking.Status != BookingStatus.WaitingCheckout)
                         {
-                            q.Booking.Status = BookingStatus.Completed;
-                            q.Booking.CompletedAt ??= now;
+                            q.Booking.Status = BookingStatus.WaitingCheckout;
 
                             context.BookingAuditLogs.Add(new BookingAuditLog
                             {
                                 BookingId = q.BookingId!.Value,
-                                Action = "Completed",
-                                Description = $"Tự động hoàn thành dịch vụ sau {BookingWorkflowConfig.TotalDurationSeconds} giây.",
+                                Action = "WaitingCheckout",
+                                Description = $"Tự động chuyển sang trạng thái chờ thanh toán sau {BookingWorkflowConfig.TotalDurationSeconds} giây.",
                                 PerformedBy = "System",
                                 CreatedAt = now
                             });
 
-                            var alreadyAwarded = await context.LoyaltyTransactions
-                                .AnyAsync(lt => lt.BookingId == q.BookingId && lt.TransactionType == "EARN");
-                            if (!alreadyAwarded)
+                            context.Notifications.Add(new Notification
                             {
-                                var customer = q.Booking.Customer;
-                                if (customer != null)
+                                CustomerId = q.Booking.CustomerId,
+                                Title = "Xe đã hoàn tất dịch vụ",
+                                Message = "Xe đã hoàn tất dịch vụ. Vui lòng đến cửa hàng thanh toán.",
+                                Type = "Booking",
+                                IsRead = false,
+                                CreatedAt = now
+                            });
+
+                            // Send WaitingCheckout email notification
+                            if (!q.Booking.WaitingCheckoutEmailSent)
+                            {
+                                q.Booking.WaitingCheckoutEmailSent = true;
+
+                                var mainService = await context.BookingServices
+                                    .Include(bs => bs.Service)
+                                    .Where(bs => bs.BookingId == q.BookingId.Value && !bs.Service.IsAddOn)
+                                    .Select(bs => bs.Service.ServiceName)
+                                    .FirstOrDefaultAsync() ?? "Dịch vụ rửa xe";
+
+                                var emailModel = new BookingEmailModel
                                 {
-                                    customer.TotalVisits += 1;
-                                    customer.TotalSpend += q.Booking.FinalPrice;
-                                    customer.RankingBalance += q.Booking.FinalPrice;
-                                    customer.PointBalance += q.Booking.PointsEarned;
-                                    customer.LifetimePoints += q.Booking.PointsEarned;
-                                    customer.LastVisitAt = now;
+                                    BookingId = q.BookingId.Value,
+                                    CustomerName = q.Booking.Customer?.Account?.FullName ?? "Khách hàng",
+                                    Email = q.Booking.Customer?.Account?.Email ?? "",
+                                    LicensePlate = q.LicensePlate ?? "",
+                                    ScheduledAt = q.Booking.ScheduledAt,
+                                    FinalPrice = q.Booking.FinalPrice,
+                                    ServiceName = mainService
+                                };
+
+                                if (!string.IsNullOrWhiteSpace(emailModel.Email))
+                                {
+                                    var notificationService = scope.ServiceProvider.GetRequiredService<BookingNotificationService>();
+                                    notificationService.SendWaitingCheckoutEmailInBackground(emailModel);
+                                    _logger.LogInformation("[EMAIL] WaitingCheckout email sent: BookingId={BookingId}, Email={Email}", q.BookingId, emailModel.Email);
                                 }
-
-                                context.LoyaltyTransactions.Add(new LoyaltyTransaction
-                                {
-                                    CustomerId = q.Booking.CustomerId,
-                                    Points = q.Booking.PointsEarned,
-                                    TransactionType = "EARN",
-                                    BookingId = q.BookingId,
-                                    Note = $"Tích điểm dịch vụ rửa xe {q.LicensePlate} (Tự động hoàn thành)",
-                                    CreatedAt = now
-                                });
-
-                                context.Notifications.Add(new Notification
-                                {
-                                    CustomerId = q.Booking.CustomerId,
-                                    Title = $"Lịch hẹn #{q.BookingId} đã hoàn tất tự động.",
-                                    Message = $"Xe của bạn đã hoàn tất dịch vụ. Bạn nhận +{q.Booking.PointsEarned} điểm!",
-                                    Type = "points",
-                                    IsRead = false,
-                                    CreatedAt = now
-                                });
                             }
                         }
 
-                        _logger.LogInformation("[AUDIT EVENT] Auto-completed: QueueId={QueueId}, BookingId={BookingId}, LicensePlate={LicensePlate}, CompletedAt={CompletedAt}",
+                        _logger.LogInformation("[AUDIT EVENT] Auto-waiting-checkout: QueueId={QueueId}, BookingId={BookingId}, LicensePlate={LicensePlate}, CompletedAt={CompletedAt}",
                             q.QueueId, q.BookingId, q.LicensePlate, q.CompletedAt);
                     }
                 }
             }
 
-            // 2. Auto NoShow Detection (Threshold: 15 minutes)
-            int noShowThreshold = 15; // as per Phase 2 requirements
+            // 2. Auto NoShow Detection (Threshold configurable)
+            int noShowThreshold = _configuration.GetValue<int>("BookingCapacityConfig:CheckInWindowMinutes", 15);
             var noShowCutoff = now.AddMinutes(-noShowThreshold);
             var overdueBookings = await context.Bookings
                 .Include(b => b.Customer)
@@ -228,7 +231,7 @@ namespace Auto_Wash.Services
                 {
                     BookingId = booking.BookingId,
                     Action = "NoShow",
-                    Description = "Tự động đánh dấu Không Đến (No-Show) do quá hạn check-in 15 phút.",
+                    Description = $"Tự động đánh dấu Không Đến (No-Show) do quá hạn check-in {noShowThreshold} phút.",
                     PerformedBy = "System",
                     CreatedAt = now
                 });
@@ -238,7 +241,7 @@ namespace Auto_Wash.Services
                 {
                     CustomerId = booking.CustomerId,
                     Title = "Lịch hẹn quá hạn (No-Show)",
-                    Message = $"Lịch hẹn #{booking.BookingId} cho xe {booking.Vehicle?.LicensePlate} lúc {booking.ScheduledAt:HH:mm} đã tự động chuyển thành No-Show do trễ check-in 15 phút.",
+                    Message = $"Lịch hẹn #{booking.BookingId} cho xe {booking.Vehicle?.LicensePlate} lúc {booking.ScheduledAt:HH:mm} đã tự động chuyển thành No-Show do trễ check-in {noShowThreshold} phút.",
                     Type = "Booking",
                     IsRead = false,
                     CreatedAt = now

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Auto_Wash.Data;
 using Auto_Wash.Data.Entities;
 using Auto_Wash.DTOs.Admin;
+using Auto_Wash.Helpers;
 
 namespace Auto_Wash.Services
 {
@@ -32,8 +33,8 @@ namespace Auto_Wash.Services
 
             // 3. Revenue
             var completedBookingsGrouped = await _context.Bookings
-                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue && b.PaidAt.Value >= startDate)
-                .GroupBy(b => b.PaidAt!.Value.Date)
+                .Where(b => b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt != null && b.Payment.PaidAt.Value >= startDate)
+                .GroupBy(b => b.Payment.PaidAt!.Value.Date)
                 .Select(g => new { Date = g.Key, Total = g.Sum(b => b.FinalPrice) })
                 .ToListAsync();
 
@@ -46,17 +47,17 @@ namespace Auto_Wash.Services
                 }).ToArray();
 
             var totalRevenue = await _context.Bookings
-                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue && b.PaidAt.Value >= startDate)
+                .Where(b => b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt != null && b.Payment.PaidAt.Value >= startDate)
                 .SumAsync(b => (long)b.FinalPrice);
 
             var prevTotalRevenue = await _context.Bookings
-                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue
-                         && b.PaidAt.Value >= prevStart && b.PaidAt.Value < startDate)
+                .Where(b => b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt != null
+                         && b.Payment.PaidAt.Value >= prevStart && b.Payment.PaidAt.Value < startDate)
                 .SumAsync(b => (long)b.FinalPrice);
 
             // 4. Monthly Revenue (last 30 days)
             var monthlyRevenue = await _context.Bookings
-                .Where(b => b.Status == BookingStatus.Completed && b.PaidAt.HasValue && b.PaidAt.Value >= today.AddDays(-30))
+                .Where(b => b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt != null && b.Payment.PaidAt.Value >= today.AddDays(-30))
                 .SumAsync(b => (long)b.FinalPrice);
 
             // 5. Active Queue
@@ -232,52 +233,21 @@ namespace Auto_Wash.Services
 
         public async Task<(int upgrades, int downgrades)> RunTierReviewAsync()
         {
-            var tiers = await _context.Tiers.OrderBy(t => t.MinRankingBalance).ToListAsync();
-            if (!tiers.Any()) return (0, 0);
-
             var customers = await _context.Customers
                 .Include(c => c.Account)
-                .Include(c => c.Tier)
                 .ToListAsync();
 
             int upgrades = 0, downgrades = 0;
             var now = DateTime.Now;
 
+            // Tier is driven by spend within the rolling ranking window
+            // (see TierHelper). Re-evaluate every customer against that window.
             foreach (var c in customers)
             {
-                var newTier = tiers.Where(t => t.MinRankingBalance <= c.RankingBalance)
-                    .OrderByDescending(t => t.MinRankingBalance)
-                    .FirstOrDefault() ?? tiers.First();
-
-                if (newTier.TierId == c.TierId) continue;
-
-                var isUp = newTier.TierId > c.TierId;
-                if (isUp) upgrades++; else downgrades++;
-
-                _context.LoyaltyTransactions.Add(new LoyaltyTransaction
-                {
-                    CustomerId = c.CustomerId,
-                    Points = 0,
-                    TransactionType = "TIER_UPGRADE",
-                    FromTierId = c.TierId,
-                    ToTierId = newTier.TierId,
-                    Note = "Monthly Tier Review",
-                    CreatedAt = now
-                });
-
-                _context.Notifications.Add(new Notification
-                {
-                    CustomerId = c.CustomerId,
-                    Title = "Thay đổi hạng thành viên",
-                    Message = isUp
-                        ? $"Chúc mừng! Bạn đã được nâng lên hạng {newTier.TierName}."
-                        : $"Hạng thành viên của bạn đã được điều chỉnh xuống {newTier.TierName}.",
-                    Type = "Tier",
-                    IsRead = false,
-                    CreatedAt = now
-                });
-
-                c.TierId = newTier.TierId;
+                int oldTierId = c.TierId;
+                await TierHelper.RecalculateTierAsync(_context, c, now);
+                if (c.TierId > oldTierId) upgrades++;
+                else if (c.TierId < oldTierId) downgrades++;
             }
 
             await _context.SaveChangesAsync();

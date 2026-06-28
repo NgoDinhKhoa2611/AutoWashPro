@@ -98,7 +98,8 @@ namespace Auto_Wash.Services
                         CurrentStage = "CheckIn",
                         Progress = 0,
                         RemainingSeconds = BookingWorkflowConfig.TotalDurationSeconds,
-                        ProgressTracking = BookingWorkflowConfig.GetProgressForBooking(b, null)
+                        ProgressTracking = BookingWorkflowConfig.GetProgressForBooking(b, null),
+                        BookingStatus = b.Status.ToString()
                     };
                 })
                 .OrderBy(item => item.CheckInAt)
@@ -144,7 +145,8 @@ namespace Auto_Wash.Services
                     FinalPrice = q.Booking?.FinalPrice ?? (services.Sum(s => s.Price)),
                     PointsEarned = q.Booking?.PointsEarned ?? 0,
                     Services = services,
-                    QueuePriority = q.Tier?.QueuePriority ?? 0
+                    QueuePriority = q.Tier?.QueuePriority ?? 0,
+                    BookingStatus = q.Booking != null ? q.Booking.Status.ToString() : string.Empty
                 };
 
                 if (q.Status == QueueStatus.Archived || q.Status == QueueStatus.Completed)
@@ -163,7 +165,7 @@ namespace Auto_Wash.Services
                     item.BookingTime = q.Booking != null ? q.Booking.ScheduledAt.ToString("HH:mm") : "Walk-in";
                     item.CheckInTime = q.CheckInAt.ToString("HH:mm:ss");
                     
-                    // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
+                    // Calculate estimated start and ETA based on workflow config
                     var estStart = q.CheckInAt;
                     item.EstimatedStart = estStart.ToString("HH:mm:ss");
                     item.EtaCompletion = estStart.AddSeconds(BookingWorkflowConfig.TotalDurationSeconds).ToString("HH:mm:ss");
@@ -243,9 +245,9 @@ namespace Auto_Wash.Services
                         }
 
                         // Enforce: Do not check-in Cancelled, Completed, or NoShow bookings
-                        if (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.NoShow)
+                        if (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.WaitingCheckout)
                         {
-                            return (false, $"Không thể check-in lịch đặt đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}!", null!);
+                            return (false, $"Không thể check-in lịch đặt đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : booking.Status == BookingStatus.WaitingCheckout ? "chờ thanh toán" : "hoàn thành")}!", null!);
                         }
 
                         var existingQueue = await _context.Queues
@@ -292,8 +294,8 @@ namespace Auto_Wash.Services
             }
             else
             {
-                // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
-                return (false, "Chuyển tiếp thủ công bị vô hiệu hóa trong chế độ demo tự động!", null!);
+                // Manual stage advance is disabled when auto-advance is active
+                return (false, "Chuyển tiếp thủ công bị vô hiệu hóa khi chế độ tự động đang hoạt động!", null!);
             }
         }
 
@@ -318,9 +320,9 @@ namespace Auto_Wash.Services
                     return (false, "Không tìm thấy lịch đặt!", 0);
                 }
 
-                if (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.NoShow)
+                if (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.WaitingCheckout)
                 {
-                    return (false, $"Không thể thao tác trên lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}!", 0);
+                    return (false, $"Không thể thao tác trên lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : booking.Status == BookingStatus.WaitingCheckout ? "chờ thanh toán" : "hoàn thành")}!", 0);
                 }
 
                 // If only updating notes or status is still Waiting, don't create real queue
@@ -461,14 +463,13 @@ namespace Auto_Wash.Services
                     }
                     else if (parsedStatus.Value == QueueStatus.Completed)
                     {
-                        q.Booking.Status = BookingStatus.Completed;
-                        q.Booking.CompletedAt ??= DateTime.Now;
+                        q.Booking.Status = BookingStatus.WaitingCheckout;
 
                         _context.BookingAuditLogs.Add(new BookingAuditLog
                         {
                             BookingId = q.BookingId!.Value,
-                            Action = "Completed",
-                            Description = "Xe đã hoàn tất các công đoạn dịch vụ.",
+                            Action = "WaitingCheckout",
+                            Description = "Xe đã hoàn tất các công đoạn dịch vụ, chờ thanh toán.",
                             PerformedBy = "Staff",
                             CreatedAt = DateTime.Now
                         });
@@ -555,6 +556,8 @@ namespace Auto_Wash.Services
                 .Include(qu => qu.Booking)
                     .ThenInclude(b => b!.Customer)
                         .ThenInclude(c => c.Account)
+                .Include(qu => qu.Booking)
+                    .ThenInclude(b => b!.Payment)
                 .FirstOrDefaultAsync(qu => qu.QueueId == id);
 
             if (q == null)
@@ -592,7 +595,6 @@ namespace Auto_Wash.Services
 
                 if (!alreadyAwarded)
                 {
-                    q.Booking.PaidAt ??= now;
                     q.Booking.CompletedAt ??= now;
 
                     _context.BookingAuditLogs.Add(new BookingAuditLog
@@ -649,6 +651,15 @@ namespace Auto_Wash.Services
             }
 
             await _context.SaveChangesAsync();
+
+            // Re-evaluate membership tier now that this completed booking counts
+            // toward the rolling ranking window (booking is persisted above).
+            if (q.Booking?.Customer != null)
+            {
+                await TierHelper.RecalculateTierAsync(_context, q.Booking.Customer, now);
+                await _context.SaveChangesAsync();
+            }
+
             return (true, "Thanh toán & checkout thành công!", finalPrice, pointsEarned);
         }
 
@@ -761,8 +772,8 @@ namespace Auto_Wash.Services
                     message = "Xe của bạn đang được sấy khô và kiểm tra cuối.";
                     break;
                 case QueueStatus.Completed:
-                    title = "Hoàn tất";
-                    message = "Xe của bạn đã hoàn tất dịch vụ.";
+                    title = "Chờ thanh toán";
+                    message = "Dịch vụ của bạn đã hoàn tất. Vui lòng đến quầy để thanh toán.";
                     break;
             }
 
@@ -801,6 +812,7 @@ namespace Auto_Wash.Services
         public string TierName { get; set; } = string.Empty;
         public int TierId { get; set; }
         public string Status { get; set; } = "Waiting";
+        public string BookingStatus { get; set; } = string.Empty;
         public int Position { get; set; }
         public DateTime CheckInAt { get; set; }
         public DateTime? StartedAt { get; set; }
