@@ -480,6 +480,13 @@ export const CustomerBookings = () => {
     (b.status === 'Completed' && b.checkedOutAt)
   ), [bookings]);
 
+  // Per-filter counts for the history tab filter pills
+  const historyCounts = useMemo(() => ({
+    all: historyBookings.length,
+    completed: historyBookings.filter(b => b.status === 'Completed').length,
+    cancelled: historyBookings.filter(b => b.status === 'Cancelled' || b.status === 'NoShow' || b.status === 'No Show').length,
+  }), [historyBookings]);
+
   // Filtered & Searched history bookings
   const filteredHistory = useMemo(() => historyBookings.filter(b => {
     if (historyFilter === 'completed' && b.status !== 'Completed') return false;
@@ -682,26 +689,41 @@ export const CustomerBookings = () => {
               {/* Search & Filter Controls */}
               <div className="row g-3 mb-4 align-items-center">
                 <div className="col-md-6">
-                  <div className="input-group">
-                    <span className="input-group-text bg-light border-end-0"><i className="fas fa-search text-muted"></i></span>
+                  <div className="history-search">
+                    <i className="fas fa-search history-search-icon"></i>
                     <input
                       type="text"
-                      className="form-control border bg-light text-dark p-2"
+                      className="history-search-input"
                       placeholder="Tìm theo Mã lịch hoặc Biển số xe..."
                       value={historySearch}
                       onChange={(e) => { setHistorySearch(e.target.value); setHistoryPage(1); }}
                     />
+                    {historySearch && (
+                      <button
+                        type="button"
+                        className="history-search-clear"
+                        aria-label="Xoá tìm kiếm"
+                        onClick={() => { setHistorySearch(''); setHistoryPage(1); }}
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="col-md-6 d-flex justify-content-md-end gap-2 flex-wrap">
-                  {['all', 'completed', 'cancelled'].map(f => (
+                  {[
+                    { key: 'all', label: 'Tất cả' },
+                    { key: 'completed', label: 'Hoàn thành' },
+                    { key: 'cancelled', label: 'Đã hủy' },
+                  ].map(f => (
                     <button
-                      key={f}
+                      key={f.key}
                       type="button"
-                      className={`btn btn-sm px-3.5 py-2 fw-semibold rounded-pill border-0 ${historyFilter === f ? 'bg-cyan text-white shadow-sm' : 'btn-light text-secondary'}`}
-                      onClick={() => { setHistoryFilter(f); setHistoryPage(1); }}
+                      className={`history-filter-btn ${historyFilter === f.key ? 'active' : ''}`}
+                      onClick={() => { setHistoryFilter(f.key); setHistoryPage(1); }}
                     >
-                      {f === 'all' ? 'Tất cả' : f === 'completed' ? 'Hoàn thành' : 'Đã hủy'}
+                      {f.label}
+                      <span className="history-filter-count">{historyCounts[f.key]}</span>
                     </button>
                   ))}
                 </div>

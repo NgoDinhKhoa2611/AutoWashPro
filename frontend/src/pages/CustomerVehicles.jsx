@@ -293,7 +293,10 @@ export const CustomerVehicles = () => {
               <i className="fas fa-car-side text-cyan me-2"></i>GARAGE PHƯƠNG TIỆN ĐÃ ĐĂNG KÝ
             </h5>
 
-            <div className="d-flex flex-column gap-3 mb-4">
+            <div
+              className={`d-flex flex-column gap-3 mb-4${vehicles.length > 3 ? ' vehicle-list-scroll' : ''}`}
+              style={vehicles.length > 3 ? { maxHeight: '360px', overflowY: 'auto', paddingRight: '6px' } : undefined}
+            >
               {vehicles.length === 0 ? (
                 <div className="text-center py-5 text-muted small bg-light rounded-4 border border-dashed" style={{ background: 'rgba(15,23,42,0.02)' }}>
                   <i className="fas fa-car-side fa-2x mb-3 text-secondary" style={{ opacity: 0.5 }}></i>

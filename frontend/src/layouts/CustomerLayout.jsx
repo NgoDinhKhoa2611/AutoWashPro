@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { GlobalToastAndConfirm } from '../components/GlobalToastAndConfirm';
+import { GlobalLoader } from '../components/GlobalLoader';
 import { customerService } from '../services/customerService';
 import '../styles/shared.css';
 import '../styles/customer/customer.css';
@@ -34,7 +35,8 @@ export const CustomerLayout = () => {
     // Load notifications from API
     const loadNotifs = async () => {
       try {
-        const response = await customerService.getNotifications();
+        // Polling nền — không kích hoạt vòng loading toàn cục
+        const response = await customerService.getNotifications({ skipGlobalLoader: true });
         if (response.success && response.notifications) {
           setNotifications(response.notifications);
         }
@@ -76,7 +78,7 @@ export const CustomerLayout = () => {
   const markNotifRead = async (id) => {
     try {
       await customerService.markNotificationAsRead(Number(id));
-      const response = await customerService.getNotifications();
+      const response = await customerService.getNotifications({ skipGlobalLoader: true });
       if (response.success && response.notifications) {
         setNotifications(response.notifications);
       }
@@ -93,7 +95,7 @@ export const CustomerLayout = () => {
       for (const n of unread) {
         await customerService.markNotificationAsRead(Number(n.id));
       }
-      const response = await customerService.getNotifications();
+      const response = await customerService.getNotifications({ skipGlobalLoader: true });
       if (response.success && response.notifications) {
         setNotifications(response.notifications);
       }
@@ -127,6 +129,7 @@ export const CustomerLayout = () => {
   return (
     <div className="customer-layout-wrapper">
       <GlobalToastAndConfirm />
+      <GlobalLoader />
 
       {/* Mobile Sidebar Overlay */}
       {mobileSidebarShow && (

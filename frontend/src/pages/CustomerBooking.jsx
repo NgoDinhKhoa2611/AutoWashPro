@@ -462,7 +462,7 @@ export const CustomerBooking = () => {
                             {isDisabled && (
                               <div className="text-danger small mt-2 fw-medium" style={{ fontSize: '0.75rem', lineHeight: '1.3' }}>
                                 <i className="fas fa-exclamation-circle me-1"></i>
-                                This vehicle has an unfinished booking. Please complete or cancel the current booking before creating a new one.
+                                Phương tiện này đang có lịch hẹn chưa hoàn tất. Vui lòng hoàn thành hoặc hủy lịch hẹn hiện tại trước khi đặt lịch mới.
                               </div>
                             )}
                           </div>

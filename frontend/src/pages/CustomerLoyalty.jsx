@@ -228,6 +228,28 @@ export const CustomerLoyalty = () => {
     : 100;
   const fmtVnd = (n) => "₫" + Number(n || 0).toLocaleString("vi-VN");
 
+  // Locked vs achieved state: compare the previewed tier card against the
+  // user's REAL rank (loyalty.tierName from the backend, independent of the
+  // simulator preview). Tiers above the real rank are locked; the real rank
+  // and anything below it are already achieved.
+  const realLadderIdx = tierLadder.findIndex((t) => t.name === loyalty?.tierName);
+  const previewLadderIdx = currentLadderIdx;
+  const rankResolved = realLadderIdx >= 0 && previewLadderIdx >= 0;
+  const isLockedPreview = rankResolved && previewLadderIdx > realLadderIdx;
+  const isPreviousPreview = rankResolved && previewLadderIdx < realLadderIdx;
+  const previewTierLabel = currentTier.replace(" Member", "");
+  const previewTierMin = tierLadder[previewLadderIdx]?.minRankingBalance ?? 0;
+  const spendToUnlock = Math.max(0, previewTierMin - windowedSpend);
+  const unlockProgressPct =
+    previewTierMin > 0
+      ? Math.min(100, Math.round((windowedSpend / previewTierMin) * 100))
+      : 100;
+  const barProgressPct = isLockedPreview
+    ? unlockProgressPct
+    : isPreviousPreview
+      ? 100
+      : spendProgressPct;
+
   return (
     <div className="container-fluid py-4">
       {/* Interactive Tier Simulator controls */}
@@ -254,7 +276,14 @@ export const CustomerLoyalty = () => {
         {/* Left Column: Loyalty Card and Rules */}
         <div className="col-lg-5">
           <div className="member-card-container mb-4" id="loyalty-member-card">
-            <div className={`member-card ${nextTierDetails.cardClass}`}>
+            <div
+              className={`member-card ${nextTierDetails.cardClass}${isLockedPreview ? " member-card-locked" : ""}`}
+            >
+              {isLockedPreview && (
+                <span className="member-card-lock-badge" aria-hidden="true">
+                  <i className="fas fa-lock"></i>
+                </span>
+              )}
               <span className="tier-label">
                 <i className="fas fa-crown me-2"></i>
                 {currentTier.replace(" Member", " Loyalty")}
@@ -273,13 +302,39 @@ export const CustomerLoyalty = () => {
                 AutoWash Loyalty Points · dùng để đổi quà
               </p>
 
-              {/* Spend-to-rank-up amount (reactive to the previewed tier) + progress */}
+              {/* Trạng thái hạng (đã đạt / đã khoá) + tiến độ chi tiêu */}
               <div className="mb-2">
+                {/* Dòng trạng thái hạng */}
+                <div
+                  className={`d-flex align-items-center gap-2 mb-2 fw-bold ${
+                    isLockedPreview ? "tier-status-locked" : "tier-status-achieved"
+                  }`}
+                  style={{ fontSize: "0.95rem" }}
+                >
+                  <i
+                    className={`fas ${isLockedPreview ? "fa-lock" : "fa-check-circle"}`}
+                  ></i>
+                  {isLockedPreview
+                    ? `Hạng ${previewTierLabel} đã khoá`
+                    : `Bạn đã đạt hạng ${previewTierLabel}`}
+                </div>
+
+                {/* Dòng hướng dẫn chi tiêu */}
                 <div
                   className="text-white mb-2"
-                  style={{ fontSize: "0.98rem", fontWeight: 600, opacity: 0.95 }}
+                  style={{ fontSize: "0.95rem", fontWeight: 600, opacity: 0.95 }}
                 >
-                  {isMaxTier ? (
+                  {isLockedPreview ? (
+                    <>
+                      Cần chi tiêu thêm{" "}
+                      <strong style={{ fontWeight: 800 }}>
+                        {fmtVnd(spendToUnlock)}
+                      </strong>{" "}
+                      để mở khoá hạng {previewTierLabel}
+                    </>
+                  ) : isPreviousPreview ? (
+                    <>Bạn đã hoàn thành hạng này ✓</>
+                  ) : isMaxTier ? (
                     <>Bạn đang ở hạng cao nhất 🎉</>
                   ) : (
                     <>
@@ -291,17 +346,8 @@ export const CustomerLoyalty = () => {
                     </>
                   )}
                 </div>
-                <div
-                  className="d-flex justify-content-between mb-1 text-white"
-                  style={{ fontSize: "0.66rem", opacity: 0.8, fontWeight: 700 }}
-                >
-                  <span
-                    style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}
-                  >
-                    Chi tiêu {windowMonths} tháng: {fmtVnd(windowedSpend)}
-                  </span>
-                  {!isMaxTier && <span>{fmtVnd(nextTierMin)}</span>}
-                </div>
+
+                {/* Thanh tiến độ */}
                 <div
                   style={{
                     height: 8,
@@ -312,55 +358,13 @@ export const CustomerLoyalty = () => {
                 >
                   <div
                     style={{
-                      width: `${spendProgressPct}%`,
+                      width: `${barProgressPct}%`,
                       height: "100%",
                       borderRadius: 999,
                       background: "var(--cyan-electric, #0ea5e9)",
                       transition: "width .4s ease",
                     }}
                   />
-                </div>
-              </div>
-
-              <div className="d-flex justify-content-between align-items-center mt-4">
-                <div>
-                  <small
-                    style={{
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "1px",
-                      opacity: 0.6,
-                    }}
-                  >
-                    HẠNG TIẾP THEO
-                  </small>
-                  <div
-                    className="fw-bold text-cyan mt-1"
-                    style={{ fontSize: "0.88rem" }}
-                  >
-                    {isMaxTier ? "Tối cao" : nextTierName}
-                  </div>
-                </div>
-                <div className="text-end">
-                  <small
-                    style={{
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "1px",
-                      opacity: 0.6,
-                    }}
-                  >
-                    MÃ THÀNH VIÊN
-                  </small>
-                  <div
-                    className="fw-bold text-white mt-1 font-monospace"
-                    style={{ fontSize: "0.75rem", letterSpacing: "1px" }}
-                  >
-                    AW-LOYALTY-
-                    {currentTier.replace(" Member", "").toUpperCase()}
-                  </div>
                 </div>
               </div>
             </div>

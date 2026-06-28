@@ -145,8 +145,8 @@ export const customerService = {
     return response.data;
   },
 
-  getNotifications: async () => {
-    const response = await api.get('/Customer/GetNotifications');
+  getNotifications: async (config = {}) => {
+    const response = await api.get('/Customer/GetNotifications', config);
     return response.data;
   },
 
