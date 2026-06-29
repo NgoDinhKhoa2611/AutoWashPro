@@ -490,8 +490,40 @@ namespace Auto_Wash.Services
             var queue = b.Queues.FirstOrDefault();
             var progressTracking = BookingWorkflowConfig.GetProgressForBooking(b, queue);
 
+            // Calculate reschedule quota statistics for this customer
+            var cutoff = DateTime.Now.AddDays(-30);
+            var quotaUsed = await _context.BookingRescheduleHistories
+                .CountAsync(rh => rh.Booking.CustomerId == b.CustomerId 
+                               && rh.ChangedBy == "Customer" 
+                               && rh.CreatedAt >= cutoff);
+
+            var remainingReschedules = Math.Max(0, 3 - quotaUsed);
+            var isQuotaExhausted = quotaUsed >= 3;
+
+            DateTime? nextQuotaResetAt = null;
+            if (quotaUsed > 0)
+            {
+                var oldestAttempt = await _context.BookingRescheduleHistories
+                    .Where(rh => rh.Booking.CustomerId == b.CustomerId 
+                              && rh.ChangedBy == "Customer" 
+                              && rh.CreatedAt >= cutoff)
+                    .OrderBy(rh => rh.CreatedAt)
+                    .Select(rh => (DateTime?)rh.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (oldestAttempt.HasValue)
+                {
+                    nextQuotaResetAt = oldestAttempt.Value.AddDays(30);
+                }
+            }
+
             return new {
                 bookingId = b.BookingId,
+                remainingReschedules = remainingReschedules,
+                quotaLimit = 3,
+                quotaUsed = quotaUsed,
+                nextQuotaResetAt = nextQuotaResetAt,
+                isQuotaExhausted = isQuotaExhausted,
                 customer = new {
                     fullName = b.Customer?.Account?.FullName ?? "Khách hàng",
                     phone = b.Customer?.Account?.Phone ?? "",
@@ -635,6 +667,8 @@ namespace Auto_Wash.Services
                     .ThenInclude(bs => bs.Service)
                 .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.CustomerId == customerId);
 
+
+
             if (booking == null)
             {
                 return (false, "Không tìm thấy đơn đặt lịch hoặc bạn không có quyền đổi lịch.");
@@ -698,6 +732,21 @@ namespace Auto_Wash.Services
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
+                    // 1. Lock customer row to prevent concurrent exploits on rolling quota
+                    await _context.Database.ExecuteSqlRawAsync("SELECT 1 FROM customers WHERE customerid = {0} FOR UPDATE;", customerId);
+
+                    // 2. Count customer's successful reschedules in rolling 30 days
+                    var cutoff = DateTime.Now.AddDays(-30);
+                    var quotaUsed = await _context.BookingRescheduleHistories
+                        .CountAsync(rh => rh.Booking.CustomerId == customerId 
+                                       && rh.ChangedBy == "Customer" 
+                                       && rh.CreatedAt >= cutoff);
+
+                    if (quotaUsed >= 3)
+                    {
+                        return (false, "You have reached the maximum of 3 reschedules within the last 30 days.");
+                    }
+
                     int lockKey1 = newScheduledAt.Year * 10000 + newScheduledAt.Month * 100 + newScheduledAt.Day;
                     int lockKey2 = newScheduledAt.Hour;
                     await _context.Database.ExecuteSqlRawAsync($"SELECT pg_advisory_xact_lock({lockKey1}, {lockKey2});");
@@ -728,6 +777,7 @@ namespace Auto_Wash.Services
                     booking.Status = BookingStatus.Confirmed; 
                     booking.Reminder1Sent = false;
                     booking.Reminder2Sent = false;
+                    booking.RescheduleCount++;
 
                     _context.BookingRescheduleHistories.Add(new BookingRescheduleHistory
                     {
@@ -784,7 +834,8 @@ namespace Auto_Wash.Services
                         _bookingNotificationService.SendBookingRescheduledEmailInBackground(emailModel);
                     }
 
-                    return (true, "Đổi lịch hẹn thành công!");
+                    var remainingAttempts = Math.Max(0, 3 - (quotaUsed + 1));
+                    return (true, $"Booking rescheduled successfully. You have {remainingAttempts} reschedule attempt(s) remaining.");
                 }
                 catch (Exception ex)
                 {

@@ -706,9 +706,17 @@ export const AdminBookings = () => {
                             {getStatusLabel(bookingDetail.status)}
                           </span>
                         </div>
-                        <div className="col-12 border-top pt-1">
-                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Ngày tạo đơn</small>
-                          <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>{new Date(bookingDetail.createdAt).toLocaleString('vi-VN')}</span>
+                        <div className="col-12 border-top pt-1 d-flex justify-content-between align-items-center">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Ngày tạo đơn</small>
+                            <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>{new Date(bookingDetail.createdAt).toLocaleString('vi-VN')}</span>
+                          </div>
+                          <div className="text-end">
+                            <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Quota 30 ngày (Khách)</small>
+                            <span className={`badge ${bookingDetail.quotaUsed >= 3 ? 'bg-danger' : 'bg-secondary'} px-2 py-1 mt-0.5`} style={{ fontSize: '0.7rem' }}>
+                              Used: {bookingDetail.quotaUsed ?? 0} / 3
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

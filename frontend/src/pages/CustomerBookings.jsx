@@ -1358,6 +1358,35 @@ export const CustomerBookings = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* Reschedule Quota Statistics */}
+                    {detailModalBooking.quotaLimit !== undefined && (
+                      <div className="border-top pt-3 mt-3">
+                        <small className="text-muted d-block fw-bold mb-2" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>HẠN MỨC ĐỔI LỊCH (30 NGÀY QUA)</small>
+                        <div className="bg-light p-3 rounded-4 border text-start" style={{ fontSize: '0.8rem' }}>
+                          <div className="d-flex justify-content-between mb-1.5">
+                            <span className="text-secondary">Đã dùng:</span>
+                            <strong className={detailModalBooking.quotaUsed >= 3 ? "text-danger" : "text-dark"}>
+                              {detailModalBooking.quotaUsed} / {detailModalBooking.quotaLimit} lần
+                            </strong>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1.5">
+                            <span className="text-secondary">Còn lại:</span>
+                            <strong className={detailModalBooking.remainingReschedules === 0 ? "text-danger" : "text-success"}>
+                              {detailModalBooking.remainingReschedules} lượt
+                            </strong>
+                          </div>
+                          {detailModalBooking.nextQuotaResetAt && (
+                            <div className="d-flex justify-content-between border-top pt-2 mt-2" style={{ fontSize: '0.75rem' }}>
+                              <span className="text-muted"><i className="fas fa-history me-1"></i>Hồi lượt tiếp theo:</span>
+                              <strong className="text-info">
+                                {new Date(detailModalBooking.nextQuotaResetAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                              </strong>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1375,13 +1404,21 @@ export const CustomerBookings = () => {
             <>
               {detailModalBooking && (detailModalBooking.status === 'Pending' || detailModalBooking.status === 'Pending Confirmation' || detailModalBooking.status === 'Confirmed') && (
                 <>
+                  {detailModalBooking.rescheduleCount >= 3 && (
+                    <div className="alert alert-warning border-0 small py-2 px-3 mb-2 w-100 text-start d-flex align-items-center" style={{ borderRadius: '8px', fontSize: '0.75rem', gap: '8px' }}>
+                      <i className="fas fa-exclamation-triangle text-warning"></i>
+                      <span>Lịch hẹn này đã đổi 3/3 lần. Bạn không thể thay đổi lịch nữa. Vui lòng hủy lịch và đặt mới nếu cần.</span>
+                    </div>
+                  )}
                   <button className="btn btn-outline-danger px-4 py-2 small fw-bold" style={{ borderRadius: '8px' }} onClick={(e) => handleOpenCancel(detailModalBooking.bookingId, e)}>
                     Hủy lịch hẹn
                   </button>
                   <button 
                     className="btn btn-warning px-4 py-2 small fw-bold text-dark" 
-                    style={{ borderRadius: '8px' }} 
+                    disabled={detailModalBooking.rescheduleCount >= 3}
+                    style={{ borderRadius: '8px', opacity: detailModalBooking.rescheduleCount >= 3 ? 0.5 : 1, cursor: detailModalBooking.rescheduleCount >= 3 ? 'not-allowed' : 'pointer' }}
                     onClick={() => {
+                      if (detailModalBooking.rescheduleCount >= 3) return;
                       const sDate = new Date(detailModalBooking.scheduledAt);
                       setRescheduleDate(sDate.toLocaleDateString('sv-SE'));
                       setRescheduleTime(sDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
