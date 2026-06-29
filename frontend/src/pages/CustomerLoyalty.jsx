@@ -121,10 +121,6 @@ export const CustomerLoyalty = () => {
           r.rewardType === "DiscountPercent" ||
           r.rewardType === "Discount_Fixed",
       );
-    if (activeFilter === "Dịch vụ")
-      return rewards.filter(
-        (r) => r.rewardType === "Free_Wash" || r.rewardType === "Free_AddOn",
-      );
     if (activeFilter === "Quà tặng" || activeFilter === "Combo đặc biệt")
       return rewards.filter(
         (r) => r.rewardType === "Free_Wash" || r.rewardType === "Free_AddOn",
@@ -447,7 +443,7 @@ export const CustomerLoyalty = () => {
 
             {/* Filter buttons */}
             <div className="d-flex flex-nowrap gap-2 mb-4 w-100">
-              {["Tất cả", "Giảm giá", "Dịch vụ", "Quà tặng"].map((f) => (
+              {["Tất cả", "Giảm giá", "Quà tặng"].map((f) => (
                 <button
                   key={f}
                   className={`btn btn-sm loyalty-filter-btn border-0 rounded-pill ${

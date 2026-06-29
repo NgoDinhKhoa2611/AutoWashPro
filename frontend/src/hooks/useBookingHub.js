@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
-import * as signalR from '@microsoft/signalr';
 import { API_BASE_URL } from '../services/api';
+
+// SignalR is loaded as a global via a CDN <script> tag in index.html
+// (see "SignalR client" there) instead of being bundled as an npm dependency.
+const signalR = window.signalR;
 
 /**
  * Subscribes to real-time booking events from the backend SignalR hub.
@@ -20,6 +23,11 @@ export const useBookingHub = (onBookingCreated) => {
   }, [onBookingCreated]);
 
   useEffect(() => {
+    if (!signalR) {
+      console.error('SignalR client not loaded (CDN script missing in index.html). Real-time booking updates disabled; falling back to timer polling.');
+      return undefined;
+    }
+
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${API_BASE_URL}/hubs/bookings`, { withCredentials: true })
       .withAutomaticReconnect()

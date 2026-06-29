@@ -287,6 +287,71 @@ namespace Auto_Wash.Services
             return payment == null ? null : MapToDto(payment);
         }
 
+        public async Task<PaymentReconcileResult> ReconcilePaymentAsync(int bookingId)
+        {
+            var payment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.BookingId == bookingId);
+
+            if (payment == null)
+            {
+                return new PaymentReconcileResult { Payment = null, JustConfirmed = false };
+            }
+
+            // Already resolved (Paid/Failed): nothing to reconcile.
+            if (payment.Status != (int)PaymentStatus.Pending)
+            {
+                return new PaymentReconcileResult { Payment = MapToDto(payment), JustConfirmed = false };
+            }
+
+            if (!long.TryParse(payment.TxnRef, out var orderCode))
+            {
+                _logger.LogWarning("ReconcilePaymentAsync: Payment {PaymentId} has invalid TxnRef '{TxnRef}'. Cannot query PayOS.", payment.PaymentId, payment.TxnRef);
+                return new PaymentReconcileResult { Payment = MapToDto(payment), JustConfirmed = false };
+            }
+
+            // Ask PayOS for the authoritative status. The browser-return / polling
+            // path always reaches this local backend, so this works without the
+            // async webhook being publicly reachable.
+            PaymentLink link;
+            try
+            {
+                link = await _payOSClient.PaymentRequests.GetAsync(orderCode);
+            }
+            catch (Exception ex)
+            {
+                // Network/gateway error must not break the client's polling loop.
+                _logger.LogWarning(ex, "ReconcilePaymentAsync: Failed to query PayOS for OrderCode {OrderCode}. Leaving payment Pending.", orderCode);
+                return new PaymentReconcileResult { Payment = MapToDto(payment), JustConfirmed = false };
+            }
+
+            switch (link.Status)
+            {
+                case PaymentLinkStatus.Paid:
+                    // Defensive amount check, mirroring the webhook handler.
+                    if (link.AmountPaid < payment.Amount)
+                    {
+                        _logger.LogWarning("ReconcilePaymentAsync: OrderCode {OrderCode} reported Paid but AmountPaid {Paid} < expected {Expected}. Skipping.", orderCode, link.AmountPaid, payment.Amount);
+                        return new PaymentReconcileResult { Payment = MapToDto(payment), JustConfirmed = false };
+                    }
+
+                    var reference = link.Transactions?.FirstOrDefault()?.Reference;
+                    var paidDto = await UpdatePaymentStatusAsync(payment.TxnRef!, (int)PaymentStatus.Paid, reference, "00");
+                    _logger.LogInformation("ReconcilePaymentAsync: OrderCode {OrderCode} confirmed Paid via reconciliation.", orderCode);
+                    return new PaymentReconcileResult { Payment = paidDto, JustConfirmed = true };
+
+                case PaymentLinkStatus.Cancelled:
+                case PaymentLinkStatus.Expired:
+                case PaymentLinkStatus.Failed:
+                    var failedDto = await UpdatePaymentStatusAsync(payment.TxnRef!, (int)PaymentStatus.Failed, null, link.Status.ToString());
+                    _logger.LogInformation("ReconcilePaymentAsync: OrderCode {OrderCode} marked Failed (PayOS status {Status}).", orderCode, link.Status);
+                    return new PaymentReconcileResult { Payment = failedDto, JustConfirmed = false };
+
+                default:
+                    // Pending / Processing / Underpaid — still in flight, leave as-is.
+                    return new PaymentReconcileResult { Payment = MapToDto(payment), JustConfirmed = false };
+            }
+        }
+
         private static PaymentDto MapToDto(Payment payment)
         {
             return new PaymentDto

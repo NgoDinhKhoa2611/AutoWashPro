@@ -539,31 +539,12 @@ export const AdminQueue = () => {
 
         {/* Action buttons */}
         <div className="queue-card-actions">
-          {isWaiting ? (
-            <>
-              <button
-                className="queue-btn queue-btn-checkin"
-                disabled={submittingIds.has(item.queueId)}
-                onClick={() => handleAdvanceColumn(item.queueId)}
-              >
-                {submittingIds.has(item.queueId) && <span className="spinner-border spinner-border-sm me-1" role="status"></span>}
-                CHECK-IN
-              </button>
-              <button
-                className="queue-btn queue-btn-detail"
-                onClick={() => setSelectedVehicle(item)}
-              >
-                <i className="fas fa-eye"></i>
-              </button>
-            </>
-          ) : (
-            <button
-              className="queue-btn queue-btn-detail w-100"
-              onClick={() => setSelectedVehicle(item)}
-            >
-              CHI TIẾT
-            </button>
-          )}
+          <button
+            className="queue-btn queue-btn-detail w-100"
+            onClick={() => setSelectedVehicle(item)}
+          >
+            CHI TIẾT
+          </button>
         </div>
       </div>
     );
@@ -642,24 +623,6 @@ export const AdminQueue = () => {
 
       {/* 2. SUMMARY DASHBOARD CARDS */}
       <div className="row g-3 mb-4 text-start">
-        {/* Waiting Check-In */}
-        <div className="col-12 col-sm-6 col-lg">
-          <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-pending ${statusFilter === 'WAITING_CHECKIN' ? 'active' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'WAITING_CHECKIN' ? 'ALL' : 'WAITING_CHECKIN')}
-          >
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#FA8C16' }}>{stats.waitingCheckIn}</h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>CHỜ CHECK-IN</small>
-              </div>
-              <div className="stat-icon-wrapper" style={{ background: '#FFF7E6', color: '#FA8C16' }}>
-                <i className="fas fa-clock fa-lg"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Processing */}
         <div className="col-12 col-sm-6 col-lg">
           <div 
