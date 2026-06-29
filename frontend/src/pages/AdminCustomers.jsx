@@ -161,7 +161,15 @@ export const AdminCustomers = () => {
     }
   };
 
-  const filteredCustomers = customers; // Already filtered on the backend!
+  // Already filtered on the backend; sort by tier from highest to lowest.
+  const getTierRank = (tier) => {
+    const t = (tier || '').toUpperCase();
+    if (t.includes('PLATINUM')) return 4;
+    if (t.includes('GOLD')) return 3;
+    if (t.includes('SILVER')) return 2;
+    return 1; // Standard / Member
+  };
+  const filteredCustomers = [...customers].sort((a, b) => getTierRank(b.tier) - getTierRank(a.tier));
 
   return (
     <div className="container-fluid py-4 text-start">
@@ -186,14 +194,15 @@ export const AdminCustomers = () => {
 
       {/* Customer Directory Table */}
       <Table
+        className="customer-table-vbordered"
         headers={[
           { label: 'Khách hàng', className: 'ps-4 py-3' },
-          { label: 'Số điện thoại' },
-          { label: 'Phân hạng Loyalty' },
-          { label: 'Số điểm tích lũy' },
-          { label: 'Chi tiêu tích lũy' },
-          { label: 'Tổng lượt rửa' },
-          { label: 'Voucher khả dụng' },
+          { label: 'SĐT' },
+          { label: 'Hạng' },
+          { label: 'Điểm tích lũy (PTS)', className: 'text-end' },
+          { label: 'Chi tiêu tích lũy (đ)', className: 'text-end' },
+          { label: 'Số lượt rửa', className: 'text-end' },
+          { label: 'Voucher', className: 'text-end' },
           { label: 'Hành động', className: 'text-end pe-4' }
         ]}
         emptyMessage="Không tìm thấy khách hàng nào"
@@ -210,10 +219,10 @@ export const AdminCustomers = () => {
                 {c.tier}
               </span>
             </td>
-            <td className="fw-bold text-dark">{c.points.toLocaleString()} PTS</td>
-            <td className="fw-bold text-cyan">{c.spend.toLocaleString()}đ</td>
-            <td className="text-dark">{c.totalWashes} lượt</td>
-            <td className="text-secondary">{c.activeVouchersCount} voucher</td>
+            <td className="fw-bold text-dark text-end">{c.points.toLocaleString()}</td>
+            <td className="fw-bold text-cyan text-end">{c.spend.toLocaleString()}</td>
+            <td className="text-dark text-end">{c.totalWashes}</td>
+            <td className="text-secondary text-end">{c.activeVouchersCount}</td>
             <td className="text-end pe-4">
               <div className="d-flex justify-content-end gap-1.5">
                 <button

@@ -226,7 +226,7 @@ export const CustomerLoyalty = () => {
   const spendProgressPct = nextTierMin
     ? Math.min(100, Math.round((windowedSpend / nextTierMin) * 100))
     : 100;
-  const fmtVnd = (n) => "₫" + Number(n || 0).toLocaleString("vi-VN");
+  const fmtVnd = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
   // Locked vs achieved state: compare the previewed tier card against the
   // user's REAL rank (loyalty.tierName from the backend, independent of the
@@ -250,13 +250,21 @@ export const CustomerLoyalty = () => {
       ? 100
       : spendProgressPct;
 
+  // Presentation rules for the member card (viewing your own current rank):
+  // - Drop the "Bạn đã đạt hạng …" achieved line; keep only the
+  //   "Cần thanh toán thêm … để thăng hạng" spend guidance for the current tier.
+  // - Standard tier additionally gets a brighter highlight bar to emphasise spend.
+  const isStandardTier = currentTier === "Standard Member";
+  const isCurrentAchievedView = !isLockedPreview && !isPreviousPreview;
+  const useHighlightBar = isStandardTier && isCurrentAchievedView;
+
   return (
     <div className="container-fluid py-4">
       {/* Interactive Tier Simulator controls */}
       <div className="row mb-4">
         <div className="col-12 text-start">
           <small className="text-cyan fw-bold" style={{ letterSpacing: "1px" }}>
-            SIMULATOR PHÂN HẠNG THÀNH VIÊN
+            PHÂN HẠNG THÀNH VIÊN
           </small>
           <div className="d-flex flex-wrap gap-2 mt-2">
             {Object.keys(TIER_DATA).map((key) => (
@@ -304,22 +312,18 @@ export const CustomerLoyalty = () => {
 
               {/* Trạng thái hạng (đã đạt / đã khoá) + tiến độ chi tiêu */}
               <div className="mb-2">
-                {/* Dòng trạng thái hạng */}
-                <div
-                  className={`d-flex align-items-center gap-2 mb-2 fw-bold ${
-                    isLockedPreview ? "tier-status-locked" : "tier-status-achieved"
-                  }`}
-                  style={{ fontSize: "0.95rem" }}
-                >
-                  <i
-                    className={`fas ${isLockedPreview ? "fa-lock" : "fa-check-circle"}`}
-                  ></i>
-                  {isLockedPreview
-                    ? `Hạng ${previewTierLabel} đã khoá`
-                    : `Bạn đã đạt hạng ${previewTierLabel}`}
-                </div>
+                {/* Dòng trạng thái hạng — chỉ hiển thị khi hạng bị khoá */}
+                {isLockedPreview && (
+                  <div
+                    className="d-flex align-items-center gap-2 mb-2 fw-bold tier-status-locked"
+                    style={{ fontSize: "0.95rem" }}
+                  >
+                    <i className="fas fa-lock"></i>
+                    Hạng {previewTierLabel} đã khoá
+                  </div>
+                )}
 
-                {/* Dòng hướng dẫn chi tiêu */}
+                {/* Dòng hướng dẫn chi tiêu — luôn hiển thị cho hạng hiện tại */}
                 <div
                   className="text-white mb-2"
                   style={{ fontSize: "0.95rem", fontWeight: 600, opacity: 0.95 }}
@@ -338,7 +342,7 @@ export const CustomerLoyalty = () => {
                     <>Bạn đang ở hạng cao nhất 🎉</>
                   ) : (
                     <>
-                      Thanh toán thêm{" "}
+                      Cần thanh toán thêm{" "}
                       <strong style={{ fontWeight: 800 }}>
                         {fmtVnd(amountToNext)}
                       </strong>{" "}
@@ -361,7 +365,12 @@ export const CustomerLoyalty = () => {
                       width: `${barProgressPct}%`,
                       height: "100%",
                       borderRadius: 999,
-                      background: "var(--cyan-electric, #0ea5e9)",
+                      background: useHighlightBar
+                        ? "linear-gradient(90deg, #22d3ee 0%, #38bdf8 55%, #a5f3fc 100%)"
+                        : "var(--cyan-electric, #0ea5e9)",
+                      boxShadow: useHighlightBar
+                        ? "0 0 10px rgba(56,189,248,0.85)"
+                        : "none",
                       transition: "width .4s ease",
                     }}
                   />

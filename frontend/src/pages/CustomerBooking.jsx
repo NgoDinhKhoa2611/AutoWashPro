@@ -229,7 +229,7 @@ export const CustomerBooking = () => {
     // 30s Polling
     const interval = setInterval(() => {
       if (bookingDate) {
-        customerService.getOccupiedSlots(bookingDate).then(res => {
+        customerService.getOccupiedSlots(bookingDate, { skipGlobalLoader: true }).then(res => {
           if (res.success) {
             setSlotsStatus(res.slotsStatus || {});
             setOccupiedSlots(res.occupiedSlots || []);

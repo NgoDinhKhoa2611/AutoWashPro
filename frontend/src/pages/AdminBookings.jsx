@@ -5,6 +5,7 @@ import '../styles/admin/admin.css';
 import '../styles/admin/bookings.css';
 import { adminService } from '../services/adminService';
 import { customerService } from '../services/customerService';
+import { useBookingHub } from '../hooks/useBookingHub';
 
 const DEFAULT_TIME_SLOTS = [
   "08:00", "09:00", "10:00", "11:00", "12:00", 
@@ -19,7 +20,7 @@ export const AdminBookings = () => {
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('WAITING_CHECKIN');
   const [dateFilter, setDateFilter] = useState('');
   
   // Drawer State
@@ -114,6 +115,14 @@ export const AdminBookings = () => {
     }, 30000);
     return () => clearInterval(interval);
   }, [loadBookings]);
+
+  // Real-time: refresh instantly when a new booking is created (poll above is fallback).
+  useBookingHub((payload) => {
+    loadBookings();
+    if (window.showToast) {
+      window.showToast(`Lịch đặt mới #${payload.bookingId} · ${payload.licensePlate}`, 'info');
+    }
+  });
 
   useEffect(() => {
     return () => {
@@ -456,10 +465,7 @@ export const AdminBookings = () => {
     waitingCheckIn: bookings.filter(b => b.status === 'Confirmed' || b.status === 'Pending').length,
     processing: bookings.filter(b => b.status === 'CheckedIn' || b.status === 'Washing').length,
     completedToday: bookings.filter(b => b.status === 'Completed' && b.scheduledAt.split('T')[0] === todayStr).length,
-    noShow: bookings.filter(b => b.status === 'NoShow').length,
-    todaysRevenue: bookings
-      .filter(b => b.status === 'Completed' && b.scheduledAt.split('T')[0] === todayStr)
-      .reduce((sum, b) => sum + (Number(b.finalPrice) || 0), 0)
+    noShow: bookings.filter(b => b.status === 'NoShow').length
   };
 
   // Render Skeleton Cards
@@ -571,26 +577,6 @@ export const AdminBookings = () => {
               </div>
               <div className="stat-icon-wrapper" style={{ background: '#F1F5F9', color: '#64748b' }}>
                 <i className="fas fa-user-slash fa-lg"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Today's Revenue */}
-        <div className="col-12 col-sm-6 col-lg">
-          <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-all`}
-            style={{ cursor: 'default' }}
-          >
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#0ea5e9' }}>
-                  {stats.todaysRevenue.toLocaleString()}đ
-                </h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>DOANH THU HÔM NAY</small>
-              </div>
-              <div className="stat-icon-wrapper" style={{ background: '#E0F2FE', color: '#0ea5e9' }}>
-                <i className="fas fa-dollar-sign fa-lg"></i>
               </div>
             </div>
           </div>

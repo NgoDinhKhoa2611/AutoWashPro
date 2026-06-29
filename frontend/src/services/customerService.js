@@ -76,8 +76,8 @@ export const customerService = {
     return response.data;
   },
 
-  getBookingDetail: async (id) => {
-    const response = await api.get(`/Customer/GetBookingDetail/${id}`);
+  getBookingDetail: async (id, config = {}) => {
+    const response = await api.get(`/Customer/GetBookingDetail/${id}`, config);
     return response.data;
   },
 
@@ -110,8 +110,8 @@ export const customerService = {
     return response.data;
   },
 
-  getPendingReviews: async () => {
-    const response = await api.get('/api/reviews/pending');
+  getPendingReviews: async (config = {}) => {
+    const response = await api.get('/api/reviews/pending', config);
     return response.data;
   },
 
@@ -120,8 +120,8 @@ export const customerService = {
     return response.data;
   },
 
-  getOccupiedSlots: async (date) => {
-    const response = await api.get(`/Customer/GetOccupiedSlots?date=${date}`);
+  getOccupiedSlots: async (date, config = {}) => {
+    const response = await api.get(`/Customer/GetOccupiedSlots?date=${date}`, config);
     return response.data;
   },
 
@@ -130,13 +130,13 @@ export const customerService = {
     return response.data;
   },
 
-  getWashHistory: async () => {
-    const response = await api.get('/Customer/GetWashHistory');
+  getWashHistory: async (config = {}) => {
+    const response = await api.get('/Customer/GetWashHistory', config);
     return response.data;
   },
 
-  getActiveBooking: async () => {
-    const response = await api.get('/Customer/GetActiveBooking');
+  getActiveBooking: async (config = {}) => {
+    const response = await api.get('/Customer/GetActiveBooking', config);
     return response.data;
   },
 

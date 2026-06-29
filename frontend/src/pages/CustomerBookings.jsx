@@ -57,6 +57,8 @@ export const CustomerBookings = () => {
   const [detailModalBooking, setDetailModalBooking] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  // Live per-second countdown for the washing-process progress in the detail modal.
+  const [liveRemaining, setLiveRemaining] = useState(0);
 
   const [expandedSections, setExpandedSections] = useState({
     customer: true,
@@ -189,6 +191,31 @@ export const CustomerBookings = () => {
     detailModalBookingRef.current = detailModalBooking;
   }, [showDetailModal, detailModalBooking]);
 
+  // Real-time countdown for the washing-process panel in the detail modal. Seeded
+  // from the server value (re-synced on each 10s detail re-fetch), it ticks down
+  // once per second while the wash is actively running.
+  useEffect(() => {
+    const pt = detailModalBooking?.progressTracking;
+    if (!showDetailModal || !pt) return;
+
+    const seconds = Math.max(0, Number(pt.remainingSeconds) || 0);
+    setLiveRemaining(seconds);
+
+    const inProgress =
+      seconds > 0 &&
+      (pt.progress ?? 0) < 100 &&
+      detailModalBooking.status !== 'Completed' &&
+      detailModalBooking.status !== 'Cancelled' &&
+      detailModalBooking.status !== 'NoShow' &&
+      !detailModalBooking.checkedOutAt;
+    if (!inProgress) return;
+
+    const id = setInterval(() => {
+      setLiveRemaining(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [showDetailModal, detailModalBooking]);
+
   // Handle payment redirect query params from PayOS return URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -225,18 +252,19 @@ export const CustomerBookings = () => {
       intervalId = setInterval(() => {
         if (document.hidden) return;
 
-        customerService.getWashHistory().then(bookingRes => {
+        // Background polls — don't flash the global loading overlay.
+        customerService.getWashHistory({ skipGlobalLoader: true }).then(bookingRes => {
           if (bookingRes.success && bookingRes.history) {
             setBookings(bookingRes.history);
           }
         });
-        customerService.getPendingReviews().then(pendingRes => {
+        customerService.getPendingReviews({ skipGlobalLoader: true }).then(pendingRes => {
           if (pendingRes.success && pendingRes.bookings) {
             setPendingReviewBookings(pendingRes.bookings);
           }
         });
         if (showDetailModalRef.current && detailModalBookingRef.current) {
-          customerService.getBookingDetail(detailModalBookingRef.current.bookingId).then(res => {
+          customerService.getBookingDetail(detailModalBookingRef.current.bookingId, { skipGlobalLoader: true }).then(res => {
             if (res.success && res.booking) {
               setDetailModalBooking(res.booking);
             }
@@ -1135,15 +1163,17 @@ export const CustomerBookings = () => {
                        detailModalBooking.status !== 'Cancelled' && 
                        detailModalBooking.status !== 'NoShow' && 
                        !detailModalBooking.checkedOutAt && (
-                        <div className="mb-3 p-3 rounded-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                          <div className="d-flex justify-content-between align-items-center mb-1">
-                            <span className="small text-secondary fw-bold" style={{ fontSize: '0.7rem' }}>Tiến độ: {detailModalBooking.progressTracking.progress}%</span>
+                        <div className="mb-3 p-3 rounded-4" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', border: '1px solid #334155' }}>
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <span className="fw-bold text-white" style={{ fontSize: '0.78rem' }}>Tiến độ: {detailModalBooking.progressTracking.progress}%</span>
                             {detailModalBooking.progressTracking.remainingSeconds !== undefined && detailModalBooking.progressTracking.remainingSeconds > 0 && (
-                              <span className="small text-cyan fw-bold font-monospace" style={{ fontSize: '0.7rem' }}>Còn lại: {detailModalBooking.progressTracking.remainingSeconds}s</span>
+                              <span className="fw-bold font-monospace" style={{ fontSize: '0.78rem', color: '#22d3ee' }}>
+                                <i className="far fa-clock me-1"></i>Còn lại: {liveRemaining}s
+                              </span>
                             )}
                           </div>
-                          <div className="progress" style={{ height: '6px', background: '#e2e8f0', borderRadius: '10px' }}>
-                            <div className="progress-bar" style={{ width: `${detailModalBooking.progressTracking.progress}%`, background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)', borderRadius: '10px' }}></div>
+                          <div className="progress" style={{ height: '8px', background: 'rgba(255,255,255,0.18)', borderRadius: '10px' }}>
+                            <div className="progress-bar" style={{ width: `${detailModalBooking.progressTracking.progress}%`, background: 'linear-gradient(90deg, #22d3ee 0%, #38bdf8 100%)', borderRadius: '10px' }}></div>
                           </div>
                         </div>
                       )}

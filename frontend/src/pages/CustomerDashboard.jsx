@@ -18,6 +18,7 @@ export const CustomerDashboard = () => {
   const [claimedVouchers, setClaimedVouchers] = useState([]);
   const [washHistoryCount, setWashHistoryCount] = useState(0);
   const [bookings, setBookings] = useState([]);
+  const [loyalty, setLoyalty] = useState(null);
 
   useEffect(() => {
     // 1. Greeting header based on hour
@@ -40,9 +41,9 @@ export const CustomerDashboard = () => {
     setWeatherStatus(statuses[index]);
 
     // 3. Fetch active booking from API (Closest upcoming booking)
-    const fetchActiveBooking = async () => {
+    const fetchActiveBooking = async (background = false) => {
       try {
-        const response = await customerService.getActiveBooking();
+        const response = await customerService.getActiveBooking(background ? { skipGlobalLoader: true } : {});
         if (response && response.success) {
           if (response.booking) {
             setActiveBooking({
@@ -111,10 +112,14 @@ export const CustomerDashboard = () => {
       // Sync loyalty points & tier from backend (reflects webhook-awarded points)
       try {
         const loyaltyRes = await customerService.getLoyaltyStatus();
-        if (loyaltyRes && loyaltyRes.success) {
+        if (loyaltyRes && loyaltyRes.success && loyaltyRes.status) {
+          const status = loyaltyRes.status;
+          // Keep the full payload so the member card can show real rank-up
+          // progress (windowed spend vs next-tier threshold).
+          setLoyalty(status);
           const updates = {};
-          if (loyaltyRes.pointBalance != null) updates.points = loyaltyRes.pointBalance;
-          if (loyaltyRes.tierName) updates.tier = loyaltyRes.tierName;
+          if (status.points != null) updates.points = status.points;
+          if (status.tierName) updates.tier = status.tierName;
           if (Object.keys(updates).length > 0) updateUser(updates);
         }
       } catch (err) {
@@ -130,7 +135,7 @@ export const CustomerDashboard = () => {
       if (intervalId) return;
       intervalId = setInterval(() => {
         if (document.hidden) return;
-        fetchActiveBooking();
+        fetchActiveBooking(true); // background poll — don't flash the global loader
       }, 10000);
     };
 
@@ -197,60 +202,32 @@ export const CustomerDashboard = () => {
   };
 
   const calculateProgress = () => {
-    const currentPts = user?.points ?? 0;
-    const rawTier = user?.tier || 'Standard Member';
-    let tierName = rawTier;
-    if (rawTier === 'Member' || rawTier === 'Standard') {
-      tierName = 'Standard Member';
-    } else if (rawTier === 'Silver') {
-      tierName = 'Silver Member';
-    } else if (rawTier === 'Gold') {
-      tierName = 'Gold Member';
-    } else if (rawTier === 'Platinum') {
-      tierName = 'Platinum Member';
+    // Tier ranking is driven by spend within a rolling window (from the backend),
+    // not by loyalty points. Mirror the Loyalty page so the member card shows the
+    // same real rank-up progress: windowed spend vs the next tier's threshold.
+    const fmtVnd = (n) => '₫' + Number(n || 0).toLocaleString('vi-VN');
+    const windowedSpend = loyalty?.windowedSpend ?? 0;
+    const nextTierMin = loyalty?.nextTierMin ?? null;
+    const nextTierName = loyalty?.nextTierName ?? null;
+
+    // Loyalty data not loaded yet — show a neutral, non-misleading state.
+    if (!loyalty) {
+      return { pct: 0, label: '', next: 'hạng tiếp theo', rem: 'Đang cập nhật tiến độ thăng hạng...' };
     }
-    
-    if (tierName.toUpperCase().includes('PLATINUM')) {
-      return {
-        pct: 100,
-        label: 'HẠNG CAO NHẤT',
-        next: 'Platinum VIP',
-        rem: 'Bạn đã đạt hạng Bạch Kim cao nhất!'
-      };
-    } else if (tierName.toUpperCase().includes('GOLD')) {
-      const start = 500;
-      const target = 1000;
-      const pct = Math.min(Math.max(((currentPts - start) / (target - start)) * 100, 0), 99);
-      const rem = Math.max(target - currentPts, 0);
-      return {
-        pct: Math.round(pct),
-        label: `${currentPts}/${target} điểm`,
-        next: 'Platinum',
-        rem: `Còn ${rem} điểm để lên Platinum`
-      };
-    } else if (tierName.toUpperCase().includes('SILVER')) {
-      const start = 100;
-      const target = 500;
-      const pct = Math.min(Math.max(((currentPts - start) / (target - start)) * 100, 0), 99);
-      const rem = Math.max(target - currentPts, 0);
-      return {
-        pct: Math.round(pct),
-        label: `${currentPts}/${target} điểm`,
-        next: 'Gold',
-        rem: `Còn ${rem} điểm để lên Gold`
-      };
-    } else {
-      const start = 0;
-      const target = 100;
-      const pct = Math.min(Math.max(((currentPts - start) / (target - start)) * 100, 0), 99);
-      const rem = Math.max(target - currentPts, 0);
-      return {
-        pct: Math.round(pct),
-        label: `${currentPts}/${target} điểm`,
-        next: 'Silver',
-        rem: `Còn ${rem} điểm để lên Silver`
-      };
+
+    // Already at the highest tier — backend returns no next tier.
+    if (!nextTierName || !nextTierMin) {
+      return { pct: 100, label: 'HẠNG CAO NHẤT', next: 'VIP', rem: 'Bạn đã đạt hạng cao nhất!' };
     }
+
+    const pct = Math.min(100, Math.round((windowedSpend / nextTierMin) * 100));
+    const rem = loyalty?.amountToNextTier ?? Math.max(0, nextTierMin - windowedSpend);
+    return {
+      pct,
+      label: `${fmtVnd(windowedSpend)}/${fmtVnd(nextTierMin)}`,
+      next: nextTierName,
+      rem: `Còn ${fmtVnd(rem)} chi tiêu để lên ${nextTierName}`
+    };
   };
 
   // Live progress text block

@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../services/adminService';
+import { useBookingHub } from '../hooks/useBookingHub';
 import '../styles/shared.css';
 import '../styles/admin/bookings.css';
 import '../styles/admin/queue.css';
-
-const STAFF_LIST = ['Nguyễn Văn A', 'Trần Văn B', 'Lê Văn C', 'Phạm Hồng D'];
 
 const STAGE_LABEL_MAP = {
   CheckIn: 'Check-in',
@@ -28,21 +27,19 @@ export const AdminQueue = () => {
   const getStageLabel = (stage) => STAGE_LABEL_MAP[stage] || stage || 'Chờ check-in';
 
   const [queue, setQueue] = useState({ waitingForCheckIn: [], currentlyProcessing: [], completedToday: [] });
-  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submittingIds, setSubmittingIds] = useState(new Set());
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('PROCESSING');
   
   // Modals state
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  // Live per-second countdown for the "Chi tiết công đoạn" modal.
+  const [liveRemaining, setLiveRemaining] = useState(0);
 
   const fetchQueue = async () => {
     setLoading(true);
     try {
-      const [queueRes, bookingsRes] = await Promise.all([
-        adminService.getQueue(),
-        adminService.getBookings()
-      ]);
+      const queueRes = await adminService.getQueue();
       if (queueRes) {
         setQueue({
           waitingForCheckIn: queueRes.waitingForCheckIn || [],
@@ -71,9 +68,6 @@ export const AdminQueue = () => {
           }
           return prev;
         });
-      }
-      if (bookingsRes && bookingsRes.success) {
-        setBookings(bookingsRes.bookings);
       }
     } catch (err) {
       console.error('Lỗi khi tải hàng đợi từ API:', err);
@@ -112,10 +106,7 @@ export const AdminQueue = () => {
       intervalId = setInterval(() => {
         if (document.hidden) return;
 
-        Promise.all([
-          adminService.getQueue(),
-          adminService.getBookings()
-        ]).then(([res, bookingsRes]) => {
+        adminService.getQueue().then((res) => {
           if (res) {
             setQueue({
               waitingForCheckIn: res.waitingForCheckIn || [],
@@ -145,9 +136,6 @@ export const AdminQueue = () => {
               return prev;
             });
           }
-          if (bookingsRes && bookingsRes.success) {
-            setBookings(bookingsRes.bookings);
-          }
         }).catch(err => console.error(err));
       }, 10000);
     };
@@ -176,6 +164,24 @@ export const AdminQueue = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+
+  // Real-time countdown for the open "Chi tiết công đoạn" modal. Seeded from the
+  // server value (and re-synced on each 10s poll), it ticks down once per second
+  // while a vehicle is actively being processed.
+  useEffect(() => {
+    if (!selectedVehicle) return;
+    setLiveRemaining(Math.max(0, Number(selectedVehicle.remainingSeconds) || 0));
+
+    if (selectedVehicle.statusGroup !== 'Processing') return;
+    const id = setInterval(() => {
+      setLiveRemaining(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [selectedVehicle]);
+
+  // Real-time: a newly created booking enters the waiting-for-check-in list,
+  // so refresh the queue immediately (10s poll above remains as fallback).
+  useBookingHub(() => fetchQueue());
 
   // Move vehicle to next stage
   const handleAdvanceColumn = async (queueId) => {
@@ -285,24 +291,6 @@ export const AdminQueue = () => {
     }
   };
 
-  const handleAssignStaff = async (staff) => {
-    if (!selectedVehicle) return;
-    const updatedItem = { ...selectedVehicle, staffName: staff, staffNote: staff };
-    setSelectedVehicle(updatedItem);
-    setQueue(prev => ({
-      ...prev,
-      currentlyProcessing: prev.currentlyProcessing.map(q => q.queueId === selectedVehicle.queueId ? updatedItem : q)
-    }));
-
-    try {
-      await adminService.updateQueue(selectedVehicle.queueId, selectedVehicle.status, staff);
-      if (window.showToast) window.showToast('Đã gán nhân viên phụ trách!', 'success');
-      fetchQueue();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleSaveStaffNotes = (note) => {
     if (!selectedVehicle) return;
     const updatedItem = { ...selectedVehicle, staffNote: note };
@@ -373,10 +361,6 @@ export const AdminQueue = () => {
     return getStageLabel(item.progressTracking?.currentStage || item.currentStage);
   };
 
-  const todayStr = useMemo(() => {
-    return new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
-  }, []);
-
   const waitingItems = useMemo(() => (queue.waitingForCheckIn || []).map(item => ({
     ...item,
     statusGroup: 'Waiting',
@@ -396,25 +380,6 @@ export const AdminQueue = () => {
     mainService: item.services?.[0]?.name || 'Standard Car Wash'
   })), [queue.completedToday]);
 
-  const noShowItems = useMemo(() => bookings
-    .filter(b => b.status === 'NoShow' && b.scheduledAt.split('T')[0] === todayStr)
-    .map(b => ({
-      queueId: `noshow-${b.bookingId}`,
-      bookingId: b.bookingId,
-      licensePlate: b.licensePlate,
-      mainService: b.mainService?.serviceName || 'Standard Car Wash',
-      status: b.status,
-      statusGroup: 'NoShow',
-      remainingSeconds: 0,
-      progress: 0,
-      etaCompletion: 'N/A',
-      bookingTime: new Date(b.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      noShowTime: b.noShowAt ? new Date(b.noShowAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : new Date(b.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      customerName: b.customerName,
-      phone: b.phone,
-      tierName: 'Member'
-    })), [bookings, todayStr]);
-
   const waitingCheckoutItems = useMemo(() => completedItems.filter(item => item.bookingStatus === 'WaitingCheckout'), [completedItems]);
   const trueCompletedItems = useMemo(() => completedItems.filter(item => item.bookingStatus !== 'WaitingCheckout'), [completedItems]);
 
@@ -423,11 +388,9 @@ export const AdminQueue = () => {
       waitingCheckIn: waitingItems.length,
       processing: processingItems.length,
       waitingCheckout: waitingCheckoutItems.length,
-      completedToday: trueCompletedItems.length,
-      noShow: noShowItems.length,
-      todaysRevenue: trueCompletedItems.reduce((sum, item) => sum + (Number(item.finalPrice) || 0), 0)
+      completedToday: trueCompletedItems.length
     };
-  }, [waitingItems, processingItems, waitingCheckoutItems, trueCompletedItems, noShowItems]);
+  }, [waitingItems, processingItems, waitingCheckoutItems, trueCompletedItems]);
 
   // Filtered sections
   const filteredWaiting = useMemo(() => {
@@ -447,12 +410,7 @@ export const AdminQueue = () => {
     return [];
   }, [completedItems, trueCompletedItems, waitingCheckoutItems, statusFilter]);
 
-  const filteredNoShow = useMemo(() => {
-    if (statusFilter === 'ALL' || statusFilter === 'NoShow') return noShowItems;
-    return [];
-  }, [noShowItems, statusFilter]);
-
-  const hasAnyItems = filteredWaiting.length > 0 || filteredProcessing.length > 0 || filteredCompleted.length > 0 || filteredNoShow.length > 0;
+  const hasAnyItems = filteredWaiting.length > 0 || filteredProcessing.length > 0 || filteredCompleted.length > 0;
 
   // Get status class for card border
   const getStatusClass = (item) => {
@@ -756,44 +714,6 @@ export const AdminQueue = () => {
             </div>
           </div>
         </div>
-
-        {/* No Show */}
-        <div className="col-12 col-sm-6 col-lg">
-          <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-cancelled ${statusFilter === 'NoShow' ? 'active' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'NoShow' ? 'ALL' : 'NoShow')}
-          >
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#64748b' }}>{stats.noShow}</h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>KHÁCH KHÔNG ĐẾN</small>
-              </div>
-              <div className="stat-icon-wrapper" style={{ background: '#F1F5F9', color: '#64748b' }}>
-                <i className="fas fa-user-slash fa-lg"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Today's Revenue */}
-        <div className="col-12 col-sm-6 col-lg">
-          <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-all`}
-            style={{ cursor: 'default' }}
-          >
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#0ea5e9' }}>
-                  {stats.todaysRevenue.toLocaleString()}đ
-                </h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>DOANH THU HÔM NAY</small>
-              </div>
-              <div className="stat-icon-wrapper" style={{ background: '#E0F2FE', color: '#0ea5e9' }}>
-                <i className="fas fa-dollar-sign fa-lg"></i>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {loading ? (
@@ -827,16 +747,6 @@ export const AdminQueue = () => {
                   {renderSectionHeader('fas fa-sync-alt', 'Đang xử lý', filteredProcessing.length, '#3b82f6')}
                   <div className="queue-grid">
                     {filteredProcessing.map(item => renderCompactCard(item))}
-                  </div>
-                </div>
-              )}
-
-              {/* Section: Khách không đến */}
-              {filteredNoShow.length > 0 && (
-                <div>
-                  {renderSectionHeader('fas fa-user-slash', 'Khách không đến', filteredNoShow.length, '#ef4444')}
-                  <div className="queue-grid">
-                    {filteredNoShow.map(item => renderCompactCard(item))}
                   </div>
                 </div>
               )}
@@ -914,24 +824,10 @@ export const AdminQueue = () => {
                       </div>
                       <div className="col-6 text-end mt-2">
                         <span className="text-muted d-block small">CÒN LẠI</span>
-                        <strong className="text-cyan">{selectedVehicle.remainingSeconds} giây</strong>
+                        <strong className="text-cyan">{liveRemaining} giây</strong>
                       </div>
                     </div>
                   </div>
-
-                  {selectedVehicle.statusGroup !== 'NoShow' && (
-                    <div className="mb-3">
-                      <label className="form-label small fw-bold text-muted mb-1">GÁN NHÂN VIÊN PHỤ TRÁCH</label>
-                      <select
-                        className="form-select bg-light border-0 py-2 text-dark fw-bold"
-                        value={selectedVehicle.staffName || "Chưa gán"}
-                        onChange={(e) => handleAssignStaff(e.target.value)}
-                      >
-                        <option value="Chưa gán">-- Chọn nhân viên --</option>
-                        {STAFF_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                  )}
 
                   <label className="form-label small fw-bold text-muted mb-2">QUY TRÌNH THỰC HIỆN DỰ KIẾN</label>
                   <div className="d-flex flex-column gap-2 mb-3">

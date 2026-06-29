@@ -18,13 +18,15 @@ namespace Auto_Wash.Services
         private readonly IConfiguration _configuration;
         private readonly ILogger<BookingService> _logger;
         private readonly BookingNotificationService _bookingNotificationService;
+        private readonly IBookingRealtimeNotifier _realtimeNotifier;
 
-        public BookingService(AutoWashDbContext context, IConfiguration configuration, ILogger<BookingService> logger, BookingNotificationService bookingNotificationService)
+        public BookingService(AutoWashDbContext context, IConfiguration configuration, ILogger<BookingService> logger, BookingNotificationService bookingNotificationService, IBookingRealtimeNotifier realtimeNotifier)
         {
             _context = context;
             _configuration = configuration;
             _logger = logger;
             _bookingNotificationService = bookingNotificationService;
+            _realtimeNotifier = realtimeNotifier;
         }
 
 
@@ -370,6 +372,24 @@ namespace Auto_Wash.Services
                     // Audit Event Logging
                     _logger.LogInformation("[AUDIT EVENT] Booking Created: BookingId={BookingId}, CustomerId={CustomerId}, VehicleId={VehicleId}, ScheduledAt={ScheduledAt}, FinalPrice={FinalPrice}",
                         booking.BookingId, booking.CustomerId, booking.VehicleId, booking.ScheduledAt, booking.FinalPrice);
+
+                    // Push a real-time event to staff/admin so the booking surfaces instantly
+                    // (timer polling remains as a fallback). Never let this break booking creation.
+                    try
+                    {
+                        await _realtimeNotifier.NotifyBookingCreatedAsync(new BookingCreatedEvent(
+                            booking.BookingId,
+                            vehicle.LicensePlate,
+                            customerWithTier?.Account?.FullName ?? "Khách hàng",
+                            booking.ScheduledAt,
+                            booking.FinalPrice,
+                            mainService.ServiceName,
+                            booking.Status.ToString()));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to push BookingCreated real-time event for BookingId={BookingId}", booking.BookingId);
+                    }
 
                     return (true, "Đặt lịch thành công!", booking.BookingId);
                 }

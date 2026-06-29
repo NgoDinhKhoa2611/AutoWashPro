@@ -232,8 +232,8 @@ export const AdminServices = () => {
           headers={[
             { label: 'Tên dịch vụ', className: 'ps-4 py-3' },
             { label: 'Loại dịch vụ' },
-            { label: 'Giá tiền' },
-            { label: 'Thời gian ước tính' },
+            { label: 'Giá tiền (đ)', className: 'text-end' },
+            { label: 'Thời gian ước tính', className: 'text-end' },
             { label: 'Nổi bật' },
             { label: 'Trạng thái' },
             { label: 'Hành động', className: 'text-end pe-4' }
@@ -253,8 +253,8 @@ export const AdminServices = () => {
                     {s.category || 'Dịch vụ đi kèm'}
                   </span>
                 </td>
-                <td><span className="fw-bold text-dark">{Number(s.price).toLocaleString()}đ</span></td>
-                <td>
+                <td className="text-end"><span className="fw-bold text-dark">{Number(s.price).toLocaleString()}</span></td>
+                <td className="text-end">
                   <span className="fw-bold text-cyan">
                     <i className="far fa-clock me-1"></i>{s.estimatedMinutes || 15} phút
                   </span>
