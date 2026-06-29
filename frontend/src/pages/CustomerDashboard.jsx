@@ -551,6 +551,11 @@ export const CustomerDashboard = () => {
                           <small className="text-muted" style={{ fontSize: '0.65rem' }}>{n.time || 'Vừa xong'}</small>
                         </div>
                         <div className="text-secondary" style={{ fontSize: '0.74rem', lineHeight: '1.4' }}>{n.body}</div>
+                        {n.sentAt && (
+                          <div className="text-muted mt-1.5" style={{ fontSize: '0.65rem' }}>
+                            <i className="far fa-clock me-1"></i>{n.sentAt}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

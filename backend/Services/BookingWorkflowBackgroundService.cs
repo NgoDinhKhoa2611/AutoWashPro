@@ -1,15 +1,7 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Auto_Wash.Data;
 using Auto_Wash.Data.Entities;
 using Auto_Wash.Helpers;
-using Microsoft.Extensions.Configuration;
 using Auto_Wash.DTOs.Booking;
 
 namespace Auto_Wash.Services
@@ -58,10 +50,6 @@ namespace Auto_Wash.Services
             var context = scope.ServiceProvider.GetRequiredService<AutoWashDbContext>();
             var now = DateTime.Now;
             var today = DateTime.Today;
-
-            // Customers whose booking is auto-completed this tick — re-checked for
-            // a real-time tier upgrade after the batch is persisted (doc §4).
-            var awardedCustomerIds = new HashSet<int>();
 
             // 1. Fetch active queue items for today that are not completed, cancelled, or archived
             var activeQueues = await context.Queues
@@ -367,23 +355,6 @@ namespace Auto_Wash.Services
             if (changed)
             {
                 await context.SaveChangesAsync();
-            }
-
-            // Real-time UPGRADE re-check for just-completed customers. Runs after the
-            // save above so the new Completed booking counts in the 6-month window (doc §4).
-            if (awardedCustomerIds.Count > 0)
-            {
-                bool tierChanged = false;
-                foreach (var custId in awardedCustomerIds)
-                {
-                    var cust = await context.Customers.FirstOrDefaultAsync(c => c.CustomerId == custId);
-                    if (cust != null)
-                    {
-                        await TierHelper.EvaluateUpgradeAsync(context, cust, now);
-                        tierChanged = true;
-                    }
-                }
-                if (tierChanged) await context.SaveChangesAsync();
             }
 
             // 4. Monthly tier maintenance / downgrade review (doc §5, §9).

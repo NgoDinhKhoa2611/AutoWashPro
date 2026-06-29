@@ -256,6 +256,18 @@ namespace Auto_Wash.Services
                         }
 
                         await _context.SaveChangesAsync();
+
+                        // Real-time tier UPGRADE now that this paid booking counts as
+                        // Completed in the 6-month ranking window (doc §4). Mirrors the
+                        // manual checkout path in AdminQueueService; downgrades are left
+                        // to the monthly maintenance job. Runs inside the same transaction,
+                        // after the save above so the booking is visible to the spend query.
+                        if (status == (int)PaymentStatus.Paid && payment.Booking?.Customer != null)
+                        {
+                            await TierHelper.EvaluateUpgradeAsync(_context, payment.Booking.Customer, DateTime.Now);
+                            await _context.SaveChangesAsync();
+                        }
+
                         await transaction.CommitAsync();
 
                         _logger.LogInformation("UpdatePaymentStatusAsync: Transaction committed successfully for TxnRef {TxnRef}.", txnRef);

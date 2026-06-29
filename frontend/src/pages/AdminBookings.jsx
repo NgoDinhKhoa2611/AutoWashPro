@@ -79,14 +79,6 @@ export const AdminBookings = () => {
   const [selectedReason, setSelectedReason] = useState('Hết slot trong ngày');
   const [customReason, setCustomReason] = useState('');
 
-  // Hover Preview States
-  const [hoveredBookingId, setHoveredBookingId] = useState(null);
-  const [previewData, setPreviewData] = useState(null);
-  const [previewPos, setPreviewPos] = useState({ top: 0, left: 0 });
-  const [hoverCache, setHoverCache] = useState({});
-  const [closeTimeoutId, setCloseTimeoutId] = useState(null);
-  const [fetchTimeoutId, setFetchTimeoutId] = useState(null);
-
   const loadBookings = useCallback(async () => {
     setLoading(true);
     try {
@@ -123,13 +115,6 @@ export const AdminBookings = () => {
       window.showToast(`Lịch đặt mới #${payload.bookingId} · ${payload.licensePlate}`, 'info');
     }
   });
-
-  useEffect(() => {
-    return () => {
-      if (fetchTimeoutId) clearTimeout(fetchTimeoutId);
-      if (closeTimeoutId) clearTimeout(closeTimeoutId);
-    };
-  }, [fetchTimeoutId, closeTimeoutId]);
 
   const loadBookingDetail = async (id) => {
     setLoadingDetail(true);
@@ -311,113 +296,12 @@ export const AdminBookings = () => {
     }
   };
 
-  const getPreviewStatusBadgeStyle = (status) => {
-    switch (status) {
-      case 'Pending':
-        return { backgroundColor: '#FEF3C7', color: '#D97706', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'Confirmed':
-        return { backgroundColor: '#DBEAFE', color: '#2563EB', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'CheckedIn':
-        return { backgroundColor: '#EDE9FE', color: '#7C3AED', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'Washing':
-        return { backgroundColor: '#E0F2FE', color: '#0369A1', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'Completed':
-        return { backgroundColor: '#DCFCE7', color: '#16A34A', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'Cancelled':
-        return { backgroundColor: '#FEE2E2', color: '#DC2626', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'NoShow':
-        return { backgroundColor: '#F3F4F6', color: '#4B5563', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'WaitingCheckout':
-        return { backgroundColor: '#FFF7E6', color: '#FA8C16', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      default:
-        return {};
-    }
-  };
-
   const getTierBadgeClass = (tierName) => {
     const t = (tierName || '').toUpperCase();
     if (t.includes('PLATINUM')) return 'tier-pill-platinum active';
     if (t.includes('GOLD')) return 'tier-pill-gold active';
     if (t.includes('SILVER')) return 'tier-pill-silver active';
     return 'tier-pill-member active';
-  };
-
-  // Hover Handlers
-  const handleCardMouseEnter = (e, bookingId) => {
-    if (closeTimeoutId) {
-      clearTimeout(closeTimeoutId);
-      setCloseTimeoutId(null);
-    }
-
-    if (fetchTimeoutId) {
-      clearTimeout(fetchTimeoutId);
-    }
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    
-    const spaceRight = window.innerWidth - rect.right;
-    let left = rect.right + 10;
-    if (spaceRight < 340) {
-      left = rect.left - 330;
-    }
-    const top = rect.top + scrollTop - 10;
-
-    const timeout = setTimeout(async () => {
-      setHoveredBookingId(bookingId);
-      setPreviewPos({ top, left });
-      
-      if (hoverCache[bookingId]) {
-        setPreviewData(hoverCache[bookingId]);
-        return;
-      }
-
-      setPreviewData({ loading: true });
-      try {
-        const res = await adminService.getBookingDetail(bookingId);
-        if (res && res.success) {
-          setPreviewData(res.booking);
-          setHoverCache(prev => ({ ...prev, [bookingId]: res.booking }));
-        } else {
-          setPreviewData(null);
-        }
-      } catch (err) {
-        console.error(err);
-        setPreviewData(null);
-      }
-    }, 150); // 150ms debounce
-
-    setFetchTimeoutId(timeout);
-  };
-
-  const handleCardMouseLeave = () => {
-    if (fetchTimeoutId) {
-      clearTimeout(fetchTimeoutId);
-      setFetchTimeoutId(null);
-    }
-
-    const timeout = setTimeout(() => {
-      setHoveredBookingId(null);
-      setPreviewData(null);
-    }, 150); // 150ms leave timeout
-
-    setCloseTimeoutId(timeout);
-  };
-
-  const handlePopoverMouseEnter = () => {
-    if (closeTimeoutId) {
-      clearTimeout(closeTimeoutId);
-      setCloseTimeoutId(null);
-    }
-  };
-
-  const handlePopoverMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setHoveredBookingId(null);
-      setPreviewData(null);
-    }, 150); // 150ms leave timeout
-
-    setCloseTimeoutId(timeout);
   };
 
   // Filter logic
@@ -673,8 +557,6 @@ export const AdminBookings = () => {
                 key={b.bookingId} 
                 className={`booking-card card-${b.status.toLowerCase()} position-relative`}
                 onClick={() => loadBookingDetail(b.bookingId)}
-                onMouseEnter={(e) => handleCardMouseEnter(e, b.bookingId)}
-                onMouseLeave={handleCardMouseLeave}
                 style={{ cursor: 'pointer', height: 'auto' }}
               >
                 {/* Top: BK-ID and Status */}
@@ -717,78 +599,6 @@ export const AdminBookings = () => {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* Smart Hover Preview Card */}
-      {hoveredBookingId && previewData && (
-        <div 
-          className="booking-hover-preview text-start"
-          style={{ top: `${previewPos.top}px`, left: `${previewPos.left}px` }}
-        >
-          {previewData.loading ? (
-            <div className="text-center py-4">
-              <div className="spinner-border spinner-border-sm text-cyan" role="status"></div>
-              <small className="d-block text-muted mt-2" style={{ fontSize: '0.65rem' }}>Đang tải xem nhanh...</small>
-            </div>
-          ) : (
-            <>
-              <div className="fw-black text-cyan mb-0" style={{ fontSize: '1rem', letterSpacing: '0.5px' }}>
-                #BK-{previewData.bookingId}
-              </div>
-              <div className="small text-muted mb-2 fw-semibold" style={{ fontSize: '0.75rem' }}>
-                Booking Preview
-              </div>
-              <div className="d-flex gap-3 mb-2 small text-secondary">
-                <div>
-                  <span className="text-muted small">Date: </span>
-                  <span className="fw-bold text-white">{new Date(previewData.scheduledAt).toLocaleDateString('vi-VN')}</span>
-                </div>
-                <div>
-                  <span className="text-muted small">Time: </span>
-                  <span className="fw-bold text-white font-monospace">{new Date(previewData.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              </div>
-              
-              <div className="preview-divider"></div>
-              
-              <div className="preview-field mb-2">
-                <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>KHÁCH HÀNG</div>
-                <div className="preview-val" style={{ color: '#F8FAFC', fontWeight: '600', fontSize: '0.85rem' }}>{previewData.customer.fullName}</div>
-                <small style={{ color: '#CBD5E1', fontSize: '0.75rem' }}>{previewData.customer.phone}</small>
-              </div>
-
-              <div className="preview-field mb-2">
-                <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PHƯƠNG TIỆN</div>
-                <div className="preview-val font-monospace" style={{ color: '#F8FAFC', fontWeight: '600', fontSize: '0.85rem' }}>{previewData.vehicle.licensePlate}</div>
-                <small style={{ color: '#CBD5E1', fontSize: '0.75rem' }}>{previewData.vehicle.brand} - {previewData.vehicle.model}</small>
-              </div>
-
-              <div className="preview-divider"></div>
-
-              <div className="preview-field mb-2">
-                <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>DỊCH VỤ CHÍNH</div>
-                <div className="preview-val" style={{ color: '#F8FAFC', fontWeight: '600', fontSize: '0.85rem' }}>{previewData.mainService?.serviceName || 'Rửa xe tiêu chuẩn'}</div>
-              </div>
-
-              <div className="preview-divider"></div>
-
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <div className="preview-field mb-0">
-                  <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TỔNG THANH TOÁN</div>
-                  <div style={{ color: '#38BDF8', fontWeight: '700', fontSize: '24px', lineHeight: '1.2' }}>
-                    {Number(previewData.finalPrice).toLocaleString()}đ
-                  </div>
-                </div>
-                <div className="text-end">
-                  <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TRẠNG THÁI</div>
-                  <span className={`booking-status-badge d-inline-block mt-1`} style={{ ...getPreviewStatusBadgeStyle(previewData.status) }}>
-                    {getStatusLabel(previewData.status).toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            </>
-          )}
         </div>
       )}
 

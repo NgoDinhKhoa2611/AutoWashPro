@@ -88,6 +88,7 @@ namespace Auto_Wash.Services
                 title = n.Title,
                 body = n.Message,
                 time = GetRelativeTime(n.CreatedAt),
+                sentAt = n.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
                 type = n.Type,
                 read = n.IsRead
             }).Cast<object>().ToList();
