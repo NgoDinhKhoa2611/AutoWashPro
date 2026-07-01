@@ -109,8 +109,40 @@ namespace Auto_Wash.Services
                 })
                 .ToListAsync();
 
+            // Calculate reschedule quota statistics for this customer
+            var cutoff = DateTime.Now.AddDays(-30);
+            var quotaUsed = await _context.BookingRescheduleHistories
+                .CountAsync(rh => rh.Booking.CustomerId == b.CustomerId 
+                               && rh.ChangedBy == "Customer" 
+                               && rh.CreatedAt >= cutoff);
+
+            var remainingReschedules = Math.Max(0, 3 - quotaUsed);
+            var isQuotaExhausted = quotaUsed >= 3;
+
+            DateTime? nextQuotaResetAt = null;
+            if (quotaUsed > 0)
+            {
+                var oldestAttempt = await _context.BookingRescheduleHistories
+                    .Where(rh => rh.Booking.CustomerId == b.CustomerId 
+                              && rh.ChangedBy == "Customer" 
+                              && rh.CreatedAt >= cutoff)
+                    .OrderBy(rh => rh.CreatedAt)
+                    .Select(rh => (DateTime?)rh.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (oldestAttempt.HasValue)
+                {
+                    nextQuotaResetAt = oldestAttempt.Value.AddDays(30);
+                }
+            }
+
             return new {
                 bookingId = b.BookingId,
+                remainingReschedules = remainingReschedules,
+                quotaLimit = 3,
+                quotaUsed = quotaUsed,
+                nextQuotaResetAt = nextQuotaResetAt,
+                isQuotaExhausted = isQuotaExhausted,
                 customer = new {
                     customerId = b.Customer.CustomerId,
                     fullName = b.Customer.Account?.FullName ?? "Khách vãng lai",
@@ -319,9 +351,9 @@ namespace Auto_Wash.Services
                 return (false, $"Đã quá giờ check-in! Bạn chỉ có thể check-in trễ tối đa {checkInWindowMinutes} phút (trước {latestAllowed:HH:mm}).", 0);
             }
 
-            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.WaitingCheckout)
             {
-                return (false, $"Không thể check-in lịch đặt đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}.", 0);
+                return (false, $"Không thể check-in lịch đặt đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : booking.Status == BookingStatus.WaitingCheckout ? "chờ thanh toán" : "hoàn thành")}.", 0);
             }
 
             if (booking.Status != BookingStatus.Confirmed)
@@ -408,9 +440,9 @@ namespace Auto_Wash.Services
                 return (false, "Không tìm thấy đơn đặt lịch.");
             }
 
-            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.WaitingCheckout)
             {
-                return (false, $"Không thể đổi lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}.");
+                return (false, $"Không thể đổi lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : booking.Status == BookingStatus.WaitingCheckout ? "chờ thanh toán" : "hoàn thành")}.");
             }
 
             if (booking.Status != BookingStatus.Pending && booking.Status != BookingStatus.Confirmed)
@@ -487,6 +519,7 @@ namespace Auto_Wash.Services
                     booking.Status = BookingStatus.Confirmed; 
                     booking.Reminder1Sent = false;
                     booking.Reminder2Sent = false;
+                    booking.RescheduleCount++;
 
                     _context.BookingRescheduleHistories.Add(new BookingRescheduleHistory
                     {

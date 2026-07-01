@@ -18,13 +18,15 @@ namespace Auto_Wash.Services
         private readonly IConfiguration _configuration;
         private readonly ILogger<BookingService> _logger;
         private readonly BookingNotificationService _bookingNotificationService;
+        private readonly IBookingRealtimeNotifier _realtimeNotifier;
 
-        public BookingService(AutoWashDbContext context, IConfiguration configuration, ILogger<BookingService> logger, BookingNotificationService bookingNotificationService)
+        public BookingService(AutoWashDbContext context, IConfiguration configuration, ILogger<BookingService> logger, BookingNotificationService bookingNotificationService, IBookingRealtimeNotifier realtimeNotifier)
         {
             _context = context;
             _configuration = configuration;
             _logger = logger;
             _bookingNotificationService = bookingNotificationService;
+            _realtimeNotifier = realtimeNotifier;
         }
 
 
@@ -55,6 +57,7 @@ namespace Auto_Wash.Services
                 .Include(b => b.BookingServices)
                     .ThenInclude(bs => bs.Service)
                 .Include(b => b.Queues)
+                .Include(b => b.Payment)
                 .Where(b => b.CustomerId == customerId 
                     && b.CheckedOutAt == null
                     && b.Status != BookingStatus.Cancelled
@@ -63,7 +66,8 @@ namespace Auto_Wash.Services
                         || b.Status == BookingStatus.Confirmed 
                         || b.Status == BookingStatus.CheckedIn
                         || b.Status == BookingStatus.Washing
-                        || (b.Status == BookingStatus.Completed && b.PaidAt >= tenMinutesAgo)))
+                        || b.Status == BookingStatus.WaitingCheckout
+                        || (b.Status == BookingStatus.Completed && b.Payment != null && b.Payment.PaidAt >= tenMinutesAgo)))
                 .ToListAsync();
 
             if (!bookings.Any()) return null;
@@ -73,7 +77,7 @@ namespace Auto_Wash.Services
                     var queue = b.Queues.FirstOrDefault();
                     if (queue != null && queue.Status != QueueStatus.Completed && queue.Status != QueueStatus.Cancelled && queue.Status != QueueStatus.Archived)
                         return 1; // Priority 1: Active in Queue
-                    if (b.Status == BookingStatus.CheckedIn || b.Status == BookingStatus.Washing)
+                    if (b.Status == BookingStatus.CheckedIn || b.Status == BookingStatus.Washing || b.Status == BookingStatus.WaitingCheckout)
                         return 2; // Priority 2: Checked In / Washing
                     if (b.Status == BookingStatus.Confirmed)
                         return 3; // Priority 3: Confirmed
@@ -280,14 +284,11 @@ namespace Auto_Wash.Services
                         finalPrice = calculatedBasePrice - promoDiscount;
                     }
 
-                    // Backend loyalty points calculation.
-                    // Points are multiplied by the customer's tier PointMultiplier
-                    // (e.g. Silver x1.2, Gold x1.5, Platinum x2.0), using the tier at booking time.
-                    var config = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
-                    int pointsPerThousand = config?.PointsPerThousandVND ?? 1;
+                    // Estimated loyalty points for display at booking time (doc §3.2:
+                    // 10.000 VNĐ = 1 base point × tier multiplier). The authoritative
+                    // award is recomputed at checkout against the then-current tier.
                     decimal tierMultiplier = customerWithTier?.Tier?.PointMultiplier ?? 1.0m;
-                    int basePoints = (finalPrice / 1000) * pointsPerThousand;
-                    int pointsEarned = (int)Math.Floor(basePoints * tierMultiplier);
+                    int pointsEarned = LoyaltyPointsHelper.ComputeEarnedPoints(finalPrice, tierMultiplier);
 
                     // Create Booking
                     var booking = new Booking
@@ -372,6 +373,24 @@ namespace Auto_Wash.Services
                     _logger.LogInformation("[AUDIT EVENT] Booking Created: BookingId={BookingId}, CustomerId={CustomerId}, VehicleId={VehicleId}, ScheduledAt={ScheduledAt}, FinalPrice={FinalPrice}",
                         booking.BookingId, booking.CustomerId, booking.VehicleId, booking.ScheduledAt, booking.FinalPrice);
 
+                    // Push a real-time event to staff/admin so the booking surfaces instantly
+                    // (timer polling remains as a fallback). Never let this break booking creation.
+                    try
+                    {
+                        await _realtimeNotifier.NotifyBookingCreatedAsync(new BookingCreatedEvent(
+                            booking.BookingId,
+                            vehicle.LicensePlate,
+                            customerWithTier?.Account?.FullName ?? "Khách hàng",
+                            booking.ScheduledAt,
+                            booking.FinalPrice,
+                            mainService.ServiceName,
+                            booking.Status.ToString()));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to push BookingCreated real-time event for BookingId={BookingId}", booking.BookingId);
+                    }
+
                     return (true, "Đặt lịch thành công!", booking.BookingId);
                 }
                 catch (Exception ex)
@@ -410,6 +429,7 @@ namespace Auto_Wash.Services
                 .Include(b => b.AppliedRedemption)
                     .ThenInclude(r => r!.Reward)
                 .Include(b => b.Queues)
+                .Include(b => b.Payment)
                 .FirstOrDefaultAsync(x => x.BookingId == bookingId && x.CustomerId == customerId);
 
             if (b == null) return null;
@@ -470,8 +490,40 @@ namespace Auto_Wash.Services
             var queue = b.Queues.FirstOrDefault();
             var progressTracking = BookingWorkflowConfig.GetProgressForBooking(b, queue);
 
+            // Calculate reschedule quota statistics for this customer
+            var cutoff = DateTime.Now.AddDays(-30);
+            var quotaUsed = await _context.BookingRescheduleHistories
+                .CountAsync(rh => rh.Booking.CustomerId == b.CustomerId 
+                               && rh.ChangedBy == "Customer" 
+                               && rh.CreatedAt >= cutoff);
+
+            var remainingReschedules = Math.Max(0, 3 - quotaUsed);
+            var isQuotaExhausted = quotaUsed >= 3;
+
+            DateTime? nextQuotaResetAt = null;
+            if (quotaUsed > 0)
+            {
+                var oldestAttempt = await _context.BookingRescheduleHistories
+                    .Where(rh => rh.Booking.CustomerId == b.CustomerId 
+                              && rh.ChangedBy == "Customer" 
+                              && rh.CreatedAt >= cutoff)
+                    .OrderBy(rh => rh.CreatedAt)
+                    .Select(rh => (DateTime?)rh.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (oldestAttempt.HasValue)
+                {
+                    nextQuotaResetAt = oldestAttempt.Value.AddDays(30);
+                }
+            }
+
             return new {
                 bookingId = b.BookingId,
+                remainingReschedules = remainingReschedules,
+                quotaLimit = 3,
+                quotaUsed = quotaUsed,
+                nextQuotaResetAt = nextQuotaResetAt,
+                isQuotaExhausted = isQuotaExhausted,
                 customer = new {
                     fullName = b.Customer?.Account?.FullName ?? "Khách hàng",
                     phone = b.Customer?.Account?.Phone ?? "",
@@ -499,7 +551,11 @@ namespace Auto_Wash.Services
                 hasReview = hasReview,
                 rating = b.Stars,
                 reviewText = b.ReviewText,
-                paidAt = b.PaidAt,
+                paidAt = b.Payment?.PaidAt,
+                paymentMethod = b.Payment != null ? ((PaymentMethod)b.Payment.PaymentMethod).ToString() : null,
+                transactionNo = b.Payment?.TransactionNo,
+                paymentStatus = b.Payment != null ? ((PaymentStatus)b.Payment.Status).ToString() : null,
+                invoice = b.Payment != null && b.Payment.Status == (int)PaymentStatus.Paid ? new { invoiceNumber = $"INV-{b.BookingId}-{b.Payment.PaymentId}", amount = b.Payment.Amount, createdAt = b.Payment.PaidAt ?? b.Payment.CreatedAt } : null,
                 createdAt = b.CreatedAt,
                 timeline = timeline,
                 reschedules = reschedules,
@@ -611,14 +667,16 @@ namespace Auto_Wash.Services
                     .ThenInclude(bs => bs.Service)
                 .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.CustomerId == customerId);
 
+
+
             if (booking == null)
             {
                 return (false, "Không tìm thấy đơn đặt lịch hoặc bạn không có quyền đổi lịch.");
             }
 
-            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+            if (booking.Status == BookingStatus.NoShow || booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.WaitingCheckout)
             {
-                return (false, $"Không thể đổi lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : "hoàn thành")}.");
+                return (false, $"Không thể đổi lịch hẹn đã {(booking.Status == BookingStatus.NoShow ? "quá hạn (No-Show)" : booking.Status == BookingStatus.Cancelled ? "bị hủy" : booking.Status == BookingStatus.WaitingCheckout ? "chờ thanh toán" : "hoàn thành")}.");
             }
 
             if (booking.Status != BookingStatus.Pending && booking.Status != BookingStatus.Confirmed)
@@ -674,6 +732,21 @@ namespace Auto_Wash.Services
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
+                    // 1. Lock customer row to prevent concurrent exploits on rolling quota
+                    await _context.Database.ExecuteSqlRawAsync("SELECT 1 FROM customers WHERE customerid = {0} FOR UPDATE;", customerId);
+
+                    // 2. Count customer's successful reschedules in rolling 30 days
+                    var cutoff = DateTime.Now.AddDays(-30);
+                    var quotaUsed = await _context.BookingRescheduleHistories
+                        .CountAsync(rh => rh.Booking.CustomerId == customerId 
+                                       && rh.ChangedBy == "Customer" 
+                                       && rh.CreatedAt >= cutoff);
+
+                    if (quotaUsed >= 3)
+                    {
+                        return (false, "You have reached the maximum of 3 reschedules within the last 30 days.");
+                    }
+
                     int lockKey1 = newScheduledAt.Year * 10000 + newScheduledAt.Month * 100 + newScheduledAt.Day;
                     int lockKey2 = newScheduledAt.Hour;
                     await _context.Database.ExecuteSqlRawAsync($"SELECT pg_advisory_xact_lock({lockKey1}, {lockKey2});");
@@ -704,6 +777,7 @@ namespace Auto_Wash.Services
                     booking.Status = BookingStatus.Confirmed; 
                     booking.Reminder1Sent = false;
                     booking.Reminder2Sent = false;
+                    booking.RescheduleCount++;
 
                     _context.BookingRescheduleHistories.Add(new BookingRescheduleHistory
                     {
@@ -760,7 +834,8 @@ namespace Auto_Wash.Services
                         _bookingNotificationService.SendBookingRescheduledEmailInBackground(emailModel);
                     }
 
-                    return (true, "Đổi lịch hẹn thành công!");
+                    var remainingAttempts = Math.Max(0, 3 - (quotaUsed + 1));
+                    return (true, $"Booking rescheduled successfully. You have {remainingAttempts} reschedule attempt(s) remaining.");
                 }
                 catch (Exception ex)
                 {

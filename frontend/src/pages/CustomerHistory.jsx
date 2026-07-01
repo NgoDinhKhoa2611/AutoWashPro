@@ -132,7 +132,7 @@ export const CustomerHistory = () => {
                 </div>
                 <div>
                   <small className="text-muted d-block fw-bold" style={{ fontSize: '0.65rem' }}>ĐIỂM ĐÃ NHẬN</small>
-                  <h5 className="fw-bold text-warning mb-0">+{totalPoints} PTS</h5>
+                  <h5 className="fw-bold text-warning mb-0">+{totalPoints}đ</h5>
                 </div>
               </div>
             </div>
@@ -224,7 +224,7 @@ export const CustomerHistory = () => {
                           {/* Review block */}
                           <div className="d-flex flex-wrap align-items-center justify-content-between pt-3 border-top gap-2">
                             <span className="text-muted small" style={{ fontSize: '0.78rem' }}>
-                              Điểm thưởng: <strong className="text-warning">+{b.status === 'Completed' ? b.points : 0} PTS</strong>
+                              Điểm thưởng: <strong className="text-warning">+{b.status === 'Completed' ? b.points : 0}đ</strong>
                             </span>
 
                             {b.status === 'Completed' ? (

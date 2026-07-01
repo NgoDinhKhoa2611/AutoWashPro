@@ -1,0 +1,40 @@
+/* ──────────────────────────────────────────────────────────────
+ * Global loading ring — hiển thị toàn cục khi đang tải dữ liệu.
+ * Dùng chung cho mọi trang (customer/admin) qua component GlobalLoader.
+ * ────────────────────────────────────────────────────────────── */
+.global-loader-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 250, 252, 0.55);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    animation: global-loader-fade 0.2s ease;
+}
+
+.global-loader-ring {
+    width: 52px;
+    height: 52px;
+    border: 4px solid rgba(14, 165, 233, 0.18);
+    border-top-color: var(--cyan-electric, #0ea5e9);
+    border-radius: 50%;
+    animation: global-loader-spin 0.7s linear infinite;
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2);
+}
+
+@keyframes global-loader-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes global-loader-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .global-loader-ring { animation-duration: 1.4s; }
+    .global-loader-overlay { animation: none; }
+}

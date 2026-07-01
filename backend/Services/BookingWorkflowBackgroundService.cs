@@ -1,15 +1,7 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Auto_Wash.Data;
 using Auto_Wash.Data.Entities;
 using Auto_Wash.Helpers;
-using Microsoft.Extensions.Configuration;
 using Auto_Wash.DTOs.Booking;
 
 namespace Auto_Wash.Services
@@ -45,7 +37,7 @@ namespace Auto_Wash.Services
                     _logger.LogError(ex, "Error occurred executing BookingWorkflowBackgroundService.");
                 }
 
-                // DEMO VALUE - CHANGE BACK TO MINUTES BEFORE FINAL RELEASE
+                // Polling interval for queue workflow processing
                 await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
             }
 
@@ -139,58 +131,61 @@ namespace Auto_Wash.Services
                         q.CompletedAt ??= now;
                         changed = true;
 
-                        if (q.Booking != null && q.Booking.Status != BookingStatus.Completed)
+                        if (q.Booking != null && q.Booking.Status != BookingStatus.WaitingCheckout)
                         {
-                            q.Booking.Status = BookingStatus.Completed;
-                            q.Booking.CompletedAt ??= now;
+                            q.Booking.Status = BookingStatus.WaitingCheckout;
 
                             context.BookingAuditLogs.Add(new BookingAuditLog
                             {
                                 BookingId = q.BookingId!.Value,
-                                Action = "Completed",
-                                Description = $"Tự động hoàn thành dịch vụ sau {BookingWorkflowConfig.TotalDurationSeconds} giây.",
+                                Action = "WaitingCheckout",
+                                Description = $"Tự động chuyển sang trạng thái chờ thanh toán sau {BookingWorkflowConfig.TotalDurationSeconds} giây.",
                                 PerformedBy = "System",
                                 CreatedAt = now
                             });
 
-                            var alreadyAwarded = await context.LoyaltyTransactions
-                                .AnyAsync(lt => lt.BookingId == q.BookingId && lt.TransactionType == "EARN");
-                            if (!alreadyAwarded)
+                            context.Notifications.Add(new Notification
                             {
-                                var customer = q.Booking.Customer;
-                                if (customer != null)
+                                CustomerId = q.Booking.CustomerId,
+                                Title = "Xe đã hoàn tất dịch vụ",
+                                Message = "Xe đã hoàn tất dịch vụ. Vui lòng đến cửa hàng thanh toán.",
+                                Type = "Booking",
+                                IsRead = false,
+                                CreatedAt = now
+                            });
+
+                            // Send WaitingCheckout email notification
+                            if (!q.Booking.WaitingCheckoutEmailSent)
+                            {
+                                q.Booking.WaitingCheckoutEmailSent = true;
+
+                                var mainService = await context.BookingServices
+                                    .Include(bs => bs.Service)
+                                    .Where(bs => bs.BookingId == q.BookingId.Value && !bs.Service.IsAddOn)
+                                    .Select(bs => bs.Service.ServiceName)
+                                    .FirstOrDefaultAsync() ?? "Dịch vụ rửa xe";
+
+                                var emailModel = new BookingEmailModel
                                 {
-                                    customer.TotalVisits += 1;
-                                    customer.TotalSpend += q.Booking.FinalPrice;
-                                    customer.RankingBalance += q.Booking.FinalPrice;
-                                    customer.PointBalance += q.Booking.PointsEarned;
-                                    customer.LifetimePoints += q.Booking.PointsEarned;
-                                    customer.LastVisitAt = now;
+                                    BookingId = q.BookingId.Value,
+                                    CustomerName = q.Booking.Customer?.Account?.FullName ?? "Khách hàng",
+                                    Email = q.Booking.Customer?.Account?.Email ?? "",
+                                    LicensePlate = q.LicensePlate ?? "",
+                                    ScheduledAt = q.Booking.ScheduledAt,
+                                    FinalPrice = q.Booking.FinalPrice,
+                                    ServiceName = mainService
+                                };
+
+                                if (!string.IsNullOrWhiteSpace(emailModel.Email))
+                                {
+                                    var notificationService = scope.ServiceProvider.GetRequiredService<BookingNotificationService>();
+                                    notificationService.SendWaitingCheckoutEmailInBackground(emailModel);
+                                    _logger.LogInformation("[EMAIL] WaitingCheckout email sent: BookingId={BookingId}, Email={Email}", q.BookingId, emailModel.Email);
                                 }
-
-                                context.LoyaltyTransactions.Add(new LoyaltyTransaction
-                                {
-                                    CustomerId = q.Booking.CustomerId,
-                                    Points = q.Booking.PointsEarned,
-                                    TransactionType = "EARN",
-                                    BookingId = q.BookingId,
-                                    Note = $"Tích điểm dịch vụ rửa xe {q.LicensePlate} (Tự động hoàn thành)",
-                                    CreatedAt = now
-                                });
-
-                                context.Notifications.Add(new Notification
-                                {
-                                    CustomerId = q.Booking.CustomerId,
-                                    Title = $"Lịch hẹn #{q.BookingId} đã hoàn tất tự động.",
-                                    Message = $"Xe của bạn đã hoàn tất dịch vụ. Bạn nhận +{q.Booking.PointsEarned} điểm!",
-                                    Type = "points",
-                                    IsRead = false,
-                                    CreatedAt = now
-                                });
                             }
                         }
 
-                        _logger.LogInformation("[AUDIT EVENT] Auto-completed: QueueId={QueueId}, BookingId={BookingId}, LicensePlate={LicensePlate}, CompletedAt={CompletedAt}",
+                        _logger.LogInformation("[AUDIT EVENT] Auto-waiting-checkout: QueueId={QueueId}, BookingId={BookingId}, LicensePlate={LicensePlate}, CompletedAt={CompletedAt}",
                             q.QueueId, q.BookingId, q.LicensePlate, q.CompletedAt);
                     }
                 }
@@ -361,6 +356,40 @@ namespace Auto_Wash.Services
             {
                 await context.SaveChangesAsync();
             }
+
+            // 4. Monthly tier maintenance / downgrade review (doc §5, §9).
+            await ProcessMonthlyTierReviewAsync(context, now);
+        }
+
+        /// <summary>
+        /// Monthly maintenance job (doc §9). On/after the configured review day, scans
+        /// customers not yet reviewed this month and demotes any whose 6-month spend is
+        /// below their tier's MaintainBalance. LastTierReviewAt makes it idempotent and
+        /// lets it catch up if the server was down on the 1st. Batched to stay light.
+        /// </summary>
+        private async Task ProcessMonthlyTierReviewAsync(AutoWashDbContext context, DateTime now)
+        {
+            var config = await context.LoyaltyConfigs.FirstOrDefaultAsync();
+            int reviewDay = config?.TierReviewDayOfMonth ?? 1;
+            if (now.Day < reviewDay) return;
+
+            var firstOfMonth = new DateTime(now.Year, now.Month, 1);
+            var due = await context.Customers
+                .Where(c => c.LastTierReviewAt == null || c.LastTierReviewAt < firstOfMonth)
+                .OrderBy(c => c.CustomerId)
+                .Take(25)
+                .ToListAsync();
+            if (due.Count == 0) return;
+
+            int downgrades = 0;
+            foreach (var c in due)
+            {
+                if (await TierHelper.RunMaintenanceAsync(context, c, now)) downgrades++;
+            }
+            await context.SaveChangesAsync();
+
+            _logger.LogInformation("[TIER REVIEW] Reviewed {Count} customer(s); {Downgrades} downgraded.",
+                due.Count, downgrades);
         }
     }
 }

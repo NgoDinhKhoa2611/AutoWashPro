@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { customerService } from '../services/customerService';
+import { useAuth } from '../hooks/useAuth';
 import { queueStatusMapper } from '../utils/queueStatusMapper';
 import Modal from '../components/Modal';
 import '../styles/shared.css';
@@ -40,6 +41,8 @@ const getStatusBorderClass = (status) => {
 export const CustomerBookings = () => {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { updateUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState('active'); // active, history, reviews
   const [reviewSubTab, setReviewSubTab] = useState('pending'); // pending, submitted
@@ -54,6 +57,8 @@ export const CustomerBookings = () => {
   const [detailModalBooking, setDetailModalBooking] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  // Live per-second countdown for the washing-process progress in the detail modal.
+  const [liveRemaining, setLiveRemaining] = useState(0);
 
   const [expandedSections, setExpandedSections] = useState({
     customer: true,
@@ -186,6 +191,58 @@ export const CustomerBookings = () => {
     detailModalBookingRef.current = detailModalBooking;
   }, [showDetailModal, detailModalBooking]);
 
+  // Real-time countdown for the washing-process panel in the detail modal. Seeded
+  // from the server value (re-synced on each 10s detail re-fetch), it ticks down
+  // once per second while the wash is actively running.
+  useEffect(() => {
+    const pt = detailModalBooking?.progressTracking;
+    if (!showDetailModal || !pt) return;
+
+    const seconds = Math.max(0, Number(pt.remainingSeconds) || 0);
+    setLiveRemaining(seconds);
+
+    const inProgress =
+      seconds > 0 &&
+      (pt.progress ?? 0) < 100 &&
+      detailModalBooking.status !== 'Completed' &&
+      detailModalBooking.status !== 'Cancelled' &&
+      detailModalBooking.status !== 'NoShow' &&
+      !detailModalBooking.checkedOutAt;
+    if (!inProgress) return;
+
+    const id = setInterval(() => {
+      setLiveRemaining(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [showDetailModal, detailModalBooking]);
+
+  // Handle payment redirect query params from PayOS return URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const paymentStatus = params.get('payment');
+    const bookingId = params.get('bookingId');
+
+    if (paymentStatus) {
+      if (paymentStatus === 'success') {
+        if (window.showToast) window.showToast(`Thanh toán thành công cho lịch đặt #${bookingId}!`, 'success');
+        // Sync loyalty points from backend
+        customerService.getLoyaltyStatus().then(res => {
+          if (res && res.success) {
+            const updates = {};
+            if (res.pointBalance != null) updates.points = res.pointBalance;
+            if (res.tierName) updates.tier = res.tierName;
+            if (Object.keys(updates).length > 0) updateUser(updates);
+          }
+        }).catch(err => console.error('Error syncing loyalty after payment:', err));
+      } else if (paymentStatus === 'cancel') {
+        if (window.showToast) window.showToast(`Giao dịch thanh toán #${bookingId} đã bị hủy.`, 'warning');
+      }
+      // Clean query params from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [location.search, updateUser]);
+
   useEffect(() => {
     loadData();
     let intervalId = null;
@@ -195,18 +252,19 @@ export const CustomerBookings = () => {
       intervalId = setInterval(() => {
         if (document.hidden) return;
 
-        customerService.getWashHistory().then(bookingRes => {
+        // Background polls — don't flash the global loading overlay.
+        customerService.getWashHistory({ skipGlobalLoader: true }).then(bookingRes => {
           if (bookingRes.success && bookingRes.history) {
             setBookings(bookingRes.history);
           }
         });
-        customerService.getPendingReviews().then(pendingRes => {
+        customerService.getPendingReviews({ skipGlobalLoader: true }).then(pendingRes => {
           if (pendingRes.success && pendingRes.bookings) {
             setPendingReviewBookings(pendingRes.bookings);
           }
         });
         if (showDetailModalRef.current && detailModalBookingRef.current) {
-          customerService.getBookingDetail(detailModalBookingRef.current.bookingId).then(res => {
+          customerService.getBookingDetail(detailModalBookingRef.current.bookingId, { skipGlobalLoader: true }).then(res => {
             if (res.success && res.booking) {
               setDetailModalBooking(res.booking);
             }
@@ -435,6 +493,7 @@ export const CustomerBookings = () => {
      b.status === 'Washing' ||
      b.status === 'InProgress' ||
      b.status === 'In Progress' ||
+     b.status === 'WaitingCheckout' ||
      b.status === 'Completed') && 
      b.status !== 'Cancelled' &&
      b.status !== 'NoShow' &&
@@ -448,6 +507,13 @@ export const CustomerBookings = () => {
     b.status === 'No Show' ||
     (b.status === 'Completed' && b.checkedOutAt)
   ), [bookings]);
+
+  // Per-filter counts for the history tab filter pills
+  const historyCounts = useMemo(() => ({
+    all: historyBookings.length,
+    completed: historyBookings.filter(b => b.status === 'Completed').length,
+    cancelled: historyBookings.filter(b => b.status === 'Cancelled' || b.status === 'NoShow' || b.status === 'No Show').length,
+  }), [historyBookings]);
 
   // Filtered & Searched history bookings
   const filteredHistory = useMemo(() => historyBookings.filter(b => {
@@ -487,6 +553,8 @@ export const CustomerBookings = () => {
       case 'NoShow':
       case 'No Show':
         return { label: 'Khách không đến', badgeClass: 'bg-danger bg-opacity-15 text-danger fw-bold', icon: 'fa-user-slash' };
+      case 'WaitingCheckout':
+        return { label: 'Chờ thanh toán', badgeClass: 'bg-warning bg-opacity-15 text-warning', icon: 'fa-file-invoice-dollar' };
       default:
         return { label: 'Đang xử lý', badgeClass: 'bg-secondary bg-opacity-10 text-secondary', icon: 'fa-cog fa-spin' };
     }
@@ -586,9 +654,11 @@ export const CustomerBookings = () => {
               ) : (
                 <div className="row g-3">
                   {activeBookings.map((b) => {
-                    const statusInfo = b.queueStatus
-                      ? { label: queueStatusMapper.getLabel(b.queueStatus), badgeClass: queueStatusMapper.getBadgeClass(b.queueStatus), icon: queueStatusMapper.getIcon(b.queueStatus) }
-                      : translateStatus(b.status);
+                    const statusInfo = (b.status === 'WaitingCheckout')
+                      ? translateStatus(b.status)
+                      : (b.queueStatus
+                        ? { label: queueStatusMapper.getLabel(b.queueStatus), badgeClass: queueStatusMapper.getBadgeClass(b.queueStatus), icon: queueStatusMapper.getIcon(b.queueStatus) }
+                        : translateStatus(b.status));
                     return (
                       <div key={b.id} className="col-md-6 col-lg-4">
                         <div className={`app-card border border-light p-4 bg-white rounded-4 shadow-sm hover-shadow transition-all ${getStatusBorderClass(b.status)}`} style={{ cursor: 'pointer' }} onClick={() => handleOpenDetail(b.id)}>
@@ -606,7 +676,14 @@ export const CustomerBookings = () => {
                             <div className="mb-1"><i className="far fa-calendar text-muted me-2"></i>Ngày hẹn: <strong className="text-dark">{b.bookingDate.split('-').reverse().join('/')}</strong></div>
                             <div className="mb-1"><i className="far fa-clock text-muted me-2"></i>Giờ hẹn: <strong className="text-dark">{b.bookingTime}</strong></div>
                             <div className="mb-1"><i className="fas fa-hands-wash text-muted me-2"></i>Dịch vụ chính: <strong className="text-dark">{b.mainService}</strong></div>
-                            <div><i className="fas fa-coins text-muted me-2"></i>Dịch vụ tích điểm: <strong className="text-warning">+{b.points} PTS</strong></div>
+                            <div>
+                              <i className="fas fa-coins text-muted me-2"></i>Dịch vụ tích điểm: {' '}
+                              {b.status === 'Completed' ? (
+                                <strong className="text-warning">+{b.points}đ</strong>
+                              ) : (
+                                <span className="text-secondary" style={{ fontSize: '0.74rem' }}>Điểm sẽ được cộng sau khi thanh toán.</span>
+                              )}
+                            </div>
                           </div>
 
                           <div className="d-flex justify-content-between align-items-center pt-3 border-top">
@@ -640,26 +717,41 @@ export const CustomerBookings = () => {
               {/* Search & Filter Controls */}
               <div className="row g-3 mb-4 align-items-center">
                 <div className="col-md-6">
-                  <div className="input-group">
-                    <span className="input-group-text bg-light border-end-0"><i className="fas fa-search text-muted"></i></span>
+                  <div className="history-search">
+                    <i className="fas fa-search history-search-icon"></i>
                     <input
                       type="text"
-                      className="form-control border bg-light text-dark p-2"
+                      className="history-search-input"
                       placeholder="Tìm theo Mã lịch hoặc Biển số xe..."
                       value={historySearch}
                       onChange={(e) => { setHistorySearch(e.target.value); setHistoryPage(1); }}
                     />
+                    {historySearch && (
+                      <button
+                        type="button"
+                        className="history-search-clear"
+                        aria-label="Xoá tìm kiếm"
+                        onClick={() => { setHistorySearch(''); setHistoryPage(1); }}
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="col-md-6 d-flex justify-content-md-end gap-2 flex-wrap">
-                  {['all', 'completed', 'cancelled'].map(f => (
+                  {[
+                    { key: 'all', label: 'Tất cả' },
+                    { key: 'completed', label: 'Hoàn thành' },
+                    { key: 'cancelled', label: 'Đã hủy' },
+                  ].map(f => (
                     <button
-                      key={f}
+                      key={f.key}
                       type="button"
-                      className={`btn btn-sm px-3.5 py-2 fw-semibold rounded-pill border-0 ${historyFilter === f ? 'bg-cyan text-white shadow-sm' : 'btn-light text-secondary'}`}
-                      onClick={() => { setHistoryFilter(f); setHistoryPage(1); }}
+                      className={`history-filter-btn ${historyFilter === f.key ? 'active' : ''}`}
+                      onClick={() => { setHistoryFilter(f.key); setHistoryPage(1); }}
                     >
-                      {f === 'all' ? 'Tất cả' : f === 'completed' ? 'Hoàn thành' : 'Đã hủy'}
+                      {f.label}
+                      <span className="history-filter-count">{historyCounts[f.key]}</span>
                     </button>
                   ))}
                 </div>
@@ -675,9 +767,11 @@ export const CustomerBookings = () => {
                 <>
                   <div className="row g-3">
                     {paginatedHistory.map((b) => {
-                      const statusInfo = b.queueStatus
-                        ? { label: queueStatusMapper.getLabel(b.queueStatus), badgeClass: queueStatusMapper.getBadgeClass(b.queueStatus), icon: queueStatusMapper.getIcon(b.queueStatus) }
-                        : translateStatus(b.status);
+                      const statusInfo = (b.status === 'WaitingCheckout')
+                        ? translateStatus(b.status)
+                        : (b.queueStatus
+                          ? { label: queueStatusMapper.getLabel(b.queueStatus), badgeClass: queueStatusMapper.getBadgeClass(b.queueStatus), icon: queueStatusMapper.getIcon(b.queueStatus) }
+                          : translateStatus(b.status));
                       return (
                         <div key={b.id} className="col-md-6 col-lg-4">
                           <div className={`app-card border border-light p-4 bg-white rounded-4 shadow-sm hover-shadow transition-all ${getStatusBorderClass(b.status)}`} style={{ cursor: 'pointer' }} onClick={() => handleOpenDetail(b.id)}>
@@ -695,7 +789,14 @@ export const CustomerBookings = () => {
                               <div className="mb-1"><i className="far fa-calendar text-muted me-2"></i>Ngày hẹn: <strong className="text-dark">{b.bookingDate.split('-').reverse().join('/')}</strong></div>
                               <div className="mb-1"><i className="far fa-clock text-muted me-2"></i>Giờ hẹn: <strong className="text-dark">{b.bookingTime}</strong></div>
                               <div className="mb-1"><i className="fas fa-hands-wash text-muted me-2"></i>Dịch vụ chính: <strong className="text-dark">{b.mainService}</strong></div>
-                              <div><i className="fas fa-coins text-muted me-2"></i>Tích điểm: <strong className="text-warning">+{b.status === 'Completed' ? b.points : 0} PTS</strong></div>
+                              <div>
+                                <i className="fas fa-coins text-muted me-2"></i>Tích điểm: {' '}
+                                {b.status === 'Completed' ? (
+                                  <strong className="text-warning">+{b.points}đ</strong>
+                                ) : (
+                                  <span className="text-secondary" style={{ fontSize: '0.74rem' }}>Điểm sẽ được cộng sau khi thanh toán.</span>
+                                )}
+                              </div>
                               {b.progressTracking?.stages && b.status === 'Completed' && (
                                 <div className="mt-2.5 pt-2.5 border-top text-start">
                                   <small className="text-muted fw-bold d-block mb-1.5" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>TIẾN TRÌNH CHI TIẾT</small>
@@ -1025,13 +1126,17 @@ export const CustomerBookings = () => {
                       <div className="col-6 pe-0">
                         <small className="text-secondary d-block mb-1" style={{ fontSize: '0.62rem', fontWeight: 600 }}>TRẠNG THÁI</small>
                         <span className={`badge px-2.5 py-1.5 rounded-pill small fw-bold d-inline-block mt-0.5 ${
-                          detailModalBooking.queueStatus
-                            ? queueStatusMapper.getBadgeClass(detailModalBooking.queueStatus)
-                            : translateStatus(detailModalBooking.status).badgeClass
+                          detailModalBooking.status === 'WaitingCheckout'
+                            ? translateStatus(detailModalBooking.status).badgeClass
+                            : (detailModalBooking.queueStatus
+                              ? queueStatusMapper.getBadgeClass(detailModalBooking.queueStatus)
+                              : translateStatus(detailModalBooking.status).badgeClass)
                         }`} style={{ fontSize: '0.68rem' }}>
-                          {detailModalBooking.queueStatus
-                            ? queueStatusMapper.getLabel(detailModalBooking.queueStatus)
-                            : translateStatus(detailModalBooking.status).label}
+                          {detailModalBooking.status === 'WaitingCheckout'
+                            ? translateStatus(detailModalBooking.status).label
+                            : (detailModalBooking.queueStatus
+                              ? queueStatusMapper.getLabel(detailModalBooking.queueStatus)
+                              : translateStatus(detailModalBooking.status).label)}
                         </span>
                       </div>
                       <div className="col-12 border-top pt-1.5 px-0 mt-1.5">
@@ -1058,15 +1163,17 @@ export const CustomerBookings = () => {
                        detailModalBooking.status !== 'Cancelled' && 
                        detailModalBooking.status !== 'NoShow' && 
                        !detailModalBooking.checkedOutAt && (
-                        <div className="mb-3 p-3 rounded-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                          <div className="d-flex justify-content-between align-items-center mb-1">
-                            <span className="small text-secondary fw-bold" style={{ fontSize: '0.7rem' }}>Tiến độ: {detailModalBooking.progressTracking.progress}%</span>
+                        <div className="mb-3 p-3 rounded-4" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', border: '1px solid #334155' }}>
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <span className="fw-bold text-white" style={{ fontSize: '0.78rem' }}>Tiến độ: {detailModalBooking.progressTracking.progress}%</span>
                             {detailModalBooking.progressTracking.remainingSeconds !== undefined && detailModalBooking.progressTracking.remainingSeconds > 0 && (
-                              <span className="small text-cyan fw-bold font-monospace" style={{ fontSize: '0.7rem' }}>Còn lại: {detailModalBooking.progressTracking.remainingSeconds}s</span>
+                              <span className="fw-bold font-monospace" style={{ fontSize: '0.78rem', color: '#22d3ee' }}>
+                                <i className="far fa-clock me-1"></i>Còn lại: {liveRemaining}s
+                              </span>
                             )}
                           </div>
-                          <div className="progress" style={{ height: '6px', background: '#e2e8f0', borderRadius: '10px' }}>
-                            <div className="progress-bar" style={{ width: `${detailModalBooking.progressTracking.progress}%`, background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)', borderRadius: '10px' }}></div>
+                          <div className="progress" style={{ height: '8px', background: 'rgba(255,255,255,0.18)', borderRadius: '10px' }}>
+                            <div className="progress-bar" style={{ width: `${detailModalBooking.progressTracking.progress}%`, background: 'linear-gradient(90deg, #22d3ee 0%, #38bdf8 100%)', borderRadius: '10px' }}></div>
                           </div>
                         </div>
                       )}
@@ -1156,18 +1263,36 @@ export const CustomerBookings = () => {
                         <strong className="text-cyan fs-5">{Number(detailModalBooking.finalPrice).toLocaleString()}đ</strong>
                       </div>
                       <div className="d-flex align-items-center justify-content-between border-top pt-1.5 mt-1.5" style={{ fontSize: '0.75rem' }}>
-                        <div>
-                          <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>TIÊU CHUẨN TÍCH ĐIỂM</small>
-                          <span className="font-semibold text-muted">Tích lũy điểm khi rửa xe hoàn tất.</span>
-                        </div>
-                        <div className="text-end">
-                          <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>ĐIỂM DỰ KIẾN</small>
-                          <strong className="text-warning font-monospace" style={{ fontSize: '0.9rem' }}>+{detailModalBooking.pointsEarned} PTS</strong>
-                        </div>
+                        {detailModalBooking.status === 'Completed' ? (
+                          <>
+                            <div>
+                              <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>TIÊU CHUẨN TÍCH ĐIỂM</small>
+                              <span className="font-semibold text-muted">Tích lũy điểm khi rửa xe hoàn tất.</span>
+                            </div>
+                            <div className="text-end">
+                              <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>ĐIỂM NHẬN</small>
+                              <strong className="text-warning font-monospace" style={{ fontSize: '0.9rem' }}>+{detailModalBooking.pointsEarned}đ</strong>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-100 text-start">
+                            <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>TIÊU CHUẨN TÍCH ĐIỂM</small>
+                            <span className="text-secondary font-semibold">Điểm sẽ được cộng sau khi thanh toán.</span>
+                          </div>
+                        )}
                       </div>
                       {detailModalBooking.status === 'Completed' && (
                         <div className="border-top pt-1.5 mt-1.5" style={{ fontSize: '0.75rem' }}>
                           <small className="text-secondary d-block mb-1">Thời gian thanh toán: <strong>{detailModalBooking.paidAt ? new Date(detailModalBooking.paidAt).toLocaleString('vi-VN') : 'Đã thanh toán'}</strong></small>
+                          {detailModalBooking.paymentMethod && (
+                            <small className="text-secondary d-block mb-0.5">Phương thức: <strong>{detailModalBooking.paymentMethod === 'PayOS' ? 'Thanh toán trực tuyến (PayOS)' : detailModalBooking.paymentMethod}</strong></small>
+                          )}
+                          {detailModalBooking.transactionNo && (
+                            <small className="text-secondary d-block mb-0.5">Mã giao dịch: <strong className="font-monospace">{detailModalBooking.transactionNo}</strong></small>
+                          )}
+                          {detailModalBooking.invoice && (
+                            <small className="text-secondary d-block mb-0.5">Số hóa đơn: <strong className="font-monospace">{detailModalBooking.invoice.invoiceNumber}</strong></small>
+                          )}
                           <span className="badge bg-success bg-opacity-10 text-success fw-bold mt-1" style={{ fontSize: '0.62rem', padding: '4px 8px' }}>ĐH HOÀN TẤT & ĐÃ THANH TOÁN</span>
                         </div>
                       )}
@@ -1233,6 +1358,35 @@ export const CustomerBookings = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* Reschedule Quota Statistics */}
+                    {detailModalBooking.quotaLimit !== undefined && (
+                      <div className="border-top pt-3 mt-3">
+                        <small className="text-muted d-block fw-bold mb-2" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>HẠN MỨC ĐỔI LỊCH (30 NGÀY QUA)</small>
+                        <div className="bg-light p-3 rounded-4 border text-start" style={{ fontSize: '0.8rem' }}>
+                          <div className="d-flex justify-content-between mb-1.5">
+                            <span className="text-secondary">Đã dùng:</span>
+                            <strong className={detailModalBooking.quotaUsed >= 3 ? "text-danger" : "text-dark"}>
+                              {detailModalBooking.quotaUsed} / {detailModalBooking.quotaLimit} lần
+                            </strong>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1.5">
+                            <span className="text-secondary">Còn lại:</span>
+                            <strong className={detailModalBooking.remainingReschedules === 0 ? "text-danger" : "text-success"}>
+                              {detailModalBooking.remainingReschedules} lượt
+                            </strong>
+                          </div>
+                          {detailModalBooking.nextQuotaResetAt && (
+                            <div className="d-flex justify-content-between border-top pt-2 mt-2" style={{ fontSize: '0.75rem' }}>
+                              <span className="text-muted"><i className="fas fa-history me-1"></i>Hồi lượt tiếp theo:</span>
+                              <strong className="text-info">
+                                {new Date(detailModalBooking.nextQuotaResetAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                              </strong>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1250,13 +1404,21 @@ export const CustomerBookings = () => {
             <>
               {detailModalBooking && (detailModalBooking.status === 'Pending' || detailModalBooking.status === 'Pending Confirmation' || detailModalBooking.status === 'Confirmed') && (
                 <>
+                  {detailModalBooking.rescheduleCount >= 3 && (
+                    <div className="alert alert-warning border-0 small py-2 px-3 mb-2 w-100 text-start d-flex align-items-center" style={{ borderRadius: '8px', fontSize: '0.75rem', gap: '8px' }}>
+                      <i className="fas fa-exclamation-triangle text-warning"></i>
+                      <span>Lịch hẹn này đã đổi 3/3 lần. Bạn không thể thay đổi lịch nữa. Vui lòng hủy lịch và đặt mới nếu cần.</span>
+                    </div>
+                  )}
                   <button className="btn btn-outline-danger px-4 py-2 small fw-bold" style={{ borderRadius: '8px' }} onClick={(e) => handleOpenCancel(detailModalBooking.bookingId, e)}>
                     Hủy lịch hẹn
                   </button>
                   <button 
                     className="btn btn-warning px-4 py-2 small fw-bold text-dark" 
-                    style={{ borderRadius: '8px' }} 
+                    disabled={detailModalBooking.rescheduleCount >= 3}
+                    style={{ borderRadius: '8px', opacity: detailModalBooking.rescheduleCount >= 3 ? 0.5 : 1, cursor: detailModalBooking.rescheduleCount >= 3 ? 'not-allowed' : 'pointer' }}
                     onClick={() => {
+                      if (detailModalBooking.rescheduleCount >= 3) return;
                       const sDate = new Date(detailModalBooking.scheduledAt);
                       setRescheduleDate(sDate.toLocaleDateString('sv-SE'));
                       setRescheduleTime(sDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));

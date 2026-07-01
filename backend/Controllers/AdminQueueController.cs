@@ -168,5 +168,27 @@ namespace Auto_Wash.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
+        [HttpPost]
+        [Route("Admin/ClearQueueToday")]
+        public async Task<IActionResult> ClearQueueToday()
+        {
+            if (!IsAdminOrStaff()) return Unauthorized();
+
+            try
+            {
+                var today = DateTime.Today;
+                var context = (Auto_Wash.Data.AutoWashDbContext)HttpContext.RequestServices.GetService(typeof(Auto_Wash.Data.AutoWashDbContext))!;
+                var todayQueues = context.Queues.Where(q => q.CheckInAt.Date == today);
+                context.Queues.RemoveRange(todayQueues);
+                await context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Đã dọn dẹp sạch sẽ hàng đợi hôm nay thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
     }
 }

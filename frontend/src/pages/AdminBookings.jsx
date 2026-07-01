@@ -5,6 +5,7 @@ import '../styles/admin/admin.css';
 import '../styles/admin/bookings.css';
 import { adminService } from '../services/adminService';
 import { customerService } from '../services/customerService';
+import { useBookingHub } from '../hooks/useBookingHub';
 
 const DEFAULT_TIME_SLOTS = [
   "08:00", "09:00", "10:00", "11:00", "12:00", 
@@ -19,7 +20,7 @@ export const AdminBookings = () => {
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('WAITING_CHECKIN');
   const [dateFilter, setDateFilter] = useState('');
   
   // Drawer State
@@ -78,14 +79,6 @@ export const AdminBookings = () => {
   const [selectedReason, setSelectedReason] = useState('Hết slot trong ngày');
   const [customReason, setCustomReason] = useState('');
 
-  // Hover Preview States
-  const [hoveredBookingId, setHoveredBookingId] = useState(null);
-  const [previewData, setPreviewData] = useState(null);
-  const [previewPos, setPreviewPos] = useState({ top: 0, left: 0 });
-  const [hoverCache, setHoverCache] = useState({});
-  const [closeTimeoutId, setCloseTimeoutId] = useState(null);
-  const [fetchTimeoutId, setFetchTimeoutId] = useState(null);
-
   const loadBookings = useCallback(async () => {
     setLoading(true);
     try {
@@ -115,12 +108,13 @@ export const AdminBookings = () => {
     return () => clearInterval(interval);
   }, [loadBookings]);
 
-  useEffect(() => {
-    return () => {
-      if (fetchTimeoutId) clearTimeout(fetchTimeoutId);
-      if (closeTimeoutId) clearTimeout(closeTimeoutId);
-    };
-  }, [fetchTimeoutId, closeTimeoutId]);
+  // Real-time: refresh instantly when a new booking is created (poll above is fallback).
+  useBookingHub((payload) => {
+    loadBookings();
+    if (window.showToast) {
+      window.showToast(`Lịch đặt mới #${payload.bookingId} · ${payload.licensePlate}`, 'info');
+    }
+  });
 
   const loadBookingDetail = async (id) => {
     setLoadingDetail(true);
@@ -283,6 +277,7 @@ export const AdminBookings = () => {
       case 'Completed': return 'Hoàn thành';
       case 'Cancelled': return 'Đã hủy';
       case 'NoShow': return 'Khách không đến';
+      case 'WaitingCheckout': return 'Chờ thanh toán';
       default: return status;
     }
   };
@@ -296,28 +291,8 @@ export const AdminBookings = () => {
       case 'Completed': return 'status-completed';
       case 'Cancelled': return 'status-cancelled';
       case 'NoShow': return 'status-noshow';
+      case 'WaitingCheckout': return 'status-waiting-checkout';
       default: return '';
-    }
-  };
-
-  const getPreviewStatusBadgeStyle = (status) => {
-    switch (status) {
-      case 'Pending':
-        return { backgroundColor: '#FEF3C7', color: '#D97706', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'Confirmed':
-        return { backgroundColor: '#DBEAFE', color: '#2563EB', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'CheckedIn':
-        return { backgroundColor: '#EDE9FE', color: '#7C3AED', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'Washing':
-        return { backgroundColor: '#E0F2FE', color: '#0369A1', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'Completed':
-        return { backgroundColor: '#DCFCE7', color: '#16A34A', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'Cancelled':
-        return { backgroundColor: '#FEE2E2', color: '#DC2626', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      case 'NoShow':
-        return { backgroundColor: '#F3F4F6', color: '#4B5563', fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: 800 };
-      default:
-        return {};
     }
   };
 
@@ -327,84 +302,6 @@ export const AdminBookings = () => {
     if (t.includes('GOLD')) return 'tier-pill-gold active';
     if (t.includes('SILVER')) return 'tier-pill-silver active';
     return 'tier-pill-member active';
-  };
-
-  // Hover Handlers
-  const handleCardMouseEnter = (e, bookingId) => {
-    if (closeTimeoutId) {
-      clearTimeout(closeTimeoutId);
-      setCloseTimeoutId(null);
-    }
-
-    if (fetchTimeoutId) {
-      clearTimeout(fetchTimeoutId);
-    }
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    
-    const spaceRight = window.innerWidth - rect.right;
-    let left = rect.right + 10;
-    if (spaceRight < 340) {
-      left = rect.left - 330;
-    }
-    const top = rect.top + scrollTop - 10;
-
-    const timeout = setTimeout(async () => {
-      setHoveredBookingId(bookingId);
-      setPreviewPos({ top, left });
-      
-      if (hoverCache[bookingId]) {
-        setPreviewData(hoverCache[bookingId]);
-        return;
-      }
-
-      setPreviewData({ loading: true });
-      try {
-        const res = await adminService.getBookingDetail(bookingId);
-        if (res && res.success) {
-          setPreviewData(res.booking);
-          setHoverCache(prev => ({ ...prev, [bookingId]: res.booking }));
-        } else {
-          setPreviewData(null);
-        }
-      } catch (err) {
-        console.error(err);
-        setPreviewData(null);
-      }
-    }, 150); // 150ms debounce
-
-    setFetchTimeoutId(timeout);
-  };
-
-  const handleCardMouseLeave = () => {
-    if (fetchTimeoutId) {
-      clearTimeout(fetchTimeoutId);
-      setFetchTimeoutId(null);
-    }
-
-    const timeout = setTimeout(() => {
-      setHoveredBookingId(null);
-      setPreviewData(null);
-    }, 150); // 150ms leave timeout
-
-    setCloseTimeoutId(timeout);
-  };
-
-  const handlePopoverMouseEnter = () => {
-    if (closeTimeoutId) {
-      clearTimeout(closeTimeoutId);
-      setCloseTimeoutId(null);
-    }
-  };
-
-  const handlePopoverMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setHoveredBookingId(null);
-      setPreviewData(null);
-    }, 150); // 150ms leave timeout
-
-    setCloseTimeoutId(timeout);
   };
 
   // Filter logic
@@ -452,10 +349,7 @@ export const AdminBookings = () => {
     waitingCheckIn: bookings.filter(b => b.status === 'Confirmed' || b.status === 'Pending').length,
     processing: bookings.filter(b => b.status === 'CheckedIn' || b.status === 'Washing').length,
     completedToday: bookings.filter(b => b.status === 'Completed' && b.scheduledAt.split('T')[0] === todayStr).length,
-    noShow: bookings.filter(b => b.status === 'NoShow').length,
-    todaysRevenue: bookings
-      .filter(b => b.status === 'Completed' && b.scheduledAt.split('T')[0] === todayStr)
-      .reduce((sum, b) => sum + (Number(b.finalPrice) || 0), 0)
+    noShow: bookings.filter(b => b.status === 'NoShow').length
   };
 
   // Render Skeleton Cards
@@ -571,26 +465,6 @@ export const AdminBookings = () => {
             </div>
           </div>
         </div>
-
-        {/* Today's Revenue */}
-        <div className="col-12 col-sm-6 col-lg">
-          <div 
-            className={`app-card border-0 p-3.5 bg-white rounded-4 h-100 booking-stat-card hover-lift stat-all`}
-            style={{ cursor: 'default' }}
-          >
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <h3 className="fw-black mb-0 font-monospace" style={{ color: '#0ea5e9' }}>
-                  {stats.todaysRevenue.toLocaleString()}đ
-                </h3>
-                <small className="text-muted d-block fw-bold mt-1" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>DOANH THU HÔM NAY</small>
-              </div>
-              <div className="stat-icon-wrapper" style={{ background: '#E0F2FE', color: '#0ea5e9' }}>
-                <i className="fas fa-dollar-sign fa-lg"></i>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* 3. FILTER PANEL */}
@@ -683,8 +557,6 @@ export const AdminBookings = () => {
                 key={b.bookingId} 
                 className={`booking-card card-${b.status.toLowerCase()} position-relative`}
                 onClick={() => loadBookingDetail(b.bookingId)}
-                onMouseEnter={(e) => handleCardMouseEnter(e, b.bookingId)}
-                onMouseLeave={handleCardMouseLeave}
                 style={{ cursor: 'pointer', height: 'auto' }}
               >
                 {/* Top: BK-ID and Status */}
@@ -727,78 +599,6 @@ export const AdminBookings = () => {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* Smart Hover Preview Card */}
-      {hoveredBookingId && previewData && (
-        <div 
-          className="booking-hover-preview text-start"
-          style={{ top: `${previewPos.top}px`, left: `${previewPos.left}px` }}
-        >
-          {previewData.loading ? (
-            <div className="text-center py-4">
-              <div className="spinner-border spinner-border-sm text-cyan" role="status"></div>
-              <small className="d-block text-muted mt-2" style={{ fontSize: '0.65rem' }}>Đang tải xem nhanh...</small>
-            </div>
-          ) : (
-            <>
-              <div className="fw-black text-cyan mb-0" style={{ fontSize: '1rem', letterSpacing: '0.5px' }}>
-                #BK-{previewData.bookingId}
-              </div>
-              <div className="small text-muted mb-2 fw-semibold" style={{ fontSize: '0.75rem' }}>
-                Booking Preview
-              </div>
-              <div className="d-flex gap-3 mb-2 small text-secondary">
-                <div>
-                  <span className="text-muted small">Date: </span>
-                  <span className="fw-bold text-white">{new Date(previewData.scheduledAt).toLocaleDateString('vi-VN')}</span>
-                </div>
-                <div>
-                  <span className="text-muted small">Time: </span>
-                  <span className="fw-bold text-white font-monospace">{new Date(previewData.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              </div>
-              
-              <div className="preview-divider"></div>
-              
-              <div className="preview-field mb-2">
-                <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>KHÁCH HÀNG</div>
-                <div className="preview-val" style={{ color: '#F8FAFC', fontWeight: '600', fontSize: '0.85rem' }}>{previewData.customer.fullName}</div>
-                <small style={{ color: '#CBD5E1', fontSize: '0.75rem' }}>{previewData.customer.phone}</small>
-              </div>
-
-              <div className="preview-field mb-2">
-                <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PHƯƠNG TIỆN</div>
-                <div className="preview-val font-monospace" style={{ color: '#F8FAFC', fontWeight: '600', fontSize: '0.85rem' }}>{previewData.vehicle.licensePlate}</div>
-                <small style={{ color: '#CBD5E1', fontSize: '0.75rem' }}>{previewData.vehicle.brand} - {previewData.vehicle.model}</small>
-              </div>
-
-              <div className="preview-divider"></div>
-
-              <div className="preview-field mb-2">
-                <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>DỊCH VỤ CHÍNH</div>
-                <div className="preview-val" style={{ color: '#F8FAFC', fontWeight: '600', fontSize: '0.85rem' }}>{previewData.mainService?.serviceName || 'Rửa xe tiêu chuẩn'}</div>
-              </div>
-
-              <div className="preview-divider"></div>
-
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <div className="preview-field mb-0">
-                  <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TỔNG THANH TOÁN</div>
-                  <div style={{ color: '#38BDF8', fontWeight: '700', fontSize: '24px', lineHeight: '1.2' }}>
-                    {Number(previewData.finalPrice).toLocaleString()}đ
-                  </div>
-                </div>
-                <div className="text-end">
-                  <div className="preview-label" style={{ color: '#94A3B8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TRẠNG THÁI</div>
-                  <span className={`booking-status-badge d-inline-block mt-1`} style={{ ...getPreviewStatusBadgeStyle(previewData.status) }}>
-                    {getStatusLabel(previewData.status).toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            </>
-          )}
         </div>
       )}
 
@@ -845,7 +645,7 @@ export const AdminBookings = () => {
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Hạng TV & Điểm</small>
                           <div className="d-flex align-items-center gap-1.5 mt-0.5">
                             <span className={getTierBadgeClass(bookingDetail.customer.tierName)} style={{ fontSize: '0.65rem', padding: '1px 6px' }}>{bookingDetail.customer.tierName}</span>
-                            <strong className="text-secondary small" style={{ fontSize: '0.75rem' }}>{bookingDetail.customer.pointBalance.toLocaleString()} PTS</strong>
+                            <strong className="text-secondary small" style={{ fontSize: '0.75rem' }}>{bookingDetail.customer.pointBalance.toLocaleString()}đ</strong>
                           </div>
                         </div>
                       </div>
@@ -906,9 +706,17 @@ export const AdminBookings = () => {
                             {getStatusLabel(bookingDetail.status)}
                           </span>
                         </div>
-                        <div className="col-12 border-top pt-1">
-                          <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Ngày tạo đơn</small>
-                          <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>{new Date(bookingDetail.createdAt).toLocaleString('vi-VN')}</span>
+                        <div className="col-12 border-top pt-1 d-flex justify-content-between align-items-center">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Ngày tạo đơn</small>
+                            <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>{new Date(bookingDetail.createdAt).toLocaleString('vi-VN')}</span>
+                          </div>
+                          <div className="text-end">
+                            <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Quota 30 ngày (Khách)</small>
+                            <span className={`badge ${bookingDetail.quotaUsed >= 3 ? 'bg-danger' : 'bg-secondary'} px-2 py-1 mt-0.5`} style={{ fontSize: '0.7rem' }}>
+                              Used: {bookingDetail.quotaUsed ?? 0} / 3
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1031,7 +839,7 @@ export const AdminBookings = () => {
                         </div>
                         <div className="d-flex justify-content-between align-items-center mt-1.5 small text-success" style={{ fontSize: '0.75rem' }}>
                           <span>Tích lũy Loyalty:</span>
-                          <span>+{bookingDetail.pointsEarned} PTS</span>
+                          <span>+{bookingDetail.pointsEarned}đ</span>
                         </div>
                       </div>
                     </div>
@@ -1147,36 +955,43 @@ export const AdminBookings = () => {
           {bookingDetail && (isRescheduling || ['Pending', 'Confirmed', 'CheckedIn', 'Washing'].includes(bookingDetail.status)) && (
             <div className="booking-drawer-footer">
               {isRescheduling ? (
-                <div className="d-flex gap-2 w-100 justify-content-end">
+                <div className="d-flex gap-2.5 w-100 justify-content-end">
                   <button
-                    className="btn btn-secondary fw-bold px-4 py-2"
-                    style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                    className="btn btn-secondary fw-bold px-4 py-2.5"
+                    style={{ borderRadius: '14px', fontSize: '0.8rem', transition: 'all 0.2s ease' }}
                     onClick={() => setIsRescheduling(false)}
                   >
                     HỦY BỎ
                   </button>
                   <button
-                    className="btn btn-primary fw-bold text-white px-4 py-2"
-                    style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                    className="app-btn-primary fw-bold text-white px-4 py-2.5 w-auto"
+                    style={{ borderRadius: '14px', fontSize: '0.8rem', border: 'none' }}
                     onClick={submitReschedule}
                   >
                     LƯU ĐỔI LỊCH
                   </button>
                 </div>
               ) : (
-                <div className="d-flex gap-2 w-100 justify-content-end">
+                <div className="d-flex gap-2.5 w-100 justify-content-end">
                   {bookingDetail.status === 'Pending' && (
                     <>
                       <button
-                        className="btn btn-danger fw-bold text-white px-4 py-2"
-                        style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                        className="btn btn-outline-danger fw-bold px-4 py-2.5"
+                        style={{ borderRadius: '14px', fontSize: '0.8rem', transition: 'all 0.2s ease' }}
                         onClick={() => handleCancel(bookingDetail.bookingId, bookingDetail.customer.fullName)}
                       >
                         HỦY LỊCH HẸN
                       </button>
                       <button
-                        className="btn btn-success fw-bold text-white px-4 py-2"
-                        style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                        className="btn btn-success fw-bold text-white px-4 py-2.5"
+                        style={{ 
+                          borderRadius: '14px', 
+                          fontSize: '0.8rem', 
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                          border: 'none',
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                          transition: 'all 0.2s ease'
+                        }}
                         onClick={() => handleConfirm(bookingDetail.bookingId, bookingDetail.customer.fullName)}
                       >
                         DUYỆT LỊCH HẸN
@@ -1194,15 +1009,22 @@ export const AdminBookings = () => {
                     return (
                       <>
                         <button
-                          className="btn btn-danger fw-bold text-white px-4 py-2"
-                          style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                          className="btn btn-outline-danger fw-bold px-4 py-2.5"
+                          style={{ borderRadius: '14px', fontSize: '0.8rem', transition: 'all 0.2s ease' }}
                           onClick={() => handleCancel(bookingDetail.bookingId, bookingDetail.customer.fullName)}
                         >
                           HỦY LỊCH HẸN
                         </button>
                         <button
-                          className="btn btn-warning fw-bold text-dark px-4 py-2"
-                          style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                          className="btn btn-warning fw-bold text-white px-4 py-2.5"
+                          style={{ 
+                            borderRadius: '14px', 
+                            fontSize: '0.8rem', 
+                            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
+                            border: 'none',
+                            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)',
+                            transition: 'all 0.2s ease'
+                          }}
                           onClick={() => {
                             const sDate = new Date(bookingDetail.scheduledAt);
                             setRescheduleDate(sDate.toLocaleDateString('sv-SE'));
@@ -1214,15 +1036,17 @@ export const AdminBookings = () => {
                           ĐỔI LỊCH HẸN
                         </button>
                         <button
-                          className="btn btn-info fw-bold text-dark px-4 py-2"
+                          className="btn btn-info fw-bold text-white px-4 py-2.5"
                           style={{
-                            borderRadius: '12px',
+                            borderRadius: '14px',
                             fontSize: '0.8rem',
-                            background: isFutureBooking ? '#6c757d' : 'var(--cyan-electric)',
-                            color: isFutureBooking ? '#fff' : 'var(--dark)',
+                            background: isFutureBooking ? '#cbd5e1' : 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                            color: isFutureBooking ? '#94a3b8' : '#ffffff',
                             border: 'none',
                             cursor: isFutureBooking ? 'not-allowed' : 'pointer',
-                            opacity: isFutureBooking ? 0.65 : 1
+                            opacity: isFutureBooking ? 0.65 : 1,
+                            boxShadow: isFutureBooking ? 'none' : '0 4px 12px rgba(14, 165, 233, 0.25)',
+                            transition: 'all 0.2s ease'
                           }}
                           disabled={isFutureBooking}
                           title={isFutureBooking ? "Chỉ có thể check-in vào ngày hẹn." : ""}
@@ -1236,8 +1060,15 @@ export const AdminBookings = () => {
 
                   {['CheckedIn', 'Washing'].includes(bookingDetail.status) && (
                     <button
-                      className="btn btn-info fw-bold text-dark px-4 py-2"
-                      style={{ borderRadius: '12px', fontSize: '0.8rem', background: 'var(--cyan-electric)', border: 'none' }}
+                      className="btn btn-info fw-bold text-white px-4 py-2.5"
+                      style={{ 
+                        borderRadius: '14px', 
+                        fontSize: '0.8rem', 
+                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)', 
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.25)',
+                        transition: 'all 0.2s ease'
+                      }}
                       onClick={() => {
                         closeDrawer();
                         navigate('/admin/queue');

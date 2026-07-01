@@ -36,6 +36,9 @@ namespace Auto_Wash.Data.Entities
 
         public int RedeemedCount { get; set; } = 0;
 
+        /// <summary>Max times a single customer may redeem this reward. NULL = unlimited (doc §10).</summary>
+        public int? MaxRedemptionsPerCustomer { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         // Navigation properties

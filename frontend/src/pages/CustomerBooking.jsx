@@ -257,12 +257,14 @@ export const CustomerBooking = () => {
     // 30s Polling
     const interval = setInterval(() => {
       if (bookingDate) {
-        customerService.getOccupiedSlots(bookingDate).then((res) => {
-          if (res.success) {
-            setSlotsStatus(res.slotsStatus || {});
-            setOccupiedSlots(res.occupiedSlots || []);
-          }
-        });
+        customerService
+          .getOccupiedSlots(bookingDate, { skipGlobalLoader: true })
+          .then((res) => {
+            if (res.success) {
+              setSlotsStatus(res.slotsStatus || {});
+              setOccupiedSlots(res.occupiedSlots || []);
+            }
+          });
       }
     }, 30000);
     return () => clearInterval(interval);
@@ -582,9 +584,9 @@ export const CustomerBooking = () => {
                                 }}
                               >
                                 <i className="fas fa-exclamation-circle me-1"></i>
-                                This vehicle has an unfinished booking. Please
-                                complete or cancel the current booking before
-                                creating a new one.
+                                Phương tiện này đang có lịch hẹn chưa hoàn tất.
+                                Vui lòng hoàn thành hoặc hủy lịch hẹn hiện tại
+                                trước khi đặt lịch mới.
                               </div>
                             )}
                           </div>
@@ -946,7 +948,7 @@ export const CustomerBooking = () => {
                   style={{ fontSize: "0.7rem" }}
                 >
                   Điểm nhận:{" "}
-                  <strong className="text-warning">+{earnedPoints} PTS</strong>
+                  <strong className="text-warning">+{earnedPoints}đ</strong>
                 </span>
               </div>
               <h3 className="fw-bold text-dark mb-0">

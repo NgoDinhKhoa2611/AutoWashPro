@@ -211,7 +211,7 @@ export const CustomerProfile = () => {
                   </div>
                   <button
                     type="button"
-                    className="btn btn-outline-info"
+                    className="btn btn-outline-cyan"
                     style={{ borderRadius: '12px', minWidth: '110px', fontSize: '0.85rem' }}
                     onClick={handleSendEmailOtp}
                     disabled={pwLoading || otpCooldown > 0}

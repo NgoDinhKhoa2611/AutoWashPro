@@ -27,6 +27,7 @@ namespace Auto_Wash.Data
         public DbSet<Review> Reviews { get; set; } = null!;
         public DbSet<BookingAuditLog> BookingAuditLogs { get; set; } = null!;
         public DbSet<BookingRescheduleHistory> BookingRescheduleHistories { get; set; } = null!;
+        public DbSet<Payment> Payments { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -192,6 +193,14 @@ namespace Auto_Wash.Data
                 .HasForeignKey(b => b.RedemptionId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // Tier snapshot frozen at checkout (no navigation needed)
+            builder.Entity<Booking>()
+                .HasOne<Tier>()
+                .WithMany()
+                .HasForeignKey(b => b.TierIdSnapshot)
+                .HasConstraintName("fk_bookings_tier_snapshot")
+                .OnDelete(DeleteBehavior.SetNull);
+
             // 12. RewardRedemptions
             builder.Entity<RewardRedemption>()
                 .HasIndex(r => r.CustomerId)
@@ -200,6 +209,11 @@ namespace Auto_Wash.Data
             builder.Entity<RewardRedemption>()
                 .HasIndex(r => new { r.CustomerId, r.Status })
                 .HasDatabaseName("idx_redemptions_customer_status");
+
+            builder.Entity<RewardRedemption>()
+                .HasIndex(r => r.VoucherCode)
+                .IsUnique()
+                .HasDatabaseName("uq_rewardredemptions_vouchercode");
 
             builder.Entity<RewardRedemption>()
                 .HasOne(r => r.Customer)
@@ -359,6 +373,21 @@ namespace Auto_Wash.Data
                 .WithMany()
                 .HasForeignKey(rh => rh.BookingId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // 20. Payments (One-to-One)
+            builder.Entity<Payment>()
+                .HasKey(p => p.PaymentId);
+
+            builder.Entity<Payment>()
+                .HasOne(p => p.Booking)
+                .WithOne(b => b.Payment)
+                .HasForeignKey<Payment>(p => p.BookingId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Payment>()
+                .HasIndex(p => p.TxnRef)
+                .IsUnique()
+                .HasDatabaseName("uq_payments_txnref");
 
             builder.Entity<Service>().HasData(
                 new Service
