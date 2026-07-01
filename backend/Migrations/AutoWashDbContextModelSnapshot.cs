@@ -165,6 +165,10 @@ namespace Auto_Wash.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("notes");
 
+                    b.Property<decimal?>("PointMultiplierSnapshot")
+                        .HasColumnType("decimal(5,2)")
+                        .HasColumnName("pointmultipliersnapshot");
+
                     b.Property<int>("PointsDiscount")
                         .HasColumnType("integer")
                         .HasColumnName("pointsdiscount");
@@ -210,6 +214,10 @@ namespace Auto_Wash.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("reminder2sent");
 
+                    b.Property<int>("RescheduleCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("reschedulecount");
+
                     b.Property<string>("ReviewText")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
@@ -230,6 +238,10 @@ namespace Auto_Wash.Migrations
                     b.Property<int>("TierDiscount")
                         .HasColumnType("integer")
                         .HasColumnName("tierdiscount");
+
+                    b.Property<int?>("TierIdSnapshot")
+                        .HasColumnType("integer")
+                        .HasColumnName("tieridsnapshot");
 
                     b.Property<int>("VehicleId")
                         .HasColumnType("integer")
@@ -257,6 +269,9 @@ namespace Auto_Wash.Migrations
 
                     b.HasIndex("Status")
                         .HasDatabaseName("idx_bookings_status");
+
+                    b.HasIndex("TierIdSnapshot")
+                        .HasDatabaseName("ix_bookings_tieridsnapshot");
 
                     b.HasIndex("VehicleId", "ScheduledAt")
                         .IsUnique()
@@ -405,6 +420,10 @@ namespace Auto_Wash.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("joinedat");
 
+                    b.Property<DateTime?>("LastTierReviewAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("lasttierreviewat");
+
                     b.Property<DateTime?>("LastVisitAt")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("lastvisitat");
@@ -504,6 +523,10 @@ namespace Auto_Wash.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TransactionId"));
 
+                    b.Property<int?>("Amount")
+                        .HasColumnType("integer")
+                        .HasColumnName("amount");
+
                     b.Property<int?>("BookingId")
                         .HasColumnType("integer")
                         .HasColumnName("bookingid");
@@ -540,6 +563,11 @@ namespace Auto_Wash.Migrations
                     b.Property<int?>("RedemptionId")
                         .HasColumnType("integer")
                         .HasColumnName("redemptionid");
+
+                    b.Property<string>("SpendingWindow")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("spendingwindow");
 
                     b.Property<int?>("ToTierId")
                         .HasColumnType("integer")
@@ -903,6 +931,10 @@ namespace Auto_Wash.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("isactive");
 
+                    b.Property<int?>("MaxRedemptionsPerCustomer")
+                        .HasColumnType("integer")
+                        .HasColumnName("maxredemptionspercustomer");
+
                     b.Property<int?>("MinTierId")
                         .HasColumnType("integer")
                         .HasColumnName("mintierid");
@@ -990,6 +1022,11 @@ namespace Auto_Wash.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("usedat");
 
+                    b.Property<string>("VoucherCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("vouchercode");
+
                     b.HasKey("RedemptionId")
                         .HasName("pk_rewardredemptions");
 
@@ -1001,6 +1038,10 @@ namespace Auto_Wash.Migrations
 
                     b.HasIndex("RewardId")
                         .HasDatabaseName("ix_rewardredemptions_rewardid");
+
+                    b.HasIndex("VoucherCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_rewardredemptions_vouchercode");
 
                     b.HasIndex("CustomerId", "Status")
                         .HasDatabaseName("idx_redemptions_customer_status");
@@ -1092,6 +1133,10 @@ namespace Auto_Wash.Migrations
                     b.Property<decimal>("DiscountPercent")
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("discountpercent");
+
+                    b.Property<int>("MaintainBalance")
+                        .HasColumnType("integer")
+                        .HasColumnName("maintainbalance");
 
                     b.Property<int>("MinRankingBalance")
                         .HasColumnType("integer")
@@ -1238,6 +1283,12 @@ namespace Auto_Wash.Migrations
                         .HasForeignKey("RedemptionId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_bookings_rewardredemptions_redemptionid");
+
+                    b.HasOne("Auto_Wash.Data.Entities.Tier", null)
+                        .WithMany()
+                        .HasForeignKey("TierIdSnapshot")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_bookings_tier_snapshot");
 
                     b.HasOne("Auto_Wash.Data.Entities.Vehicle", "Vehicle")
                         .WithMany("Bookings")

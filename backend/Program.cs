@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Auto_Wash.Data;
 using Auto_Wash.Data.Entities;
 using Auto_Wash.Services;
+using Auto_Wash.Hubs;
 using Auto_Wash.Helpers;
 using System.IO;
 using System.Collections.Generic;
@@ -39,6 +40,9 @@ namespace Auto_Wash
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+
+            // Real-time push (replaces/augments timer polling for new-booking detection)
+            builder.Services.AddSignalR();
 
             // Register CORS
             builder.Services.AddCors(options =>
@@ -95,6 +99,7 @@ namespace Auto_Wash
             builder.Services.AddScoped<AdminBookingService>();
             builder.Services.AddScoped<BookingNotificationService>();
             builder.Services.AddScoped<IPaymentService, PaymentService>();
+            builder.Services.AddSingleton<IBookingRealtimeNotifier, BookingRealtimeNotifier>();
             builder.Services.AddHostedService<BookingWorkflowBackgroundService>();
 
 
@@ -132,7 +137,9 @@ namespace Auto_Wash
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
-            
+
+            app.MapHub<BookingHub>("/hubs/bookings"); // Real-time booking events (staff/admin)
+
             app.MapFallbackToFile("index.html"); // Fallback for React Router client routes
             await app.RunAsync();
         }

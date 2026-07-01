@@ -53,11 +53,11 @@ export const AdminLayout = () => {
           <Link to="/admin/dashboard" className={`sidebar-link ${activeNav === 'dashboard' ? 'active' : ''}`}>
             <i className="fas fa-chart-line"></i> <span>Bảng điều khiển</span>
           </Link>
-          <Link to="/admin/queue" className={`sidebar-link ${activeNav === 'queue' ? 'active' : ''}`}>
-            <i className="fas fa-list-ol"></i> <span>Tiến độ dịch vụ</span>
-          </Link>
           <Link to="/admin/bookings" className={`sidebar-link ${activeNav === 'bookings' ? 'active' : ''}`}>
             <i className="fas fa-calendar-check"></i> <span>Quản lý đặt lịch</span>
+          </Link>
+          <Link to="/admin/queue" className={`sidebar-link ${activeNav === 'queue' ? 'active' : ''}`}>
+            <i className="fas fa-list-ol"></i> <span>Tiến độ dịch vụ</span>
           </Link>
           <Link to="/admin/customers" className={`sidebar-link ${activeNav === 'customers' ? 'active' : ''}`}>
             <i className="fas fa-users"></i> <span>Khách hàng</span>

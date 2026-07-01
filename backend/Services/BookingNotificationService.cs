@@ -403,7 +403,7 @@ namespace Auto_Wash.Services
         </tr>
         <tr>
           <td style=""padding: 6px 0; color: #64748b; font-size: 14px;"">Điểm Loyalty nhận:</td>
-          <td style=""padding: 6px 0; color: #10b981; font-weight: bold; font-size: 14px;"">+{pointsEarned} PTS</td>
+          <td style=""padding: 6px 0; color: #10b981; font-weight: bold; font-size: 14px;"">+{pointsEarned}đ</td>
         </tr>
         <tr>
           <td style=""padding: 6px 0; color: #64748b; font-size: 14px;"">Hạng thành viên hiện tại:</td>

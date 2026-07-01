@@ -121,10 +121,6 @@ export const CustomerLoyalty = () => {
           r.rewardType === "DiscountPercent" ||
           r.rewardType === "Discount_Fixed",
       );
-    if (activeFilter === "Dịch vụ")
-      return rewards.filter(
-        (r) => r.rewardType === "Free_Wash" || r.rewardType === "Free_AddOn",
-      );
     if (activeFilter === "Quà tặng" || activeFilter === "Combo đặc biệt")
       return rewards.filter(
         (r) => r.rewardType === "Free_Wash" || r.rewardType === "Free_AddOn",
@@ -205,7 +201,7 @@ export const CustomerLoyalty = () => {
   );
   const ladderResolved = currentLadderIdx >= 0;
   const nextLadderTier = ladderResolved
-    ? tierLadder[currentLadderIdx + 1] ?? null
+    ? (tierLadder[currentLadderIdx + 1] ?? null)
     : null;
 
   // Prefer the ladder (reactive to the previewed tier); fall back to the
@@ -214,19 +210,51 @@ export const CustomerLoyalty = () => {
     ? nextLadderTier
       ? nextLadderTier.minRankingBalance
       : null
-    : loyalty?.nextTierMin ?? null;
+    : (loyalty?.nextTierMin ?? null);
   const nextTierName = ladderResolved
     ? nextLadderTier
       ? nextLadderTier.name
       : null
-    : loyalty?.nextTierName ?? nextTierDetails.nextTier;
+    : (loyalty?.nextTierName ?? nextTierDetails.nextTier);
   const isMaxTier = !nextTierMin;
   const amountToNext =
     nextTierMin != null ? Math.max(0, nextTierMin - windowedSpend) : 0;
   const spendProgressPct = nextTierMin
     ? Math.min(100, Math.round((windowedSpend / nextTierMin) * 100))
     : 100;
-  const fmtVnd = (n) => "₫" + Number(n || 0).toLocaleString("vi-VN");
+  const fmtVnd = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
+
+  // Locked vs achieved state: compare the previewed tier card against the
+  // user's REAL rank (loyalty.tierName from the backend, independent of the
+  // simulator preview). Tiers above the real rank are locked; the real rank
+  // and anything below it are already achieved.
+  const realLadderIdx = tierLadder.findIndex(
+    (t) => t.name === loyalty?.tierName,
+  );
+  const previewLadderIdx = currentLadderIdx;
+  const rankResolved = realLadderIdx >= 0 && previewLadderIdx >= 0;
+  const isLockedPreview = rankResolved && previewLadderIdx > realLadderIdx;
+  const isPreviousPreview = rankResolved && previewLadderIdx < realLadderIdx;
+  const previewTierLabel = currentTier.replace(" Member", "");
+  const previewTierMin = tierLadder[previewLadderIdx]?.minRankingBalance ?? 0;
+  const spendToUnlock = Math.max(0, previewTierMin - windowedSpend);
+  const unlockProgressPct =
+    previewTierMin > 0
+      ? Math.min(100, Math.round((windowedSpend / previewTierMin) * 100))
+      : 100;
+  const barProgressPct = isLockedPreview
+    ? unlockProgressPct
+    : isPreviousPreview
+      ? 100
+      : spendProgressPct;
+
+  // Presentation rules for the member card (viewing your own current rank):
+  // - Drop the "Bạn đã đạt hạng …" achieved line; keep only the
+  //   "Cần thanh toán thêm … để thăng hạng" spend guidance for the current tier.
+  // - Standard tier additionally gets a brighter highlight bar to emphasise spend.
+  const isStandardTier = currentTier === "Standard Member";
+  const isCurrentAchievedView = !isLockedPreview && !isPreviousPreview;
+  const useHighlightBar = isStandardTier && isCurrentAchievedView;
 
   return (
     <div className="container-fluid py-4">
@@ -234,7 +262,7 @@ export const CustomerLoyalty = () => {
       <div className="row mb-4">
         <div className="col-12 text-start">
           <small className="text-cyan fw-bold" style={{ letterSpacing: "1px" }}>
-            SIMULATOR PHÂN HẠNG THÀNH VIÊN
+            PHÂN HẠNG THÀNH VIÊN
           </small>
           <div className="d-flex flex-wrap gap-2 mt-2">
             {Object.keys(TIER_DATA).map((key) => (
@@ -254,7 +282,14 @@ export const CustomerLoyalty = () => {
         {/* Left Column: Loyalty Card and Rules */}
         <div className="col-lg-5">
           <div className="member-card-container mb-4" id="loyalty-member-card">
-            <div className={`member-card ${nextTierDetails.cardClass}`}>
+            <div
+              className={`member-card ${nextTierDetails.cardClass}${isLockedPreview ? " member-card-locked" : ""}`}
+            >
+              {isLockedPreview && (
+                <span className="member-card-lock-badge" aria-hidden="true">
+                  <i className="fas fa-lock"></i>
+                </span>
+              )}
               <span className="tier-label">
                 <i className="fas fa-crown me-2"></i>
                 {currentTier.replace(" Member", " Loyalty")}
@@ -273,17 +308,43 @@ export const CustomerLoyalty = () => {
                 AutoWash Loyalty Points · dùng để đổi quà
               </p>
 
-              {/* Spend-to-rank-up amount (reactive to the previewed tier) + progress */}
+              {/* Trạng thái hạng (đã đạt / đã khoá) + tiến độ chi tiêu */}
               <div className="mb-2">
+                {/* Dòng trạng thái hạng — chỉ hiển thị khi hạng bị khoá */}
+                {isLockedPreview && (
+                  <div
+                    className="d-flex align-items-center gap-2 mb-2 fw-bold tier-status-locked"
+                    style={{ fontSize: "0.95rem" }}
+                  >
+                    <i className="fas fa-lock"></i>
+                    Hạng {previewTierLabel} đã khoá
+                  </div>
+                )}
+
+                {/* Dòng hướng dẫn chi tiêu — luôn hiển thị cho hạng hiện tại */}
                 <div
                   className="text-white mb-2"
-                  style={{ fontSize: "0.98rem", fontWeight: 600, opacity: 0.95 }}
+                  style={{
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    opacity: 0.95,
+                  }}
                 >
-                  {isMaxTier ? (
+                  {isLockedPreview ? (
+                    <>
+                      Cần chi tiêu thêm{" "}
+                      <strong style={{ fontWeight: 800 }}>
+                        {fmtVnd(spendToUnlock)}
+                      </strong>{" "}
+                      để mở khoá hạng {previewTierLabel}
+                    </>
+                  ) : isPreviousPreview ? (
+                    <>Bạn đã hoàn thành hạng này ✓</>
+                  ) : isMaxTier ? (
                     <>Bạn đang ở hạng cao nhất 🎉</>
                   ) : (
                     <>
-                      Thanh toán thêm{" "}
+                      Cần thanh toán thêm{" "}
                       <strong style={{ fontWeight: 800 }}>
                         {fmtVnd(amountToNext)}
                       </strong>{" "}
@@ -291,17 +352,8 @@ export const CustomerLoyalty = () => {
                     </>
                   )}
                 </div>
-                <div
-                  className="d-flex justify-content-between mb-1 text-white"
-                  style={{ fontSize: "0.66rem", opacity: 0.8, fontWeight: 700 }}
-                >
-                  <span
-                    style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}
-                  >
-                    Chi tiêu {windowMonths} tháng: {fmtVnd(windowedSpend)}
-                  </span>
-                  {!isMaxTier && <span>{fmtVnd(nextTierMin)}</span>}
-                </div>
+
+                {/* Thanh tiến độ */}
                 <div
                   style={{
                     height: 8,
@@ -312,55 +364,18 @@ export const CustomerLoyalty = () => {
                 >
                   <div
                     style={{
-                      width: `${spendProgressPct}%`,
+                      width: `${barProgressPct}%`,
                       height: "100%",
                       borderRadius: 999,
-                      background: "var(--cyan-electric, #0ea5e9)",
+                      background: useHighlightBar
+                        ? "linear-gradient(90deg, #22d3ee 0%, #38bdf8 55%, #a5f3fc 100%)"
+                        : "var(--cyan-electric, #0ea5e9)",
+                      boxShadow: useHighlightBar
+                        ? "0 0 10px rgba(56,189,248,0.85)"
+                        : "none",
                       transition: "width .4s ease",
                     }}
                   />
-                </div>
-              </div>
-
-              <div className="d-flex justify-content-between align-items-center mt-4">
-                <div>
-                  <small
-                    style={{
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "1px",
-                      opacity: 0.6,
-                    }}
-                  >
-                    HẠNG TIẾP THEO
-                  </small>
-                  <div
-                    className="fw-bold text-cyan mt-1"
-                    style={{ fontSize: "0.88rem" }}
-                  >
-                    {isMaxTier ? "Tối cao" : nextTierName}
-                  </div>
-                </div>
-                <div className="text-end">
-                  <small
-                    style={{
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "1px",
-                      opacity: 0.6,
-                    }}
-                  >
-                    MÃ THÀNH VIÊN
-                  </small>
-                  <div
-                    className="fw-bold text-white mt-1 font-monospace"
-                    style={{ fontSize: "0.75rem", letterSpacing: "1px" }}
-                  >
-                    AW-LOYALTY-
-                    {currentTier.replace(" Member", "").toUpperCase()}
-                  </div>
                 </div>
               </div>
             </div>
@@ -379,20 +394,20 @@ export const CustomerLoyalty = () => {
               style={{ fontSize: "0.85rem" }}
             >
               <div className="d-flex align-items-start gap-2.5">
-                <i className="fas fa-check-circle text-cyan mt-1"></i>
+                <i className="fas fa-check-circle text-cyan mt-1 me-2"></i>
                 <span id="perk-queue">
                   <strong>Ưu tiên hàng đợi:</strong> {nextTierDetails.queuePerk}
                 </span>
               </div>
               <div className="d-flex align-items-start gap-2.5">
-                <i className="fas fa-check-circle text-cyan mt-1"></i>
+                <i className="fas fa-check-circle text-cyan mt-1 me-2"></i>
                 <span id="perk-multiplier">
                   <strong>Hệ số tích điểm:</strong> Nhân hệ số{" "}
                   {nextTierDetails.multiplier} điểm thưởng.
                 </span>
               </div>
               <div className="d-flex align-items-start gap-2.5">
-                <i className="fas fa-check-circle text-cyan mt-1"></i>
+                <i className="fas fa-check-circle text-cyan mt-1 me-2"></i>
                 <span id="perk-birthday">
                   <strong>Quà sinh nhật:</strong> {nextTierDetails.birthday}
                 </span>
@@ -428,13 +443,13 @@ export const CustomerLoyalty = () => {
                 className="badge bg-light text-muted border px-2 py-1"
                 style={{ fontSize: "0.65rem" }}
               >
-                ĐIỂM HIỆN CÓ: {pts.toLocaleString()} PTS
+                ĐIỂM HIỆN CÓ: {pts.toLocaleString()} pts
               </span>
             </div>
 
             {/* Filter buttons */}
             <div className="d-flex flex-nowrap gap-2 mb-4 w-100">
-              {["Tất cả", "Giảm giá", "Dịch vụ", "Quà tặng"].map((f) => (
+              {["Tất cả", "Giảm giá", "Quà tặng"].map((f) => (
                 <button
                   key={f}
                   className={`btn btn-sm loyalty-filter-btn border-0 rounded-pill ${
@@ -489,23 +504,21 @@ export const CustomerLoyalty = () => {
                         </div>
                         <div className="ticket-footer">
                           <span className="ticket-points-badge">
-                            {r.pointsRequired} PTS
+                            {r.pointsRequired} pts
                           </span>
-                          {canRedeem ? (
-                            <button
-                              className="ticket-btn"
-                              onClick={() => handleOpenRedeemModal(r)}
-                            >
-                              <i className="fas fa-exchange-alt me-1"></i>ĐỔI
-                            </button>
-                          ) : (
-                            <span
-                              className="small text-muted"
-                              style={{ fontSize: "0.68rem", fontWeight: 600 }}
-                            >
-                              Cần thêm {r.pointsRequired - pts} PTS
-                            </span>
-                          )}
+                          <button
+                            className="ticket-btn"
+                            disabled={!canRedeem}
+                            onClick={() => handleOpenRedeemModal(r)}
+                          >
+                            {canRedeem ? (
+                              <>
+                                <i className="fas fa-exchange-alt me-1"></i>ĐỔI
+                              </>
+                            ) : (
+                              `Thiếu ${r.pointsRequired - pts}đ`
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -645,7 +658,7 @@ export const CustomerLoyalty = () => {
                     Điểm cần dùng:
                   </span>
                   <span className="fw-bold text-warning">
-                    {pendingRedeem.pointsRequired} PTS
+                    {pendingRedeem.pointsRequired} pts
                   </span>
                 </div>
                 <div className="d-flex justify-content-between mt-2">
@@ -653,7 +666,7 @@ export const CustomerLoyalty = () => {
                     Điểm hiện có:
                   </span>
                   <span className="fw-bold text-cyan">
-                    {pts.toLocaleString()} PTS
+                    {pts.toLocaleString()} pts
                   </span>
                 </div>
               </div>

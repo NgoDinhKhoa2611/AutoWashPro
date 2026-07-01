@@ -182,41 +182,7 @@ namespace Auto_Wash.Controllers
 
                 if (targetStatus == (int)PaymentStatus.Paid)
                 {
-                    // Reload booking with full customer, tier & vehicle info to send email
-                    var booking = await _context.Bookings
-                        .Include(b => b.Customer)
-                            .ThenInclude(c => c.Account)
-                        .Include(b => b.Customer)
-                            .ThenInclude(c => c.Tier)
-                        .Include(b => b.Vehicle)
-                        .FirstOrDefaultAsync(b => b.BookingId == updatedPaymentDto.BookingId);
-
-                    if (booking != null && booking.Customer?.Account != null)
-                    {
-                        var email = booking.Customer.Account.Email;
-                        if (!string.IsNullOrWhiteSpace(email))
-                        {
-                            var invoiceNumber = $"INV-{booking.BookingId}-{updatedPaymentDto.PaymentId}";
-                            var tierName = booking.Customer.Tier?.TierName ?? "Standard";
-                            _notificationService.SendPaymentSuccessEmailInBackground(
-                                email,
-                                booking.Customer.Account.FullName,
-                                booking.Vehicle.LicensePlate,
-                                booking.BookingId,
-                                updatedPaymentDto.Amount,
-                                invoiceNumber,
-                                transactionNo ?? "PayOS-Online",
-                                updatedPaymentDto.PaidAt ?? DateTime.Now,
-                                booking.PointsEarned,
-                                tierName
-                            );
-                            _logger.LogInformation("Email sent: BookingId={BookingId}, Email={Email}", booking.BookingId, email);
-                        }
-
-                        _logger.LogInformation("Booking updated: BookingId={BookingId}, Status=Completed", booking.BookingId);
-                        _logger.LogInformation("Queue updated: BookingId={BookingId}, Status=Archived", booking.BookingId);
-                        _logger.LogInformation("Loyalty awarded: CustomerId={CustomerId}, Points={Points}", booking.CustomerId, booking.PointsEarned);
-                    }
+                    await SendPaymentSuccessEmailAsync(updatedPaymentDto, transactionNo);
                 }
 
                 _logger.LogInformation("PaymentWebhook: Webhook processed successfully for OrderCode: {OrderCode}. Status updated to {Status}", txnRef, targetStatus);
@@ -235,14 +201,67 @@ namespace Auto_Wash.Controllers
         {
             try
             {
-                var payment = await _paymentService.GetPaymentByBookingIdAsync(bookingId);
-                return Ok(new { success = true, payment });
+                // Reconcile against PayOS on read so the client poll can confirm a
+                // payment even when the async webhook hasn't been delivered (e.g.
+                // local development without a public webhook tunnel).
+                var result = await _paymentService.ReconcilePaymentAsync(bookingId);
+
+                if (result.JustConfirmed && result.Payment != null)
+                {
+                    await SendPaymentSuccessEmailAsync(result.Payment, result.Payment.TransactionNo);
+                }
+
+                return Ok(new { success = true, payment = result.Payment });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GetPaymentStatus: Error querying payment status for BookingId: {BookingId}", bookingId);
                 return StatusCode(500, new { success = false, message = "Lỗi truy vấn thông tin thanh toán." });
             }
+        }
+
+        /// <summary>
+        /// Reloads the booking with customer/tier/vehicle context and queues the
+        /// payment-success invoice email in the background. Shared by the webhook
+        /// and the reconcile-on-read path so the email is sent exactly once, on
+        /// the transition to Paid.
+        /// </summary>
+        private async Task SendPaymentSuccessEmailAsync(PaymentDto payment, string? transactionNo)
+        {
+            var booking = await _context.Bookings
+                .Include(b => b.Customer)
+                    .ThenInclude(c => c.Account)
+                .Include(b => b.Customer)
+                    .ThenInclude(c => c.Tier)
+                .Include(b => b.Vehicle)
+                .FirstOrDefaultAsync(b => b.BookingId == payment.BookingId);
+
+            if (booking?.Customer?.Account == null)
+            {
+                return;
+            }
+
+            var email = booking.Customer.Account.Email;
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return;
+            }
+
+            var invoiceNumber = $"INV-{booking.BookingId}-{payment.PaymentId}";
+            var tierName = booking.Customer.Tier?.TierName ?? "Standard";
+            _notificationService.SendPaymentSuccessEmailInBackground(
+                email,
+                booking.Customer.Account.FullName,
+                booking.Vehicle.LicensePlate,
+                booking.BookingId,
+                payment.Amount,
+                invoiceNumber,
+                transactionNo ?? "PayOS-Online",
+                payment.PaidAt ?? DateTime.Now,
+                booking.PointsEarned,
+                tierName
+            );
+            _logger.LogInformation("Payment success email queued: BookingId={BookingId}, Email={Email}", booking.BookingId, email);
         }
     }
 }

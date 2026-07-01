@@ -16,6 +16,14 @@ export const GlobalToastAndConfirm = () => {
       const container = document.getElementById('toast-container');
       if (!container) return;
 
+      // Prevent duplicate toast if the exact same message is currently active
+      const existingToasts = container.getElementsByClassName('toast-content');
+      for (let i = 0; i < existingToasts.length; i++) {
+        if (existingToasts[i].textContent === String(message)) {
+          return;
+        }
+      }
+
       const id = 'toast_' + Date.now();
       const icon = TOAST_ICONS[type] || TOAST_ICONS.info;
 

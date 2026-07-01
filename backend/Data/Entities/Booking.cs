@@ -98,6 +98,8 @@ namespace Auto_Wash.Data.Entities
         [Column(TypeName = "decimal(5,2)")]
         public decimal? PointMultiplierSnapshot { get; set; }
 
+        public int RescheduleCount { get; set; } = 0;
+
         // Navigation properties
         [ForeignKey("CustomerId")]
         public virtual Customer Customer { get; set; } = null!;

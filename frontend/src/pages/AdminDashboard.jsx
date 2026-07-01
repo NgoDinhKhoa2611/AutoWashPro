@@ -747,7 +747,7 @@ export const AdminDashboard = () => {
                         <small className="opacity-75 d-block mt-1">
                           Ngưỡng điểm tối thiểu:{" "}
                           <strong>
-                            {t.minRankingBalance.toLocaleString()} PTS
+                            {t.minRankingBalance.toLocaleString()} pts
                           </strong>
                         </small>
                       </div>

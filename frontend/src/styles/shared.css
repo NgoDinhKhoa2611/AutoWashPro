@@ -3,7 +3,7 @@
    AutoWash Pro — SWP391 FPT University
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 
 /* ── CSS Variables ────────────────────────────────────────── */
 :root {
@@ -379,6 +379,28 @@ h1, h2, h3, h4, h5, h6,
 .border-cyan {
     border: 2px solid var(--cyan-electric) !important;
 }
+
+/* Cyan theme utilities (Bootstrap 5 has no cyan theme color by default) */
+.bg-cyan {
+    background-color: var(--cyan-electric) !important;
+}
+
+.btn-outline-cyan {
+    border: 1.5px solid var(--cyan-electric) !important;
+    color: var(--cyan-electric) !important;
+    background-color: transparent !important;
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .btn-outline-cyan:hover:not(:disabled) {
+        background-color: var(--cyan-electric) !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+    }
+
+    .btn-outline-cyan:disabled {
+        opacity: 0.45;
+    }
 
 .no-scrollbar::-webkit-scrollbar {
     display: none;
