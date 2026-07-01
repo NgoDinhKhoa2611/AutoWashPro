@@ -299,7 +299,7 @@ export const CustomerLoyalty = () => {
                 style={{ fontSize: "2.4rem" }}
               >
                 {pts.toLocaleString()}{" "}
-                <small style={{ fontSize: "1rem", fontWeight: 600 }}>đ</small>
+                <small style={{ fontSize: "1rem", fontWeight: 600 }}>PTS</small>
               </h2>
               <p
                 className="text-white mb-3"
@@ -443,7 +443,7 @@ export const CustomerLoyalty = () => {
                 className="badge bg-light text-muted border px-2 py-1"
                 style={{ fontSize: "0.65rem" }}
               >
-                ĐIỂM HIỆN CÓ: {pts.toLocaleString()}đ
+                ĐIỂM HIỆN CÓ: {pts.toLocaleString()} pts
               </span>
             </div>
 
@@ -504,7 +504,7 @@ export const CustomerLoyalty = () => {
                         </div>
                         <div className="ticket-footer">
                           <span className="ticket-points-badge">
-                            {r.pointsRequired}đ
+                            {r.pointsRequired} pts
                           </span>
                           <button
                             className="ticket-btn"
@@ -658,7 +658,7 @@ export const CustomerLoyalty = () => {
                     Điểm cần dùng:
                   </span>
                   <span className="fw-bold text-warning">
-                    {pendingRedeem.pointsRequired}đ
+                    {pendingRedeem.pointsRequired} pts
                   </span>
                 </div>
                 <div className="d-flex justify-content-between mt-2">
@@ -666,7 +666,7 @@ export const CustomerLoyalty = () => {
                     Điểm hiện có:
                   </span>
                   <span className="fw-bold text-cyan">
-                    {pts.toLocaleString()}đ
+                    {pts.toLocaleString()} pts
                   </span>
                 </div>
               </div>

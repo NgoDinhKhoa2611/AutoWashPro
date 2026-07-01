@@ -468,7 +468,7 @@ export const CustomerDashboard = () => {
                 Điểm tích lũy
               </span>
               <div className="summary-value fw-bold text-dark fs-5">
-                {points.toLocaleString()}PTS
+                {points.toLocaleString()} PTS
               </div>
             </div>
           </Link>
@@ -1002,7 +1002,7 @@ export const CustomerDashboard = () => {
                 <div className="loyalty-card-points">
                   <span id="dashboard-points">{points.toLocaleString()}</span>{" "}
                   <span style={{ fontSize: "0.85rem", fontWeight: 700 }}>
-                    đ
+                    PTS
                   </span>
                 </div>
               </div>
