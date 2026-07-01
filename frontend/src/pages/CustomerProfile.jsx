@@ -13,7 +13,6 @@ export const CustomerProfile = () => {
   const [profileLoading, setProfileLoading] = useState(false);
 
   // Password Change States
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [emailOtp, setEmailOtp] = useState('');
@@ -67,10 +66,6 @@ export const CustomerProfile = () => {
   // Change Password
   const handleChangePasswordSubmit = async (e) => {
     e.preventDefault();
-    if (!currentPassword.trim()) {
-      if (window.showToast) window.showToast('Vui lòng nhập mật khẩu hiện tại!', 'warning');
-      return;
-    }
     if (!emailOtp.trim()) {
       if (window.showToast) window.showToast('Vui lòng nhập mã OTP Gmail!', 'warning');
       return;
@@ -90,18 +85,17 @@ export const CustomerProfile = () => {
 
     setPwLoading(true);
     try {
-      const response = await customerService.verifyEmailAndChangePassword(user.email, emailOtp, currentPassword, newPassword);
+      const response = await customerService.verifyEmailAndChangePassword(user.email, emailOtp, newPassword);
       if (response.success) {
         if (window.showToast) window.showToast('Thay đổi mật khẩu thành công!', 'success');
         setEmailOtp('');
-        setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
         if (window.showToast) window.showToast(response.message || 'Lỗi đổi mật khẩu!', 'error');
       }
     } catch (err) {
-      if (window.showToast) window.showToast(err.response?.data?.message || 'Mã OTP không đúng hoặc mật khẩu cũ không chính xác!', 'error');
+      if (window.showToast) window.showToast(err.response?.data?.message || 'Mã OTP không đúng hoặc đã hết hạn!', 'error');
     } finally {
       setPwLoading(false);
     }
@@ -180,21 +174,6 @@ export const CustomerProfile = () => {
             </h5>
 
             <form onSubmit={handleChangePasswordSubmit}>
-              <div className="mb-3">
-                <label className="form-label small fw-bold text-muted">MẬT KHẨU HIỆN TẠI</label>
-                <div className="input-group glass-input-group">
-                  <span className="input-group-text"><i className="fas fa-lock"></i></span>
-                  <input
-                    type="password"
-                    className="form-control"
-                    placeholder="Nhập mật khẩu hiện tại"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
               <div className="mb-3">
                 <label className="form-label small fw-bold text-muted">MÃ EMAIL OTP</label>
                 <div className="d-flex gap-2">

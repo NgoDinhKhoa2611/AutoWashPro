@@ -16,11 +16,10 @@ export const customerService = {
     return response.data;
   },
 
-  verifyEmailAndChangePassword: async (email, otpCode, currentPassword, newPassword) => {
+  verifyEmailAndChangePassword: async (email, otpCode, newPassword) => {
     const response = await api.post('/Customer/VerifyEmailAndChangePassword', {
       Email: email,
       OtpCode: otpCode,
-      CurrentPassword: currentPassword,
       NewPassword: newPassword
     });
     return response.data;
