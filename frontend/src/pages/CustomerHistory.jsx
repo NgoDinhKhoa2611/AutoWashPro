@@ -5,10 +5,37 @@ import { queueStatusMapper } from "../utils/queueStatusMapper";
 import "../styles/shared.css";
 import "../styles/customer/history.css";
 
+// Payment status (issue #50): 1 Pending, 2 Paid, 3 Failed, 4 Expired
+const getPaymentStatusStyle = (status) => {
+  switch (status) {
+    case 2:
+      return { cls: "bg-success bg-opacity-10 text-success", icon: "fa-check-circle" };
+    case 1:
+      return { cls: "bg-warning bg-opacity-10 text-warning", icon: "fa-clock" };
+    case 3:
+      return { cls: "bg-danger bg-opacity-10 text-danger", icon: "fa-times-circle" };
+    case 4:
+      return { cls: "bg-secondary bg-opacity-10 text-secondary", icon: "fa-ban" };
+    default:
+      return { cls: "bg-secondary bg-opacity-10 text-secondary", icon: "fa-question-circle" };
+  }
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("vi-VN");
+};
+
 export const CustomerHistory = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("care");
   const [history, setHistory] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [txStatusFilter, setTxStatusFilter] = useState("");
+  const [txMethodFilter, setTxMethodFilter] = useState("");
+  const [txFromDate, setTxFromDate] = useState("");
+  const [txToDate, setTxToDate] = useState("");
   const [loading, setLoading] = useState(true);
 
   // Stats
@@ -41,6 +68,12 @@ export const CustomerHistory = () => {
         if (reviewsRes.success && reviewsRes.reviews) {
           reviewsList = reviewsRes.reviews;
           setReviews(reviewsList);
+        }
+
+        // 2b. Fetch payment transactions (issue #50)
+        const txRes = await customerService.getMyTransactions();
+        if (txRes.success && txRes.transactions) {
+          setTransactions(txRes.transactions);
         }
 
         // 3. Calculate stats based on COMPLETED bookings
@@ -77,6 +110,32 @@ export const CustomerHistory = () => {
     return reviews.find((r) => r.bookingId === parseInt(bookingId, 10));
   };
 
+  // Client-side filtering of the customer's own transactions (issue #50)
+  const filteredTransactions = transactions.filter((t) => {
+    const matchStatus = !txStatusFilter || String(t.status) === txStatusFilter;
+    const matchMethod = !txMethodFilter || String(t.paymentMethod) === txMethodFilter;
+
+    // Date range compares against the transaction's created date (local day)
+    const created = t.createdAt ? new Date(t.createdAt) : null;
+    let matchFrom = true;
+    let matchTo = true;
+    if (txFromDate && created) {
+      matchFrom = created >= new Date(`${txFromDate}T00:00:00`);
+    }
+    if (txToDate && created) {
+      matchTo = created <= new Date(`${txToDate}T23:59:59`);
+    }
+
+    return matchStatus && matchMethod && matchFrom && matchTo;
+  });
+
+  const resetTxFilters = () => {
+    setTxStatusFilter("");
+    setTxMethodFilter("");
+    setTxFromDate("");
+    setTxToDate("");
+  };
+
   return (
     <div className="container-fluid py-4">
       {/* Top Header Section */}
@@ -100,6 +159,30 @@ export const CustomerHistory = () => {
         </button>
       </div>
 
+      {/* Tabs (issue #50) */}
+      <ul className="nav nav-pills gap-2 mb-4">
+        <li className="nav-item">
+          <button
+            type="button"
+            className={`nav-link fw-bold ${activeTab === "care" ? "active" : "text-secondary"}`}
+            style={{ borderRadius: "12px" }}
+            onClick={() => setActiveTab("care")}
+          >
+            <i className="fas fa-hands-wash me-2"></i>Lịch sử chăm sóc xe
+          </button>
+        </li>
+        <li className="nav-item">
+          <button
+            type="button"
+            className={`nav-link fw-bold ${activeTab === "transactions" ? "active" : "text-secondary"}`}
+            style={{ borderRadius: "12px" }}
+            onClick={() => setActiveTab("transactions")}
+          >
+            <i className="fas fa-receipt me-2"></i>Lịch sử giao dịch ({transactions.length})
+          </button>
+        </li>
+      </ul>
+
       {/* Loading state */}
       {loading ? (
         <div className="text-center py-5">
@@ -110,6 +193,8 @@ export const CustomerHistory = () => {
         </div>
       ) : (
         <>
+          {activeTab === "care" && (
+          <>
           {/* Stats Row */}
           <div className="row g-3 mb-4 text-start">
             {/* Total Washes */}
@@ -421,6 +506,229 @@ export const CustomerHistory = () => {
               </div>
             </div>
           </div>
+          </>
+          )}
+
+          {activeTab === "transactions" && (
+            <div className="row text-start">
+              <div className="col-12">
+                <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4">
+                  <h5
+                    className="fw-bold mb-4 text-dark"
+                    style={{ fontSize: "0.95rem" }}
+                  >
+                    <i className="fas fa-receipt text-cyan me-2"></i>LỊCH SỬ GIAO
+                    DỊCH THANH TOÁN ({filteredTransactions.length}/
+                    {transactions.length})
+                  </h5>
+
+                  {transactions.length === 0 ? (
+                    <div className="text-center py-5 text-muted">
+                      <div className="empty-state-icon mb-3">
+                        <i className="fas fa-receipt fa-2x"></i>
+                      </div>
+                      <h5 className="fw-bold mb-2">Chưa có giao dịch nào</h5>
+                      <p className="small mb-0">
+                        Các giao dịch thanh toán của bạn sẽ hiển thị tại đây.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Transaction filters (issue #50) */}
+                      <div className="row g-2 mb-4 align-items-end">
+                        <div className="col-6 col-lg-3">
+                          <label className="form-label small fw-bold text-muted mb-1">
+                            TRẠNG THÁI
+                          </label>
+                          <select
+                            className="form-select bg-white shadow-sm fw-semibold text-dark"
+                            style={{ borderRadius: "10px", boxShadow: "none", cursor: "pointer" }}
+                            value={txStatusFilter}
+                            onChange={(e) => setTxStatusFilter(e.target.value)}
+                          >
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="1">Chờ thanh toán</option>
+                            <option value="2">Đã thanh toán</option>
+                            <option value="3">Thất bại</option>
+                            <option value="4">Hết hạn</option>
+                          </select>
+                        </div>
+                        <div className="col-6 col-lg-3">
+                          <label className="form-label small fw-bold text-muted mb-1">
+                            PHƯƠNG THỨC
+                          </label>
+                          <select
+                            className="form-select bg-white shadow-sm fw-semibold text-dark"
+                            style={{ borderRadius: "10px", boxShadow: "none", cursor: "pointer" }}
+                            value={txMethodFilter}
+                            onChange={(e) => setTxMethodFilter(e.target.value)}
+                          >
+                            <option value="">Tất cả phương thức</option>
+                            <option value="1">Tiền mặt</option>
+                            <option value="2">VNPay</option>
+                            <option value="3">PayOS</option>
+                          </select>
+                        </div>
+                        <div className="col-6 col-lg-2">
+                          <label className="form-label small fw-bold text-muted mb-1">
+                            TỪ NGÀY
+                          </label>
+                          <input
+                            type="date"
+                            className="form-control bg-white shadow-sm fw-semibold text-dark"
+                            style={{ borderRadius: "10px", boxShadow: "none" }}
+                            value={txFromDate}
+                            max={txToDate || undefined}
+                            onChange={(e) => setTxFromDate(e.target.value)}
+                          />
+                        </div>
+                        <div className="col-6 col-lg-2">
+                          <label className="form-label small fw-bold text-muted mb-1">
+                            ĐẾN NGÀY
+                          </label>
+                          <input
+                            type="date"
+                            className="form-control bg-white shadow-sm fw-semibold text-dark"
+                            style={{ borderRadius: "10px", boxShadow: "none" }}
+                            value={txToDate}
+                            min={txFromDate || undefined}
+                            onChange={(e) => setTxToDate(e.target.value)}
+                          />
+                        </div>
+                        <div className="col-12 col-lg-2 d-grid">
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary fw-bold"
+                            style={{ borderRadius: "10px" }}
+                            onClick={resetTxFilters}
+                          >
+                            <i className="fas fa-eraser me-1"></i> Xóa lọc
+                          </button>
+                        </div>
+                      </div>
+
+                      {filteredTransactions.length === 0 ? (
+                        <div className="text-center py-4 text-muted">
+                          <i className="fas fa-filter fa-2x mb-2" style={{ opacity: 0.25 }}></i>
+                          <p className="small mb-0">
+                            Không có giao dịch nào khớp bộ lọc đã chọn.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="d-flex flex-column gap-3">
+                          {filteredTransactions.map((t) => {
+                        const st = getPaymentStatusStyle(t.status);
+                        return (
+                          <div
+                            key={t.paymentId}
+                            className="app-card border border-light p-4 bg-white rounded-4 shadow-sm hover-shadow transition-all"
+                          >
+                            <div className="d-flex flex-wrap justify-content-between align-items-start border-bottom pb-3 mb-3 gap-2">
+                              <div>
+                                <div className="fw-bold fs-6 text-dark font-monospace">
+                                  {t.invoiceNumber}
+                                </div>
+                                <small
+                                  className="text-muted"
+                                  style={{ fontSize: "0.75rem" }}
+                                >
+                                  Mã lịch hẹn: #{t.bookingId}
+                                  {t.licensePlate ? ` • Xe: ${t.licensePlate}` : ""}
+                                </small>
+                              </div>
+                              <span
+                                className={`badge px-3 py-2 rounded-pill small fw-bold ${st.cls}`}
+                              >
+                                <i className={`fas me-1 ${st.icon}`}></i>
+                                {t.statusName}
+                              </span>
+                            </div>
+
+                            <div className="row g-3">
+                              <div className="col-6 col-md-3">
+                                <small
+                                  className="text-muted d-block"
+                                  style={{ fontSize: "0.68rem" }}
+                                >
+                                  Số tiền
+                                </small>
+                                <span
+                                  className="fw-bold text-cyan"
+                                  style={{ fontSize: "1rem" }}
+                                >
+                                  {Number(t.amount).toLocaleString()}đ
+                                </span>
+                              </div>
+                              <div className="col-6 col-md-3">
+                                <small
+                                  className="text-muted d-block"
+                                  style={{ fontSize: "0.68rem" }}
+                                >
+                                  Phương thức
+                                </small>
+                                <span
+                                  className="fw-bold text-dark"
+                                  style={{ fontSize: "0.85rem" }}
+                                >
+                                  {t.paymentMethodName}
+                                </span>
+                              </div>
+                              <div className="col-6 col-md-3">
+                                <small
+                                  className="text-muted d-block"
+                                  style={{ fontSize: "0.68rem" }}
+                                >
+                                  Thời gian tạo
+                                </small>
+                                <span
+                                  className="text-dark"
+                                  style={{ fontSize: "0.8rem" }}
+                                >
+                                  {formatDateTime(t.createdAt)}
+                                </span>
+                              </div>
+                              <div className="col-6 col-md-3">
+                                <small
+                                  className="text-muted d-block"
+                                  style={{ fontSize: "0.68rem" }}
+                                >
+                                  Thời gian thanh toán
+                                </small>
+                                <span
+                                  className="text-dark"
+                                  style={{ fontSize: "0.8rem" }}
+                                >
+                                  {formatDateTime(t.paidAt)}
+                                </span>
+                              </div>
+                              {t.transactionNo && (
+                                <div className="col-12 pt-2 border-top">
+                                  <small
+                                    className="text-muted d-block"
+                                    style={{ fontSize: "0.68rem" }}
+                                  >
+                                    Mã giao dịch
+                                  </small>
+                                  <span
+                                    className="font-monospace text-secondary"
+                                    style={{ fontSize: "0.78rem" }}
+                                  >
+                                    {t.transactionNo}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

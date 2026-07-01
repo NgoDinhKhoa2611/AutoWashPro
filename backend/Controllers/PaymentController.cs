@@ -25,6 +25,7 @@ namespace Auto_Wash.Controllers
         private readonly PayOSClient _payOSClient;
         private readonly PayOSSettings _payOSSettings;
         private readonly BookingNotificationService _notificationService;
+        private readonly AuthContextService _authContextService;
         private readonly ILogger<PaymentController> _logger;
 
         public PaymentController(
@@ -33,6 +34,7 @@ namespace Auto_Wash.Controllers
             PayOSClient payOSClient,
             IOptions<PayOSSettings> payOSSettings,
             BookingNotificationService notificationService,
+            AuthContextService authContextService,
             ILogger<PaymentController> logger)
         {
             _paymentService = paymentService;
@@ -40,7 +42,70 @@ namespace Auto_Wash.Controllers
             _payOSClient = payOSClient;
             _payOSSettings = payOSSettings.Value;
             _notificationService = notificationService;
+            _authContextService = authContextService;
             _logger = logger;
+        }
+
+        private bool IsAdminOrStaff()
+        {
+            var role = HttpContext.Session.GetString("UserRole");
+            return string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(role, "staff", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Transaction history for the currently signed-in customer (issue #50).
+        /// Returns the customer's own payments only, newest first.
+        /// </summary>
+        [HttpGet]
+        [Route("history/me")]
+        public async Task<IActionResult> GetMyTransactions()
+        {
+            var customer = await _authContextService.GetCurrentCustomerAsync();
+            if (customer == null)
+            {
+                return Unauthorized(new { success = false, message = "Bạn chưa đăng nhập!" });
+            }
+
+            try
+            {
+                var transactions = await _paymentService.GetCustomerTransactionsAsync(customer.CustomerId);
+                return Ok(new { success = true, transactions });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetMyTransactions: Error loading transactions for CustomerId {CustomerId}", customer.CustomerId);
+                return StatusCode(500, new { success = false, message = "Lỗi truy vấn lịch sử giao dịch." });
+            }
+        }
+
+        /// <summary>
+        /// Transaction history across all customers for the admin page (issue #50),
+        /// with optional status / method / date-range filters.
+        /// </summary>
+        [HttpGet]
+        [Route("history")]
+        public async Task<IActionResult> GetAllTransactions(
+            [FromQuery] int? status,
+            [FromQuery] int? method,
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate)
+        {
+            if (!IsAdminOrStaff())
+            {
+                return Unauthorized(new { success = false, message = "Bạn không có quyền thực hiện hành động này!" });
+            }
+
+            try
+            {
+                var transactions = await _paymentService.GetAllTransactionsAsync(status, method, fromDate, toDate);
+                return Ok(new { success = true, transactions });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetAllTransactions: Error loading admin transaction history.");
+                return StatusCode(500, new { success = false, message = "Lỗi truy vấn lịch sử giao dịch." });
+            }
         }
 
         public class CreatePaymentRequest

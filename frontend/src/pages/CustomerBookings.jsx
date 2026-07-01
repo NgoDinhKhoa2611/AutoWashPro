@@ -86,12 +86,6 @@ export const CustomerBookings = () => {
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  // History Tab Search, Filter and Pagination states
-  const [historyFilter, setHistoryFilter] = useState('all'); // all, completed, cancelled
-  const [historySearch, setHistorySearch] = useState('');
-  const [historyPage, setHistoryPage] = useState(1);
-  const itemsPerPage = 5;
-
   const [showCancelReasonModal, setShowCancelReasonModal] = useState(false);
   const [cancelReasonDetails, setCancelReasonDetails] = useState(null); // { id, cancelledBy, cancelledAt, reason }
 
@@ -501,41 +495,6 @@ export const CustomerBookings = () => {
      !b.checkedOutAt
   ), [bookings]);
 
-  const historyBookings = useMemo(() => bookings.filter(b => 
-    b.status === 'Cancelled' || 
-    b.status === 'NoShow' || 
-    b.status === 'No Show' ||
-    (b.status === 'Completed' && b.checkedOutAt)
-  ), [bookings]);
-
-  // Per-filter counts for the history tab filter pills
-  const historyCounts = useMemo(() => ({
-    all: historyBookings.length,
-    completed: historyBookings.filter(b => b.status === 'Completed').length,
-    cancelled: historyBookings.filter(b => b.status === 'Cancelled' || b.status === 'NoShow' || b.status === 'No Show').length,
-  }), [historyBookings]);
-
-  // Filtered & Searched history bookings
-  const filteredHistory = useMemo(() => historyBookings.filter(b => {
-    if (historyFilter === 'completed' && b.status !== 'Completed') return false;
-    if (historyFilter === 'cancelled' && b.status !== 'Cancelled' && b.status !== 'NoShow' && b.status !== 'No Show') return false;
-
-    if (historySearch.trim()) {
-      const q = historySearch.toLowerCase().trim();
-      const idMatches = b.id.toString().includes(q);
-      const plateMatches = b.vehicle && b.vehicle.toLowerCase().includes(q);
-      return idMatches || plateMatches;
-    }
-    return true;
-  }), [historyBookings, historyFilter, historySearch]);
-
-  // Paginated history
-  const totalHistoryPages = useMemo(() => Math.ceil(filteredHistory.length / itemsPerPage), [filteredHistory]);
-  const paginatedHistory = useMemo(() => filteredHistory.slice(
-    (historyPage - 1) * itemsPerPage,
-    historyPage * itemsPerPage
-  ), [filteredHistory, historyPage]);
-
   const translateStatus = (status) => {
     switch (status) {
       case 'Pending':
@@ -612,13 +571,6 @@ export const CustomerBookings = () => {
               onClick={() => setActiveTab('active')}
             >
               Lịch hẹn hoạt động ({activeBookings.length})
-            </button>
-            <button
-              className={`btn pb-2 fw-bold text-decoration-none border-0 rounded-0 px-2 position-relative ${activeTab === 'history' ? 'text-cyan border-bottom border-cyan border-3' : 'text-secondary'}`}
-              style={{ background: 'transparent' }}
-              onClick={() => setActiveTab('history')}
-            >
-              Lịch sử giao dịch ({historyBookings.length})
             </button>
             <button
               className={`btn pb-2 fw-bold text-decoration-none border-0 rounded-0 px-2 position-relative ${activeTab === 'reviews' ? 'text-cyan border-bottom border-cyan border-3' : 'text-secondary'}`}
@@ -707,162 +659,6 @@ export const CustomerBookings = () => {
                     );
                   })}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 2: BOOKING HISTORY */}
-          {activeTab === 'history' && (
-            <div className="col-12">
-              {/* Search & Filter Controls */}
-              <div className="row g-3 mb-4 align-items-center">
-                <div className="col-md-6">
-                  <div className="history-search">
-                    <i className="fas fa-search history-search-icon"></i>
-                    <input
-                      type="text"
-                      className="history-search-input"
-                      placeholder="Tìm theo Mã lịch hoặc Biển số xe..."
-                      value={historySearch}
-                      onChange={(e) => { setHistorySearch(e.target.value); setHistoryPage(1); }}
-                    />
-                    {historySearch && (
-                      <button
-                        type="button"
-                        className="history-search-clear"
-                        aria-label="Xoá tìm kiếm"
-                        onClick={() => { setHistorySearch(''); setHistoryPage(1); }}
-                      >
-                        <i className="fas fa-times"></i>
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="col-md-6 d-flex justify-content-md-end gap-2 flex-wrap">
-                  {[
-                    { key: 'all', label: 'Tất cả' },
-                    { key: 'completed', label: 'Hoàn thành' },
-                    { key: 'cancelled', label: 'Đã hủy' },
-                  ].map(f => (
-                    <button
-                      key={f.key}
-                      type="button"
-                      className={`history-filter-btn ${historyFilter === f.key ? 'active' : ''}`}
-                      onClick={() => { setHistoryFilter(f.key); setHistoryPage(1); }}
-                    >
-                      {f.label}
-                      <span className="history-filter-count">{historyCounts[f.key]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {filteredHistory.length === 0 ? (
-                <div className="app-card p-5 text-center text-muted rounded-4 bg-white border-0 shadow-sm">
-                  <div className="mb-3"><i className="fas fa-history fa-3x text-light"></i></div>
-                  <h5 className="fw-bold mb-1 text-dark">Chưa có lịch sử giao dịch</h5>
-                  <p className="small mb-0">Các lịch hẹn hoàn thành hoặc đã hủy khớp với bộ lọc sẽ hiển thị tại đây.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="row g-3">
-                    {paginatedHistory.map((b) => {
-                      const statusInfo = (b.status === 'WaitingCheckout')
-                        ? translateStatus(b.status)
-                        : (b.queueStatus
-                          ? { label: queueStatusMapper.getLabel(b.queueStatus), badgeClass: queueStatusMapper.getBadgeClass(b.queueStatus), icon: queueStatusMapper.getIcon(b.queueStatus) }
-                          : translateStatus(b.status));
-                      return (
-                        <div key={b.id} className="col-md-6 col-lg-4">
-                          <div className={`app-card border border-light p-4 bg-white rounded-4 shadow-sm hover-shadow transition-all ${getStatusBorderClass(b.status)}`} style={{ cursor: 'pointer' }} onClick={() => handleOpenDetail(b.id)}>
-                            <div className="d-flex justify-content-between align-items-start mb-3 border-bottom pb-2">
-                              <div>
-                                <div className="small text-muted font-monospace mb-0.5">MÃ LỊCH: #{b.id}</div>
-                                <span className="fw-bold text-dark font-monospace fs-6">{b.vehicle}</span>
-                              </div>
-                              <span className={`badge px-2.5 py-1.5 rounded-pill small fw-bold ${statusInfo.badgeClass}`}>
-                                <i className={`fas ${statusInfo.icon} me-1`}></i>{statusInfo.label}
-                              </span>
-                            </div>
-
-                            <div className="mb-3 small text-secondary">
-                              <div className="mb-1"><i className="far fa-calendar text-muted me-2"></i>Ngày hẹn: <strong className="text-dark">{b.bookingDate.split('-').reverse().join('/')}</strong></div>
-                              <div className="mb-1"><i className="far fa-clock text-muted me-2"></i>Giờ hẹn: <strong className="text-dark">{b.bookingTime}</strong></div>
-                              <div className="mb-1"><i className="fas fa-hands-wash text-muted me-2"></i>Dịch vụ chính: <strong className="text-dark">{b.mainService}</strong></div>
-                              <div>
-                                <i className="fas fa-coins text-muted me-2"></i>Tích điểm: {' '}
-                                {b.status === 'Completed' ? (
-                                  <strong className="text-warning">+{b.points}đ</strong>
-                                ) : (
-                                  <span className="text-secondary" style={{ fontSize: '0.74rem' }}>Điểm sẽ được cộng sau khi thanh toán.</span>
-                                )}
-                              </div>
-                              {b.progressTracking?.stages && b.status === 'Completed' && (
-                                <div className="mt-2.5 pt-2.5 border-top text-start">
-                                  <small className="text-muted fw-bold d-block mb-1.5" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>TIẾN TRÌNH CHI TIẾT</small>
-                                  <div className="d-flex flex-column gap-1">
-                                    {b.progressTracking.stages.map((stage, sIdx) => (
-                                      <div key={sIdx} className="text-success small d-flex align-items-center gap-1.5" style={{ fontSize: '0.72rem', fontWeight: 500 }}>
-                                        <i className="fas fa-check-circle text-success" style={{ fontSize: '0.75rem' }}></i>
-                                        <span>{stage.displayName}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="d-flex justify-content-between align-items-center pt-3 border-top">
-                              <div>
-                                <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>THÀNH TIỀN</small>
-                                <strong className="text-cyan fs-5">{Number(b.price).toLocaleString()}đ</strong>
-                              </div>
-                              <div className="d-flex gap-2">
-                                {b.status === 'Completed' && (
-                                  b.hasReview ? (
-                                    <button className="btn btn-outline-secondary btn-sm px-3 py-1.5 rounded-3 fw-bold small border text-dark" onClick={(e) => { e.stopPropagation(); handleOpenDetail(b.id); }}>
-                                      Xem đánh giá
-                                    </button>
-                                  ) : (
-                                    <button className="btn btn-outline-info btn-sm px-3 py-1.5 rounded-3 fw-bold small" onClick={(e) => { e.stopPropagation(); handleOpenReview(b.id); }}>
-                                      Viết đánh giá
-                                    </button>
-                                  )
-                                )}
-                                {b.status === 'Cancelled' && (
-                                  <button className="btn btn-light btn-sm px-3 py-1.5 rounded-3 fw-bold small border text-danger" onClick={(e) => handleOpenCancelReason(b.id, e)}>
-                                    Lý do hủy
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Pagination Controls */}
-                  {totalHistoryPages > 1 && (
-                    <div className="d-flex justify-content-center align-items-center mt-4 gap-3">
-                      <button
-                        className="btn btn-outline-cyan btn-sm px-3 py-2 rounded-3 fw-bold"
-                        disabled={historyPage === 1}
-                        onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
-                      >
-                        <i className="fas fa-chevron-left me-1"></i> Trước
-                      </button>
-                      <span className="small fw-bold text-secondary">Trang {historyPage} / {totalHistoryPages}</span>
-                      <button
-                        className="btn btn-outline-cyan btn-sm px-3 py-2 rounded-3 fw-bold"
-                        disabled={historyPage === totalHistoryPages}
-                        onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
-                      >
-                        Sau <i className="fas fa-chevron-right ms-1"></i>
-                      </button>
-                    </div>
-                  )}
-                </>
               )}
             </div>
           )}

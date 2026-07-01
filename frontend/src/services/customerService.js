@@ -134,6 +134,11 @@ export const customerService = {
     return response.data;
   },
 
+  getMyTransactions: async (config = {}) => {
+    const response = await api.get('/api/payment/history/me', config);
+    return response.data;
+  },
+
   getActiveBooking: async (config = {}) => {
     const response = await api.get('/Customer/GetActiveBooking', config);
     return response.data;

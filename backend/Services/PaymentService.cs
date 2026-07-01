@@ -364,6 +364,91 @@ namespace Auto_Wash.Services
             }
         }
 
+        public async Task<List<TransactionHistoryDto>> GetCustomerTransactionsAsync(int customerId)
+        {
+            var payments = await _context.Payments
+                .Include(p => p.Booking)
+                    .ThenInclude(b => b.Vehicle)
+                .Where(p => p.Booking.CustomerId == customerId)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            return payments.Select(p => MapToHistoryDto(p, includeCustomer: false)).ToList();
+        }
+
+        public async Task<List<TransactionHistoryDto>> GetAllTransactionsAsync(int? status, int? method, DateTime? fromDate, DateTime? toDate)
+        {
+            var query = _context.Payments
+                .Include(p => p.Booking)
+                    .ThenInclude(b => b.Vehicle)
+                .Include(p => p.Booking)
+                    .ThenInclude(b => b.Customer)
+                        .ThenInclude(c => c.Account)
+                .AsQueryable();
+
+            if (status.HasValue) query = query.Where(p => p.Status == status.Value);
+            if (method.HasValue) query = query.Where(p => p.PaymentMethod == method.Value);
+            if (fromDate.HasValue) query = query.Where(p => p.CreatedAt >= fromDate.Value);
+            if (toDate.HasValue)
+            {
+                // inclusive of the whole end day
+                var end = toDate.Value.Date.AddDays(1);
+                query = query.Where(p => p.CreatedAt < end);
+            }
+
+            var payments = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            return payments.Select(p => MapToHistoryDto(p, includeCustomer: true)).ToList();
+        }
+
+        private static TransactionHistoryDto MapToHistoryDto(Payment p, bool includeCustomer)
+        {
+            var booking = p.Booking;
+            var dto = new TransactionHistoryDto
+            {
+                PaymentId = p.PaymentId,
+                BookingId = p.BookingId,
+                Amount = p.Amount,
+                PaymentMethod = p.PaymentMethod,
+                PaymentMethodName = GetMethodName(p.PaymentMethod),
+                Status = p.Status,
+                StatusName = GetStatusName(p.Status),
+                TxnRef = p.TxnRef,
+                TransactionNo = p.TransactionNo,
+                CreatedAt = p.CreatedAt,
+                PaidAt = p.PaidAt,
+                InvoiceNumber = $"INV-{p.BookingId}-{p.PaymentId}",
+                LicensePlate = booking?.Vehicle?.LicensePlate
+            };
+
+            if (includeCustomer)
+            {
+                dto.CustomerName = booking?.Customer?.Account?.FullName;
+                dto.CustomerPhone = booking?.Customer?.Account?.Phone;
+            }
+
+            return dto;
+        }
+
+        private static string GetMethodName(int method) => method switch
+        {
+            (int)PaymentMethod.Cash => "Tiền mặt",
+            (int)PaymentMethod.VNPay => "VNPay",
+            (int)PaymentMethod.PayOS => "PayOS",
+            _ => "Khác"
+        };
+
+        private static string GetStatusName(int status) => status switch
+        {
+            (int)PaymentStatus.Pending => "Chờ thanh toán",
+            (int)PaymentStatus.Paid => "Đã thanh toán",
+            (int)PaymentStatus.Failed => "Thất bại",
+            (int)PaymentStatus.Expired => "Hết hạn",
+            _ => "Không xác định"
+        };
+
         private static PaymentDto MapToDto(Payment payment)
         {
             return new PaymentDto
