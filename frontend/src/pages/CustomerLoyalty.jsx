@@ -297,7 +297,7 @@ export const CustomerLoyalty = () => {
                 style={{ fontSize: "2.4rem" }}
               >
                 {pts.toLocaleString()}{" "}
-                <small style={{ fontSize: "1rem", fontWeight: 600 }}>PTS</small>
+                <small style={{ fontSize: "1rem", fontWeight: 600 }}>đ</small>
               </h2>
               <p
                 className="text-white mb-3"
@@ -437,7 +437,7 @@ export const CustomerLoyalty = () => {
                 className="badge bg-light text-muted border px-2 py-1"
                 style={{ fontSize: "0.65rem" }}
               >
-                ĐIỂM HIỆN CÓ: {pts.toLocaleString()} PTS
+                ĐIỂM HIỆN CÓ: {pts.toLocaleString()}đ
               </span>
             </div>
 
@@ -498,23 +498,21 @@ export const CustomerLoyalty = () => {
                         </div>
                         <div className="ticket-footer">
                           <span className="ticket-points-badge">
-                            {r.pointsRequired} PTS
+                            {r.pointsRequired}đ
                           </span>
-                          {canRedeem ? (
-                            <button
-                              className="ticket-btn"
-                              onClick={() => handleOpenRedeemModal(r)}
-                            >
-                              <i className="fas fa-exchange-alt me-1"></i>ĐỔI
-                            </button>
-                          ) : (
-                            <span
-                              className="small text-muted"
-                              style={{ fontSize: "0.68rem", fontWeight: 600 }}
-                            >
-                              Cần thêm {r.pointsRequired - pts} PTS
-                            </span>
-                          )}
+                          <button
+                            className="ticket-btn"
+                            disabled={!canRedeem}
+                            onClick={() => handleOpenRedeemModal(r)}
+                          >
+                            {canRedeem ? (
+                              <>
+                                <i className="fas fa-exchange-alt me-1"></i>ĐỔI
+                              </>
+                            ) : (
+                              `Thiếu ${r.pointsRequired - pts}đ`
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -654,7 +652,7 @@ export const CustomerLoyalty = () => {
                     Điểm cần dùng:
                   </span>
                   <span className="fw-bold text-warning">
-                    {pendingRedeem.pointsRequired} PTS
+                    {pendingRedeem.pointsRequired}đ
                   </span>
                 </div>
                 <div className="d-flex justify-content-between mt-2">
@@ -662,7 +660,7 @@ export const CustomerLoyalty = () => {
                     Điểm hiện có:
                   </span>
                   <span className="fw-bold text-cyan">
-                    {pts.toLocaleString()} PTS
+                    {pts.toLocaleString()}đ
                   </span>
                 </div>
               </div>

@@ -645,7 +645,7 @@ export const AdminBookings = () => {
                           <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Hạng TV & Điểm</small>
                           <div className="d-flex align-items-center gap-1.5 mt-0.5">
                             <span className={getTierBadgeClass(bookingDetail.customer.tierName)} style={{ fontSize: '0.65rem', padding: '1px 6px' }}>{bookingDetail.customer.tierName}</span>
-                            <strong className="text-secondary small" style={{ fontSize: '0.75rem' }}>{bookingDetail.customer.pointBalance.toLocaleString()} PTS</strong>
+                            <strong className="text-secondary small" style={{ fontSize: '0.75rem' }}>{bookingDetail.customer.pointBalance.toLocaleString()}đ</strong>
                           </div>
                         </div>
                       </div>
@@ -839,7 +839,7 @@ export const AdminBookings = () => {
                         </div>
                         <div className="d-flex justify-content-between align-items-center mt-1.5 small text-success" style={{ fontSize: '0.75rem' }}>
                           <span>Tích lũy Loyalty:</span>
-                          <span>+{bookingDetail.pointsEarned} PTS</span>
+                          <span>+{bookingDetail.pointsEarned}đ</span>
                         </div>
                       </div>
                     </div>
@@ -955,36 +955,43 @@ export const AdminBookings = () => {
           {bookingDetail && (isRescheduling || ['Pending', 'Confirmed', 'CheckedIn', 'Washing'].includes(bookingDetail.status)) && (
             <div className="booking-drawer-footer">
               {isRescheduling ? (
-                <div className="d-flex gap-2 w-100 justify-content-end">
+                <div className="d-flex gap-2.5 w-100 justify-content-end">
                   <button
-                    className="btn btn-secondary fw-bold px-4 py-2"
-                    style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                    className="btn btn-secondary fw-bold px-4 py-2.5"
+                    style={{ borderRadius: '14px', fontSize: '0.8rem', transition: 'all 0.2s ease' }}
                     onClick={() => setIsRescheduling(false)}
                   >
                     HỦY BỎ
                   </button>
                   <button
-                    className="btn btn-primary fw-bold text-white px-4 py-2"
-                    style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                    className="app-btn-primary fw-bold text-white px-4 py-2.5 w-auto"
+                    style={{ borderRadius: '14px', fontSize: '0.8rem', border: 'none' }}
                     onClick={submitReschedule}
                   >
                     LƯU ĐỔI LỊCH
                   </button>
                 </div>
               ) : (
-                <div className="d-flex gap-2 w-100 justify-content-end">
+                <div className="d-flex gap-2.5 w-100 justify-content-end">
                   {bookingDetail.status === 'Pending' && (
                     <>
                       <button
-                        className="btn btn-danger fw-bold text-white px-4 py-2"
-                        style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                        className="btn btn-outline-danger fw-bold px-4 py-2.5"
+                        style={{ borderRadius: '14px', fontSize: '0.8rem', transition: 'all 0.2s ease' }}
                         onClick={() => handleCancel(bookingDetail.bookingId, bookingDetail.customer.fullName)}
                       >
                         HỦY LỊCH HẸN
                       </button>
                       <button
-                        className="btn btn-success fw-bold text-white px-4 py-2"
-                        style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                        className="btn btn-success fw-bold text-white px-4 py-2.5"
+                        style={{ 
+                          borderRadius: '14px', 
+                          fontSize: '0.8rem', 
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                          border: 'none',
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                          transition: 'all 0.2s ease'
+                        }}
                         onClick={() => handleConfirm(bookingDetail.bookingId, bookingDetail.customer.fullName)}
                       >
                         DUYỆT LỊCH HẸN
@@ -1002,15 +1009,22 @@ export const AdminBookings = () => {
                     return (
                       <>
                         <button
-                          className="btn btn-danger fw-bold text-white px-4 py-2"
-                          style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                          className="btn btn-outline-danger fw-bold px-4 py-2.5"
+                          style={{ borderRadius: '14px', fontSize: '0.8rem', transition: 'all 0.2s ease' }}
                           onClick={() => handleCancel(bookingDetail.bookingId, bookingDetail.customer.fullName)}
                         >
                           HỦY LỊCH HẸN
                         </button>
                         <button
-                          className="btn btn-warning fw-bold text-dark px-4 py-2"
-                          style={{ borderRadius: '12px', fontSize: '0.8rem' }}
+                          className="btn btn-warning fw-bold text-white px-4 py-2.5"
+                          style={{ 
+                            borderRadius: '14px', 
+                            fontSize: '0.8rem', 
+                            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
+                            border: 'none',
+                            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)',
+                            transition: 'all 0.2s ease'
+                          }}
                           onClick={() => {
                             const sDate = new Date(bookingDetail.scheduledAt);
                             setRescheduleDate(sDate.toLocaleDateString('sv-SE'));
@@ -1022,15 +1036,17 @@ export const AdminBookings = () => {
                           ĐỔI LỊCH HẸN
                         </button>
                         <button
-                          className="btn btn-info fw-bold text-dark px-4 py-2"
+                          className="btn btn-info fw-bold text-white px-4 py-2.5"
                           style={{
-                            borderRadius: '12px',
+                            borderRadius: '14px',
                             fontSize: '0.8rem',
-                            background: isFutureBooking ? '#6c757d' : 'var(--cyan-electric)',
-                            color: isFutureBooking ? '#fff' : 'var(--dark)',
+                            background: isFutureBooking ? '#cbd5e1' : 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                            color: isFutureBooking ? '#94a3b8' : '#ffffff',
                             border: 'none',
                             cursor: isFutureBooking ? 'not-allowed' : 'pointer',
-                            opacity: isFutureBooking ? 0.65 : 1
+                            opacity: isFutureBooking ? 0.65 : 1,
+                            boxShadow: isFutureBooking ? 'none' : '0 4px 12px rgba(14, 165, 233, 0.25)',
+                            transition: 'all 0.2s ease'
                           }}
                           disabled={isFutureBooking}
                           title={isFutureBooking ? "Chỉ có thể check-in vào ngày hẹn." : ""}
@@ -1044,8 +1060,15 @@ export const AdminBookings = () => {
 
                   {['CheckedIn', 'Washing'].includes(bookingDetail.status) && (
                     <button
-                      className="btn btn-info fw-bold text-dark px-4 py-2"
-                      style={{ borderRadius: '12px', fontSize: '0.8rem', background: 'var(--cyan-electric)', border: 'none' }}
+                      className="btn btn-info fw-bold text-white px-4 py-2.5"
+                      style={{ 
+                        borderRadius: '14px', 
+                        fontSize: '0.8rem', 
+                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)', 
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.25)',
+                        transition: 'all 0.2s ease'
+                      }}
                       onClick={() => {
                         closeDrawer();
                         navigate('/admin/queue');

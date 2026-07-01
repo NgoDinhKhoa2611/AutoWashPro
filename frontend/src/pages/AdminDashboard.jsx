@@ -482,7 +482,7 @@ export const AdminDashboard = () => {
                   LOYALTY POINTS ĐÃ CỘNG
                 </small>
                 <h4 className="fw-bold text-warning mt-1 mb-1">
-                  +{realtimeCounters.loyaltyPointsGrantedToday} PTS
+                  +{realtimeCounters.loyaltyPointsGrantedToday}đ
                 </h4>
                 <small
                   className="text-secondary"
@@ -747,7 +747,7 @@ export const AdminDashboard = () => {
                         <small className="opacity-75 d-block mt-1">
                           Ngưỡng điểm tối thiểu:{" "}
                           <strong>
-                            {t.minRankingBalance.toLocaleString()} PTS
+                            {t.minRankingBalance.toLocaleString()}đ
                           </strong>
                         </small>
                       </div>

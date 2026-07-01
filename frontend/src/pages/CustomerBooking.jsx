@@ -704,7 +704,7 @@ export const CustomerBooking = () => {
               <div>
                 <span className="text-muted small d-block">TỔNG CỘNG</span>
                 <span className="small text-secondary fw-bold" style={{ fontSize: '0.7rem' }}>
-                  Điểm nhận: <strong className="text-warning">+{earnedPoints} PTS</strong>
+                  Điểm nhận: <strong className="text-warning">+{earnedPoints}đ</strong>
                 </span>
               </div>
               <h3 className="fw-bold text-dark mb-0">

@@ -125,7 +125,7 @@ namespace Auto_Wash.Services
 
             if (customer.PointBalance < reward.PointCost)
             {
-                return (false, $"Bạn không đủ điểm để đổi phần thưởng này (Cần {reward.PointCost} PTS, hiện có {customer.PointBalance} PTS).");
+                return (false, $"Bạn không đủ điểm để đổi phần thưởng này (Cần {reward.PointCost}đ, hiện có {customer.PointBalance}đ).");
             }
 
             var now = DateTime.Now;

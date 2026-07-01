@@ -24,7 +24,7 @@
 .booking-stat-card.active.stat-confirmed { border-color: #1677FF !important; background-color: #E6F4FF !important; }
 .booking-stat-card.active.stat-checkedin { border-color: #722ED1 !important; background-color: #F9F0FF !important; }
 .booking-stat-card.active.stat-completed { border-color: #52C41A !important; background-color: #F6FFED !important; }
-.booking-stat-card.active.stat-cancelled { border-color: #F5222D !important; background-color: #FFF1F0 !important; }
+.booking-stat-card.active.stat-cancelled { border-color: #64748b !important; background-color: #f1f5f9 !important; }
 
 .stat-icon-wrapper {
     width: 48px;

@@ -679,7 +679,7 @@ export const CustomerBookings = () => {
                             <div>
                               <i className="fas fa-coins text-muted me-2"></i>Dịch vụ tích điểm: {' '}
                               {b.status === 'Completed' ? (
-                                <strong className="text-warning">+{b.points} PTS</strong>
+                                <strong className="text-warning">+{b.points}đ</strong>
                               ) : (
                                 <span className="text-secondary" style={{ fontSize: '0.74rem' }}>Điểm sẽ được cộng sau khi thanh toán.</span>
                               )}
@@ -792,7 +792,7 @@ export const CustomerBookings = () => {
                               <div>
                                 <i className="fas fa-coins text-muted me-2"></i>Tích điểm: {' '}
                                 {b.status === 'Completed' ? (
-                                  <strong className="text-warning">+{b.points} PTS</strong>
+                                  <strong className="text-warning">+{b.points}đ</strong>
                                 ) : (
                                   <span className="text-secondary" style={{ fontSize: '0.74rem' }}>Điểm sẽ được cộng sau khi thanh toán.</span>
                                 )}
@@ -1271,7 +1271,7 @@ export const CustomerBookings = () => {
                             </div>
                             <div className="text-end">
                               <small className="text-secondary d-block mb-0.5" style={{ fontSize: '0.62rem' }}>ĐIỂM NHẬN</small>
-                              <strong className="text-warning font-monospace" style={{ fontSize: '0.9rem' }}>+{detailModalBooking.pointsEarned} PTS</strong>
+                              <strong className="text-warning font-monospace" style={{ fontSize: '0.9rem' }}>+{detailModalBooking.pointsEarned}đ</strong>
                             </div>
                           </>
                         ) : (

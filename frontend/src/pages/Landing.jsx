@@ -692,19 +692,19 @@ export const Landing = () => {
             <div className="col-md-4 animate-up">
               <div className="tier-card tier-silver">
                 <div className="tier-badge">Silver Member</div>
-                <div className="tier-points">100 - 499 PTS</div>
+                <div className="tier-points">100 - 499đ</div>
                 
                 {/* Progression Bar */}
                 <div className="loyalty-progress-container">
                   <div className="loyalty-progress-label">
                     <span>Mức tích điểm thăng hạng</span>
-                    <span>50% (250/500 PTS)</span>
+                    <span>50% (250/500đ)</span>
                   </div>
                   <div className="loyalty-progress-bar">
                     <div className="loyalty-progress-fill" style={{ width: '50%' }}></div>
                   </div>
                   <div className="text-muted mt-2" style={{ fontSize: '0.72rem', fontWeight: '600' }}>
-                    *Cần tích lũy thêm 250 PTS chi tiêu để nâng hạng Vàng.
+                    *Cần tích lũy thêm 250đ chi tiêu để nâng hạng Vàng.
                   </div>
                 </div>
 
@@ -729,19 +729,19 @@ export const Landing = () => {
             <div className="col-md-4 animate-up" style={{ animationDelay: '0.1s' }}>
               <div className="tier-card tier-gold">
                 <div className="tier-badge">Gold Member</div>
-                <div className="tier-points">500 - 999 PTS</div>
+                <div className="tier-points">500 - 999đ</div>
                 
                 {/* Progression Bar */}
                 <div className="loyalty-progress-container">
                   <div className="loyalty-progress-label">
                     <span>Mức tích điểm thăng hạng</span>
-                    <span>75% (750/1000 PTS)</span>
+                    <span>75% (750/1000đ)</span>
                   </div>
                   <div className="loyalty-progress-bar">
                     <div className="loyalty-progress-fill" style={{ width: '75%' }}></div>
                   </div>
                   <div className="text-muted mt-2" style={{ fontSize: '0.72rem', fontWeight: '600' }}>
-                    *Cần tích lũy thêm 250 PTS chi tiêu để nâng hạng Bạch Kim.
+                    *Cần tích lũy thêm 250đ chi tiêu để nâng hạng Bạch Kim.
                   </div>
                 </div>
 
@@ -766,13 +766,13 @@ export const Landing = () => {
             <div className="col-md-4 animate-up" style={{ animationDelay: '0.2s' }}>
               <div className="tier-card tier-platinum">
                 <div className="tier-badge">Platinum Member</div>
-                <div className="tier-points">1,000+ PTS</div>
+                <div className="tier-points">1,000+đ</div>
                 
                 {/* Progression Bar */}
                 <div className="loyalty-progress-container">
                   <div className="loyalty-progress-label">
                     <span>Hạng thành viên hiện tại</span>
-                    <span>MAX RANK (1,250 PTS)</span>
+                    <span>MAX RANK (1,250đ)</span>
                   </div>
                   <div className="loyalty-progress-bar">
                     <div className="loyalty-progress-fill" style={{ width: '100%' }}></div>

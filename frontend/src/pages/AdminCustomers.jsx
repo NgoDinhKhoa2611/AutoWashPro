@@ -199,7 +199,7 @@ export const AdminCustomers = () => {
           { label: 'Khách hàng', className: 'ps-4 py-3' },
           { label: 'SĐT' },
           { label: 'Hạng' },
-          { label: 'Điểm tích lũy (PTS)', className: 'text-end' },
+          { label: 'Điểm tích lũy (đ)', className: 'text-end' },
           { label: 'Chi tiêu tích lũy (đ)', className: 'text-end' },
           { label: 'Số lượt rửa', className: 'text-end' },
           { label: 'Voucher', className: 'text-end' },
@@ -275,7 +275,7 @@ export const AdminCustomers = () => {
                 </div>
                 <div className="col-6">
                   <small className="text-muted d-block">ĐIỂM HIỆN TẠI</small>
-                  <strong className="text-cyan fs-6">{selectedCustomer.points.toLocaleString()} PTS</strong>
+                  <strong className="text-cyan fs-6">{selectedCustomer.points.toLocaleString()}đ</strong>
                 </div>
               </div>
             </div>
@@ -357,7 +357,7 @@ export const AdminCustomers = () => {
                 <div className="col-6">Họ tên: <strong className="text-dark">{detailCustomer.name}</strong></div>
                 <div className="col-6">SĐT: <strong className="text-dark font-monospace">{detailCustomer.phone}</strong></div>
                 <div className="col-6">Hạng Loyalty: <strong className="text-cyan">{detailCustomer.tier}</strong></div>
-                <div className="col-6">Điểm: <strong className="text-dark">{detailCustomer.points} PTS</strong></div>
+                <div className="col-6">Điểm: <strong className="text-dark">{detailCustomer.points}đ</strong></div>
                 <div className="col-6">Tham gia: <strong className="text-dark">{formatDate(detailCustomer.joined)}</strong></div>
                 <div className="col-6">Lần cuối: <strong className="text-dark">{formatDate(detailCustomer.lastActive)}</strong></div>
               </div>
