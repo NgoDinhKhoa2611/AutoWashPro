@@ -25,6 +25,7 @@ bld/
 .anigravity/
 .gemini/
 .antigravitycli/
+.codegraph/
 *.suo
 *.user
 *.userosscache
