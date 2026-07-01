@@ -235,6 +235,13 @@ export const CustomerLayout = () => {
             <span>Lịch hẹn của tôi</span>
           </Link>
           <Link
+            to="/customer/history"
+            className={`customer-sidebar-link ${activeNav === "history" ? "active" : ""}`}
+          >
+            <i className="fas fa-history"></i>
+            <span>Lịch sử &amp; Giao dịch</span>
+          </Link>
+          <Link
             to="/customer/profile"
             className={`customer-sidebar-link ${activeNav === "profile" ? "active" : ""}`}
           >

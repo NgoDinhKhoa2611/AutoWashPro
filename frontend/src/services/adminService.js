@@ -171,5 +171,15 @@ export const adminService = {
   createPayment: async (bookingId) => {
     const response = await api.post('/api/payment/create', { BookingId: bookingId });
     return response.data;
+  },
+
+  getTransactions: async (filters = {}) => {
+    const params = {};
+    if (filters.status != null && filters.status !== '') params.status = filters.status;
+    if (filters.method != null && filters.method !== '') params.method = filters.method;
+    if (filters.fromDate) params.fromDate = filters.fromDate;
+    if (filters.toDate) params.toDate = filters.toDate;
+    const response = await api.get('/api/payment/history', { params });
+    return response.data;
   }
 };

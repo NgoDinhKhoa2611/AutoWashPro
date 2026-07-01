@@ -16,6 +16,33 @@ namespace Auto_Wash.DTOs
         public DateTime? PaidAt { get; set; }
     }
 
+    /// <summary>
+    /// A single row of payment transaction history, enriched with booking /
+    /// customer / vehicle context for display on the Admin and Customer pages
+    /// (issue #50). Customer-facing rows leave the admin-only fields
+    /// (<see cref="CustomerName"/>, <see cref="CustomerPhone"/>) null.
+    /// </summary>
+    public class TransactionHistoryDto
+    {
+        public int PaymentId { get; set; }
+        public int BookingId { get; set; }
+        public int Amount { get; set; }
+        public int PaymentMethod { get; set; }
+        public string PaymentMethodName { get; set; } = string.Empty;
+        public int Status { get; set; }
+        public string StatusName { get; set; } = string.Empty;
+        public string? TxnRef { get; set; }
+        public string? TransactionNo { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? PaidAt { get; set; }
+        public string InvoiceNumber { get; set; } = string.Empty;
+        public string? LicensePlate { get; set; }
+
+        // Admin-only context (null for customer-facing responses)
+        public string? CustomerName { get; set; }
+        public string? CustomerPhone { get; set; }
+    }
+
     public class CreatePaymentDto
     {
         public int BookingId { get; set; }
