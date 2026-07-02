@@ -49,7 +49,7 @@ export const adminService = {
     return response.data;
   },
 
-  // Gửi ảnh xe đã rửa xong cho khách qua email (ảnh nhúng inline, không lưu server)
+  // Gửi ảnh xe rửa xong cho khách qua email
   sendCompletionPhotos: async (id, files) => {
     const formData = new FormData();
     files.forEach((file) => formData.append('photos', file));

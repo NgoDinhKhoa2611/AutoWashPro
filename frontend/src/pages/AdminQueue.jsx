@@ -41,7 +41,7 @@ export const AdminQueue = () => {
   // Live per-second countdown for the "Chi tiết công đoạn" modal.
   const [liveRemaining, setLiveRemaining] = useState(0);
 
-  // Chụp ảnh xe rửa xong & gửi email báo khách (ảnh gửi thẳng, không lưu server)
+  // Chụp ảnh xe rửa xong, gửi email báo khách
   const photoInputRef = useRef(null);
   const photoTargetRef = useRef(null);
   const [sendingPhotoId, setSendingPhotoId] = useState(null);
@@ -219,7 +219,7 @@ export const AdminQueue = () => {
 
   // Real-time: a newly created booking enters the waiting-for-check-in list,
   // so refresh the queue immediately (10s poll above remains as fallback).
-  // WashCompleted: xe vừa rửa xong — nhắc staff ra chụp ảnh và bấm báo khách.
+  // WashCompleted: nhắc staff chụp ảnh báo khách.
   useBookingHub(
     () => fetchQueue(),
     (payload) => {
@@ -232,7 +232,7 @@ export const AdminQueue = () => {
     },
   );
 
-  // Mở file picker (trên mobile mở camera) để chụp/chọn ảnh xe đã rửa xong
+  // Mở file picker (mobile: camera)
   const handleOpenPhotoPicker = (item) => {
     if (sendingPhotoId) return;
     photoTargetRef.current = item.queueId;
@@ -247,7 +247,7 @@ export const AdminQueue = () => {
     const queueId = photoTargetRef.current;
     if (!files.length || !queueId) return;
 
-    // Validate client-side (backend kiểm tra lại)
+    // Validate phía client (backend kiểm tra lại)
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (files.length > 5) {
       if (window.showToast)
@@ -959,7 +959,7 @@ export const AdminQueue = () => {
 
   return (
     <div className="container-fluid py-2 text-start d-flex flex-column h-100">
-      {/* Hidden input: chụp/chọn ảnh xe rửa xong để gửi email báo khách */}
+      {/* Hidden input chọn ảnh xe rửa xong */}
       <input
         ref={photoInputRef}
         type="file"

@@ -154,7 +154,7 @@ namespace Auto_Wash.Services
                                 CreatedAt = now
                             });
 
-                            // Send WaitingCheckout email notification
+                            // Không tự gửi email — báo staff ra chụp ảnh rồi mới gửi kèm ảnh
                             if (!q.Booking.WaitingCheckoutEmailSent)
                             {
                                 try

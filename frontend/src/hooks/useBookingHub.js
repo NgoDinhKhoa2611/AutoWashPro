@@ -14,8 +14,7 @@ const signalR = window.signalR;
  * fallback for when the socket is down.
  *
  * @param {(payload: object) => void} onBookingCreated - called when a new booking is created.
- * @param {(payload: object) => void} [onWashCompleted] - called when a wash finishes and
- *   staff should photograph the car and notify the customer (optional).
+ * @param {(payload: object) => void} [onWashCompleted] - called when a wash finishes (optional).
  */
 export const useBookingHub = (onBookingCreated, onWashCompleted) => {
   const callbackRef = useRef(onBookingCreated);
