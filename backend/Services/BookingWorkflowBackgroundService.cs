@@ -157,30 +157,19 @@ namespace Auto_Wash.Services
                             // Send WaitingCheckout email notification
                             if (!q.Booking.WaitingCheckoutEmailSent)
                             {
-                                q.Booking.WaitingCheckoutEmailSent = true;
-
-                                var mainService = await context.BookingServices
-                                    .Include(bs => bs.Service)
-                                    .Where(bs => bs.BookingId == q.BookingId.Value && !bs.Service.IsAddOn)
-                                    .Select(bs => bs.Service.ServiceName)
-                                    .FirstOrDefaultAsync() ?? "Dịch vụ rửa xe";
-
-                                var emailModel = new BookingEmailModel
+                                try
                                 {
-                                    BookingId = q.BookingId.Value,
-                                    CustomerName = q.Booking.Customer?.Account?.FullName ?? "Khách hàng",
-                                    Email = q.Booking.Customer?.Account?.Email ?? "",
-                                    LicensePlate = q.LicensePlate ?? "",
-                                    ScheduledAt = q.Booking.ScheduledAt,
-                                    FinalPrice = q.Booking.FinalPrice,
-                                    ServiceName = mainService
-                                };
-
-                                if (!string.IsNullOrWhiteSpace(emailModel.Email))
+                                    var realtimeNotifier = scope.ServiceProvider.GetRequiredService<IBookingRealtimeNotifier>();
+                                    await realtimeNotifier.NotifyWashCompletedAsync(new WashCompletedEvent(
+                                        q.QueueId,
+                                        q.BookingId,
+                                        q.LicensePlate ?? "",
+                                        q.Booking.Customer?.Account?.FullName ?? "Khách hàng"));
+                                    _logger.LogInformation("[REALTIME] WashCompleted notified to staff: QueueId={QueueId}, BookingId={BookingId}", q.QueueId, q.BookingId);
+                                }
+                                catch (Exception notifyEx)
                                 {
-                                    var notificationService = scope.ServiceProvider.GetRequiredService<BookingNotificationService>();
-                                    notificationService.SendWaitingCheckoutEmailInBackground(emailModel);
-                                    _logger.LogInformation("[EMAIL] WaitingCheckout email sent: BookingId={BookingId}, Email={Email}", q.BookingId, emailModel.Email);
+                                    _logger.LogError(notifyEx, "Failed to push WashCompleted event for QueueId={QueueId}", q.QueueId);
                                 }
                             }
                         }

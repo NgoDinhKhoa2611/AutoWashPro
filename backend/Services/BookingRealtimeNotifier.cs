@@ -19,9 +19,20 @@ namespace Auto_Wash.Services
         string ServiceName,
         string Status);
 
+    /// <summary>
+    /// Payload pushed to staff/admin when a wash finishes so an employee can
+    /// photograph the car and notify the customer by email.
+    /// </summary>
+    public record WashCompletedEvent(
+        int QueueId,
+        int? BookingId,
+        string LicensePlate,
+        string CustomerName);
+
     public interface IBookingRealtimeNotifier
     {
         Task NotifyBookingCreatedAsync(BookingCreatedEvent payload);
+        Task NotifyWashCompletedAsync(WashCompletedEvent payload);
     }
 
     /// <summary>
@@ -40,6 +51,11 @@ namespace Auto_Wash.Services
         public Task NotifyBookingCreatedAsync(BookingCreatedEvent payload)
         {
             return _hub.Clients.Group(BookingHub.StaffGroup).SendAsync("BookingCreated", payload);
+        }
+
+        public Task NotifyWashCompletedAsync(WashCompletedEvent payload)
+        {
+            return _hub.Clients.Group(BookingHub.StaffGroup).SendAsync("WashCompleted", payload);
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -79,7 +80,8 @@ namespace Auto_Wash.Services
             return true;
         }
 
-        public async Task SendEmailOtpAsync(string toEmail, string subject, string body)
+        public async Task SendEmailOtpAsync(string toEmail, string subject, string body,
+            IReadOnlyList<(string Cid, string FileName, string ContentType, byte[] Data)>? inlineImages = null)
         {
             var smtpHost = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
             var smtpPortStr = _configuration["Smtp:Port"] ?? "587";
@@ -111,6 +113,15 @@ namespace Auto_Wash.Services
                 {
                     HtmlBody = body
                 };
+                if (inlineImages != null)
+                {
+                    foreach (var (cid, fileName, contentType, data) in inlineImages)
+                    {
+                        var image = bodyBuilder.LinkedResources.Add(fileName, data, ContentType.Parse(contentType));
+                        image.ContentId = cid;
+                        image.ContentDisposition = new ContentDisposition(ContentDisposition.Inline);
+                    }
+                }
                 message.Body = bodyBuilder.ToMessageBody();
 
                 using (var client = new SmtpClient())
@@ -135,6 +146,12 @@ namespace Auto_Wash.Services
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
             await SendEmailOtpAsync(toEmail, subject, body);
+        }
+
+        public async Task SendEmailAsync(string toEmail, string subject, string body,
+            IReadOnlyList<(string Cid, string FileName, string ContentType, byte[] Data)>? inlineImages)
+        {
+            await SendEmailOtpAsync(toEmail, subject, body, inlineImages);
         }
     }
 }
