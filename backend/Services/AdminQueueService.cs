@@ -587,6 +587,31 @@ namespace Auto_Wash.Services
                 q.Booking.Status = BookingStatus.Completed;
                 q.Booking.CompletedAt ??= now;
 
+                // Record the at-counter transaction so cash / free checkouts show up
+                // in the payments-based history & revenue stats (issue #51). Online
+                // payments never reach here (webhook sets CheckedOutAt first), so a
+                // non-Paid record at this point is either absent or an abandoned
+                // PayOS attempt that the cash payment supersedes.
+                var payment = q.Booking.Payment;
+                if (payment == null)
+                {
+                    payment = new Payment
+                    {
+                        BookingId = q.Booking.BookingId,
+                        CreatedAt = now
+                    };
+                    _context.Payments.Add(payment);
+                }
+                if (payment.Status != (int)PaymentStatus.Paid)
+                {
+                    payment.PaymentMethod = q.Booking.FinalPrice <= 0
+                        ? (int)PaymentMethod.Free
+                        : (int)PaymentMethod.Cash;
+                    payment.Amount = q.Booking.FinalPrice;
+                    payment.Status = (int)PaymentStatus.Paid;
+                    payment.PaidAt = now;
+                }
+
                 // Guard against double-awarding: the background auto-complete service may have
                 // already awarded points (it writes an EARN LoyaltyTransaction but never sets PaidAt).
                 // Use the same DB-backed check here so points are credited exactly once regardless

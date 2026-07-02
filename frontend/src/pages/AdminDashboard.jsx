@@ -862,12 +862,12 @@ export const AdminDashboard = () => {
             BẢNG DỰ ĐOÁN THAY ĐỔI HẠNG KHÁCH HÀNG
           </h6>
           <div className="table-responsive">
-            <table className="table align-middle">
+            <table className="table align-middle tier-review-table">
               <thead>
                 <tr className="bg-light">
                   <th>Tên khách hàng</th>
                   <th>Hạng hiện tại</th>
-                  <th>Tích lũy chi tiêu</th>
+                  <th className="text-end">Tích lũy chi tiêu</th>
                   <th>Dự báo hạng mới</th>
                   <th>Trạng thái</th>
                   <th>Lý do điều chỉnh</th>
@@ -901,8 +901,8 @@ export const AdminDashboard = () => {
                       >
                         <td className="fw-bold text-dark">{item.name}</td>
                         <td className="text-secondary">{item.currentTier}</td>
-                        <td className="fw-bold text-cyan">
-                          {item.rankingBalance.toLocaleString()}đ
+                        <td className="fw-bold text-cyan text-end">
+                          {item.rankingBalance.toLocaleString()}
                         </td>
                         <td className="fw-bold text-warning">
                           {item.predictedTier}

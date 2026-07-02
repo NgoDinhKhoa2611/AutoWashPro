@@ -30,6 +30,11 @@ namespace Auto_Wash.Services
             return true;
         }
 
+        public async Task<bool> EmailExistsAsync(string email)
+        {
+            return await _context.Accounts.AnyAsync(a => a.Email == email.Trim());
+        }
+
         public async Task<(bool success, string message)> VerifyEmailAndChangePasswordAsync(string email, string otpCode, string currentPassword, string newPassword, OtpService otpService)
         {
             bool otpValid = await otpService.VerifyOtpAsync(email, otpCode, "ForgotPassword");

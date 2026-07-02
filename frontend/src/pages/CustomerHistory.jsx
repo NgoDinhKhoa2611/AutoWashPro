@@ -567,6 +567,7 @@ export const CustomerHistory = () => {
                             <option value="1">Tiền mặt</option>
                             <option value="2">VNPay</option>
                             <option value="3">PayOS</option>
+                            <option value="4">Miễn phí</option>
                           </select>
                         </div>
                         <div className="col-6 col-lg-2">
@@ -652,12 +653,37 @@ export const CustomerHistory = () => {
                                 >
                                   Số tiền
                                 </small>
-                                <span
-                                  className="fw-bold text-cyan"
-                                  style={{ fontSize: "1rem" }}
-                                >
-                                  {Number(t.amount).toLocaleString()}đ
-                                </span>
+                                {Number(t.discount ?? 0) > 0 && (
+                                  <small
+                                    className="text-muted d-block text-decoration-line-through"
+                                    style={{ fontSize: "0.72rem" }}
+                                  >
+                                    {Number(t.basePrice).toLocaleString()}đ
+                                  </small>
+                                )}
+                                {Number(t.amount) === 0 ? (
+                                  <span
+                                    className="fw-bold text-success"
+                                    style={{ fontSize: "1rem" }}
+                                  >
+                                    Miễn phí
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="fw-bold text-cyan"
+                                    style={{ fontSize: "1rem" }}
+                                  >
+                                    {Number(t.amount).toLocaleString()}đ
+                                  </span>
+                                )}
+                                {Number(t.discount ?? 0) > 0 && Number(t.amount) > 0 && (
+                                  <small
+                                    className="text-success d-block fw-bold"
+                                    style={{ fontSize: "0.68rem" }}
+                                  >
+                                    Đã giảm {Number(t.discount).toLocaleString()}đ
+                                  </small>
+                                )}
                               </div>
                               <div className="col-6 col-md-3">
                                 <small

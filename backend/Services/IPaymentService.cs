@@ -33,5 +33,11 @@ namespace Auto_Wash.Services
         /// (issue #50). Null filter arguments are ignored.
         /// </summary>
         Task<List<TransactionHistoryDto>> GetAllTransactionsAsync(int? status, int? method, DateTime? fromDate, DateTime? toDate);
+
+        /// <summary>
+        /// Revenue statistics over Paid transactions (gross / discounts / net),
+        /// optionally restricted to a PaidAt date range (issue #51).
+        /// </summary>
+        Task<RevenueStatsDto> GetRevenueStatsAsync(DateTime? fromDate, DateTime? toDate);
     }
 }

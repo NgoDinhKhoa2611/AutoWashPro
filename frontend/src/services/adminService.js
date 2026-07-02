@@ -181,5 +181,14 @@ export const adminService = {
     if (filters.toDate) params.toDate = filters.toDate;
     const response = await api.get('/api/payment/history', { params });
     return response.data;
+  },
+
+  // Revenue statistics with discounts / vouchers / free washes broken out (issue #51)
+  getRevenueStats: async (filters = {}) => {
+    const params = {};
+    if (filters.fromDate) params.fromDate = filters.fromDate;
+    if (filters.toDate) params.toDate = filters.toDate;
+    const response = await api.get('/api/payment/revenue-stats', { params });
+    return response.data;
   }
 };

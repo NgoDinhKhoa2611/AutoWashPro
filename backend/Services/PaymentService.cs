@@ -114,6 +114,26 @@ namespace Auto_Wash.Services
                 throw new InvalidOperationException($"Lịch đặt này đang có trạng thái {booking.Status} và không ở trạng thái Chờ thanh toán.");
             }
 
+            // Free bookings (100% discount) never reach PayOS — the gateway rejects
+            // zero-amount links. Confirm the payment locally with method Free and
+            // send the client straight to the result page (issue #51).
+            if (booking.FinalPrice <= 0)
+            {
+                var freeDto = await CreatePendingPaymentAsync(bookingId, 0, "127.0.0.1");
+
+                var freePayment = await _context.Payments
+                    .FirstAsync(p => p.PaymentId == freeDto.PaymentId);
+                freePayment.PaymentMethod = (int)PaymentMethod.Free;
+                await _context.SaveChangesAsync();
+
+                await UpdatePaymentStatusAsync(
+                    freeDto.TxnRef ?? throw new InvalidOperationException("Transaction reference not generated."),
+                    (int)PaymentStatus.Paid, null, "FREE");
+
+                _logger.LogInformation("Free booking {BookingId} confirmed without PayOS (amount = 0).", bookingId);
+                return $"/payment/result?payment=success&bookingId={bookingId}";
+            }
+
             var paymentDto = await CreatePendingPaymentAsync(bookingId, booking.FinalPrice, "127.0.0.1");
 
             long orderCode = long.Parse(paymentDto.TxnRef ?? throw new InvalidOperationException("Transaction reference not generated."));
@@ -403,14 +423,69 @@ namespace Auto_Wash.Services
             return payments.Select(p => MapToHistoryDto(p, includeCustomer: true)).ToList();
         }
 
+        public async Task<RevenueStatsDto> GetRevenueStatsAsync(DateTime? fromDate, DateTime? toDate)
+        {
+            // Net revenue is defined over money actually collected: Paid payments
+            // only, bucketed by PaidAt (issue #51). Free bookings count as 0 net
+            // but still surface through FreeCount / TotalDiscount.
+            var query = _context.Payments
+                .Where(p => p.Status == (int)PaymentStatus.Paid && p.PaidAt != null);
+
+            if (fromDate.HasValue) query = query.Where(p => p.PaidAt >= fromDate.Value);
+            if (toDate.HasValue)
+            {
+                // inclusive of the whole end day
+                var end = toDate.Value.Date.AddDays(1);
+                query = query.Where(p => p.PaidAt < end);
+            }
+
+            var rows = await query
+                .Select(p => new
+                {
+                    p.Amount,
+                    p.PaymentMethod,
+                    p.Booking.BasePrice,
+                    p.Booking.TierDiscount,
+                    p.Booking.PromoDiscount,
+                    p.Booking.PointsDiscount
+                })
+                .ToListAsync();
+
+            var stats = new RevenueStatsDto
+            {
+                GrossRevenue = rows.Sum(r => (long)r.BasePrice),
+                NetRevenue = rows.Sum(r => (long)r.Amount),
+                VoucherDiscount = rows.Sum(r => (long)r.PromoDiscount),
+                TierDiscount = rows.Sum(r => (long)r.TierDiscount),
+                PointsDiscount = rows.Sum(r => (long)r.PointsDiscount),
+                PaidCount = rows.Count,
+                FreeCount = rows.Count(r => r.Amount <= 0),
+                DiscountedCount = rows.Count(r => r.Amount > 0 && r.Amount < r.BasePrice),
+                CashRevenue = rows.Where(r => r.PaymentMethod == (int)PaymentMethod.Cash).Sum(r => (long)r.Amount),
+                OnlineRevenue = rows.Where(r => r.PaymentMethod == (int)PaymentMethod.VNPay || r.PaymentMethod == (int)PaymentMethod.PayOS).Sum(r => (long)r.Amount)
+            };
+
+            // Gross − Net also captures rounding/legacy rows the per-type columns miss.
+            stats.TotalDiscount = Math.Max(0, stats.GrossRevenue - stats.NetRevenue);
+
+            return stats;
+        }
+
         private static TransactionHistoryDto MapToHistoryDto(Payment p, bool includeCustomer)
         {
             var booking = p.Booking;
+            // Deduction context (issue #51): BasePrice is the pre-discount price;
+            // for legacy rows without booking context, fall back to the amount so
+            // Discount stays 0 instead of going negative.
+            int basePrice = booking?.BasePrice ?? p.Amount;
+
             var dto = new TransactionHistoryDto
             {
                 PaymentId = p.PaymentId,
                 BookingId = p.BookingId,
                 Amount = p.Amount,
+                BasePrice = basePrice,
+                Discount = Math.Max(0, basePrice - p.Amount),
                 PaymentMethod = p.PaymentMethod,
                 PaymentMethodName = GetMethodName(p.PaymentMethod),
                 Status = p.Status,
@@ -437,6 +512,7 @@ namespace Auto_Wash.Services
             (int)PaymentMethod.Cash => "Tiền mặt",
             (int)PaymentMethod.VNPay => "VNPay",
             (int)PaymentMethod.PayOS => "PayOS",
+            (int)PaymentMethod.Free => "Miễn phí",
             _ => "Khác"
         };
 

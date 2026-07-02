@@ -15,6 +15,12 @@
 }
 
 /* ── Tier Review Table ────────────────────────────────────── */
+.tier-review-table th:not(:first-child),
+.tier-review-table td:not(:first-child) {
+  border-left: 1px solid #e2e8f0;
+}
+
+
 .tier-change-badge {
   font-size: 0.65rem;
   font-weight: 800;
