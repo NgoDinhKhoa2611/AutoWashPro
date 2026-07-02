@@ -736,15 +736,25 @@ namespace Auto_Wash.Services
 
             // 3. Đọc ảnh vào memory (không ghi disk/DB)
             var inlinePhotos = new List<EmailInlinePhoto>();
-            foreach (var photo in photos)
+            for (int i = 0; i < photos.Count; i++)
             {
-                using var ms = new MemoryStream();
-                await photo.CopyToAsync(ms);
+                var photo = photos[i];
+                byte[] data;
+                try
+                {
+                    using var src = photo.OpenReadStream();
+                    data = await ImageCompressionHelper.CompressToJpegAsync(src);
+                }
+                catch
+                {
+                    return (false, $"Ảnh '{photo.FileName}' bị lỗi hoặc không phải ảnh hợp lệ!");
+                }
+
                 inlinePhotos.Add(new EmailInlinePhoto
                 {
-                    FileName = Path.GetFileName(photo.FileName ?? "car-photo.jpg"),
-                    ContentType = photo.ContentType,
-                    Data = ms.ToArray()
+                    FileName = $"car-photo-{i + 1}.jpg",
+                    ContentType = "image/jpeg",
+                    Data = data
                 });
             }
 
