@@ -26,6 +26,7 @@ const formatDateTime = (value) => {
 
 export const AdminTransactions = () => {
   const [transactions, setTransactions] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -37,12 +38,17 @@ export const AdminTransactions = () => {
   const loadTransactions = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await adminService.getTransactions({
-        status: statusFilter,
-        method: methodFilter,
-        fromDate,
-        toDate,
-      });
+      // Revenue stats (issue #51) share the date range but ignore
+      // status/method filters: they are defined over Paid rows only.
+      const [res, statsRes] = await Promise.all([
+        adminService.getTransactions({
+          status: statusFilter,
+          method: methodFilter,
+          fromDate,
+          toDate,
+        }),
+        adminService.getRevenueStats({ fromDate, toDate }).catch(() => null),
+      ]);
       if (res.success && res.transactions) {
         setTransactions(res.transactions);
       } else {
@@ -50,8 +56,10 @@ export const AdminTransactions = () => {
         if (window.showToast)
           window.showToast(res.message || "Không tải được lịch sử giao dịch!", "error");
       }
+      setStats(statsRes && statsRes.success ? statsRes.stats : null);
     } catch {
       setTransactions([]);
+      setStats(null);
       if (window.showToast) window.showToast("Lỗi kết nối máy chủ!", "error");
     } finally {
       setLoading(false);
@@ -70,9 +78,16 @@ export const AdminTransactions = () => {
     setToDate("");
   };
 
-  // Summary
+  // Summary — server-side stats when available, otherwise computed from the
+  // loaded rows so the cards still render if the stats call fails (issue #51).
   const paidList = transactions.filter((t) => t.status === 2);
-  const totalPaidAmount = paidList.reduce((s, t) => s + Number(t.amount), 0);
+  const grossRevenue = stats ? stats.grossRevenue : paidList.reduce((s, t) => s + Number(t.basePrice ?? t.amount), 0);
+  const netRevenue = stats ? stats.netRevenue : paidList.reduce((s, t) => s + Number(t.amount), 0);
+  const totalDiscount = stats ? stats.totalDiscount : Math.max(0, grossRevenue - netRevenue);
+  const freeCount = stats ? stats.freeCount : paidList.filter((t) => Number(t.amount) === 0).length;
+  const discountedCount = stats
+    ? stats.discountedCount
+    : paidList.filter((t) => Number(t.discount ?? 0) > 0 && Number(t.amount) > 0).length;
 
   return (
     <div className="container-fluid py-4 text-start">
@@ -94,9 +109,9 @@ export const AdminTransactions = () => {
         </button>
       </header>
 
-      {/* Summary */}
+      {/* Summary (issue #51): gross → deductions → net */}
       <div className="row g-3 mb-4 animate-up">
-        <div className="col-6 col-md-4">
+        <div className="col-6 col-md-3">
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
             <div
               className="rounded-circle d-flex align-items-center justify-content-center bg-light text-cyan"
@@ -109,26 +124,50 @@ export const AdminTransactions = () => {
                 TỔNG GIAO DỊCH
               </small>
               <h5 className="fw-bold text-dark mb-0">{transactions.length}</h5>
+              <small className="text-success fw-bold" style={{ fontSize: "0.65rem" }}>
+                {paidList.length} đã thanh toán
+              </small>
             </div>
           </div>
         </div>
-        <div className="col-6 col-md-4">
+        <div className="col-6 col-md-3">
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
             <div
-              className="rounded-circle d-flex align-items-center justify-content-center bg-light text-success"
+              className="rounded-circle d-flex align-items-center justify-content-center bg-light text-secondary"
               style={{ width: "46px", height: "46px", flexShrink: 0 }}
             >
-              <i className="fas fa-check-circle"></i>
+              <i className="fas fa-file-invoice-dollar"></i>
             </div>
             <div>
               <small className="text-muted d-block fw-bold" style={{ fontSize: "0.65rem" }}>
-                ĐÃ THANH TOÁN
+                TỔNG GIÁ GỐC
               </small>
-              <h5 className="fw-bold text-success mb-0">{paidList.length}</h5>
+              <h5 className="fw-bold text-dark mb-0">{grossRevenue.toLocaleString()}đ</h5>
             </div>
           </div>
         </div>
-        <div className="col-12 col-md-4">
+        <div className="col-6 col-md-3">
+          <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
+            <div
+              className="rounded-circle d-flex align-items-center justify-content-center bg-light text-danger"
+              style={{ width: "46px", height: "46px", flexShrink: 0 }}
+            >
+              <i className="fas fa-tags"></i>
+            </div>
+            <div>
+              <small className="text-muted d-block fw-bold" style={{ fontSize: "0.65rem" }}>
+                GIẢM TRỪ (VOUCHER / MIỄN PHÍ)
+              </small>
+              <h5 className="fw-bold text-danger mb-0">
+                −{totalDiscount.toLocaleString()}đ
+              </h5>
+              <small className="text-muted" style={{ fontSize: "0.65rem" }}>
+                {discountedCount} giảm giá • {freeCount} miễn phí
+              </small>
+            </div>
+          </div>
+        </div>
+        <div className="col-6 col-md-3">
           <div className="app-card border-0 shadow-sm p-4 bg-white rounded-4 d-flex align-items-center gap-3">
             <div
               className="rounded-circle d-flex align-items-center justify-content-center bg-light text-warning"
@@ -138,10 +177,10 @@ export const AdminTransactions = () => {
             </div>
             <div>
               <small className="text-muted d-block fw-bold" style={{ fontSize: "0.65rem" }}>
-                DOANH THU ĐÃ THU
+                DOANH THU THỰC (NET)
               </small>
               <h5 className="fw-bold text-dark mb-0">
-                {totalPaidAmount.toLocaleString()}đ
+                {netRevenue.toLocaleString()}đ
               </h5>
             </div>
           </div>
@@ -177,6 +216,7 @@ export const AdminTransactions = () => {
             <option value="1">Tiền mặt</option>
             <option value="2">VNPay</option>
             <option value="3">PayOS</option>
+            <option value="4">Miễn phí</option>
           </select>
         </div>
         <div className="col-md-2 col-sm-6">
@@ -274,7 +314,19 @@ export const AdminTransactions = () => {
                   </span>
                 </td>
                 <td className="text-end">
-                  <span className="fw-bold text-dark">{Number(t.amount).toLocaleString()}</span>
+                  {Number(t.discount ?? 0) > 0 && (
+                    <small
+                      className="text-muted d-block text-decoration-line-through"
+                      style={{ fontSize: "0.7rem" }}
+                    >
+                      {Number(t.basePrice).toLocaleString()}
+                    </small>
+                  )}
+                  {Number(t.amount) === 0 ? (
+                    <span className="fw-bold text-success">Miễn phí</span>
+                  ) : (
+                    <span className="fw-bold text-dark">{Number(t.amount).toLocaleString()}</span>
+                  )}
                 </td>
                 <td className="text-center">
                   <span

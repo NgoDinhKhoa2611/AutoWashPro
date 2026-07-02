@@ -108,6 +108,34 @@ namespace Auto_Wash.Controllers
             }
         }
 
+        /// <summary>
+        /// Revenue statistics for the admin transactions page (issue #51):
+        /// gross revenue, deductions (voucher / tier / points / free) and net
+        /// revenue over Paid transactions, optionally date-filtered by PaidAt.
+        /// </summary>
+        [HttpGet]
+        [Route("revenue-stats")]
+        public async Task<IActionResult> GetRevenueStats(
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate)
+        {
+            if (!IsAdminOrStaff())
+            {
+                return Unauthorized(new { success = false, message = "Bạn không có quyền thực hiện hành động này!" });
+            }
+
+            try
+            {
+                var stats = await _paymentService.GetRevenueStatsAsync(fromDate, toDate);
+                return Ok(new { success = true, stats });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetRevenueStats: Error computing revenue statistics.");
+                return StatusCode(500, new { success = false, message = "Lỗi truy vấn thống kê doanh thu." });
+            }
+        }
+
         public class CreatePaymentRequest
         {
             public int BookingId { get; set; }

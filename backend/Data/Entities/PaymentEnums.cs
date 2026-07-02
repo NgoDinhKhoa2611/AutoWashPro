@@ -12,6 +12,7 @@ namespace Auto_Wash.Data.Entities
     {
         Cash = 1,
         VNPay = 2,
-        PayOS = 3
+        PayOS = 3,
+        Free = 4
     }
 }
