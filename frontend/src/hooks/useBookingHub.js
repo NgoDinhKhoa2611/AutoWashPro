@@ -14,13 +14,19 @@ const signalR = window.signalR;
  * fallback for when the socket is down.
  *
  * @param {(payload: object) => void} onBookingCreated - called when a new booking is created.
+ * @param {(payload: object) => void} [onWashCompleted] - called when a wash finishes (optional).
  */
-export const useBookingHub = (onBookingCreated) => {
+export const useBookingHub = (onBookingCreated, onWashCompleted) => {
   const callbackRef = useRef(onBookingCreated);
+  const washCompletedRef = useRef(onWashCompleted);
 
   useEffect(() => {
     callbackRef.current = onBookingCreated;
   }, [onBookingCreated]);
+
+  useEffect(() => {
+    washCompletedRef.current = onWashCompleted;
+  }, [onWashCompleted]);
 
   useEffect(() => {
     if (!signalR) {
@@ -36,6 +42,10 @@ export const useBookingHub = (onBookingCreated) => {
 
     connection.on('BookingCreated', (payload) => {
       if (callbackRef.current) callbackRef.current(payload);
+    });
+
+    connection.on('WashCompleted', (payload) => {
+      if (washCompletedRef.current) washCompletedRef.current(payload);
     });
 
     let cancelled = false;

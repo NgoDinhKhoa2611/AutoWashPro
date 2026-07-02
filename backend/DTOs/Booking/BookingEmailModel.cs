@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Auto_Wash.DTOs.Booking
 {
@@ -12,5 +13,6 @@ namespace Auto_Wash.DTOs.Booking
         public decimal FinalPrice { get; set; }
         public string ServiceName { get; set; } = string.Empty;
         public string? CancelReason { get; set; }
+        public List<EmailInlinePhoto> Photos { get; set; } = new();
     }
 }

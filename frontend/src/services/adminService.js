@@ -49,6 +49,16 @@ export const adminService = {
     return response.data;
   },
 
+  // Gửi ảnh xe rửa xong cho khách qua email
+  sendCompletionPhotos: async (id, files) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('photos', file));
+    const response = await api.post(`/Admin/SendCompletionPhotos?id=${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
   cancelQueue: async (id) => {
     const response = await api.post(`/Admin/CancelQueue?id=${id}`);
     return response.data;

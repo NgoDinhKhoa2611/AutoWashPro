@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { adminService } from "../services/adminService";
 import { useBookingHub } from "../hooks/useBookingHub";
 import "../styles/shared.css";
@@ -40,6 +40,11 @@ export const AdminQueue = () => {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   // Live per-second countdown for the "Chi tiết công đoạn" modal.
   const [liveRemaining, setLiveRemaining] = useState(0);
+
+  // Chụp ảnh xe rửa xong, gửi email báo khách
+  const photoInputRef = useRef(null);
+  const photoTargetRef = useRef(null);
+  const [sendingPhotoId, setSendingPhotoId] = useState(null);
 
   const fetchQueue = async () => {
     setLoading(true);
@@ -214,7 +219,82 @@ export const AdminQueue = () => {
 
   // Real-time: a newly created booking enters the waiting-for-check-in list,
   // so refresh the queue immediately (10s poll above remains as fallback).
-  useBookingHub(() => fetchQueue());
+  // WashCompleted: nhắc staff chụp ảnh báo khách.
+  useBookingHub(
+    () => fetchQueue(),
+    (payload) => {
+      if (window.showToast)
+        window.showToast(
+          `Xe ${payload.licensePlate} đã rửa xong — chụp ảnh và báo khách!`,
+          "info",
+        );
+      fetchQueue();
+    },
+  );
+
+  // Mở file picker (mobile: camera)
+  const handleOpenPhotoPicker = (item) => {
+    if (sendingPhotoId) return;
+    photoTargetRef.current = item.queueId;
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+      photoInputRef.current.click();
+    }
+  };
+
+  const handlePhotosSelected = async (e) => {
+    const files = Array.from(e.target.files || []);
+    const queueId = photoTargetRef.current;
+    if (!files.length || !queueId) return;
+
+    // Validate phía client (backend kiểm tra lại)
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (files.length > 5) {
+      if (window.showToast)
+        window.showToast("Chỉ được gửi tối đa 5 ảnh!", "error");
+      return;
+    }
+    for (const file of files) {
+      if (!allowedTypes.includes(file.type)) {
+        if (window.showToast)
+          window.showToast(
+            `Ảnh "${file.name}" không đúng định dạng (JPG, PNG, WEBP)!`,
+            "error",
+          );
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        if (window.showToast)
+          window.showToast(`Ảnh "${file.name}" vượt quá 5MB!`, "error");
+        return;
+      }
+    }
+
+    setSendingPhotoId(queueId);
+    try {
+      const response = await adminService.sendCompletionPhotos(queueId, files);
+      if (response.success) {
+        if (window.showToast)
+          window.showToast("Đã gửi email kèm ảnh báo khách!", "success");
+        fetchQueue();
+      } else {
+        if (window.showToast)
+          window.showToast(
+            response.message || "Lỗi khi gửi ảnh báo khách!",
+            "error",
+          );
+      }
+    } catch (err) {
+      if (window.showToast)
+        window.showToast(
+          err.response?.data?.message || "Lỗi kết nối khi gửi ảnh báo khách!",
+          "error",
+        );
+    } finally {
+      setSendingPhotoId(null);
+      photoTargetRef.current = null;
+    }
+  };
 
   // Move vehicle to next stage
   const handleAdvanceColumn = async (queueId) => {
@@ -809,7 +889,46 @@ export const AdminQueue = () => {
             </span>
           </div>
         </div>
-        <div className="queue-card-actions">
+        <div className="queue-card-actions" style={{ flexDirection: "column", gap: "4px" }}>
+          {isWaitingCheckout && item.customerNotified === false && (
+            <button
+              className="queue-btn w-100"
+              style={{
+                padding: "4px 10px",
+                fontSize: "0.62rem",
+                background: "#f59e0b",
+                color: "#fff",
+                border: "none",
+                fontWeight: 700,
+              }}
+              disabled={sendingPhotoId === item.queueId}
+              onClick={() => handleOpenPhotoPicker(item)}
+            >
+              {sendingPhotoId === item.queueId ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-1"
+                    style={{ width: "10px", height: "10px" }}
+                  ></span>
+                  ĐANG GỬI...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-camera-fill me-1"></i>
+                  CHỤP ẢNH & BÁO KHÁCH
+                </>
+              )}
+            </button>
+          )}
+          {isWaitingCheckout && item.customerNotified === true && (
+            <span
+              className="w-100 text-center"
+              style={{ fontSize: "0.62rem", color: "#22c55e", fontWeight: 700 }}
+            >
+              <i className="bi bi-check-circle-fill me-1"></i>
+              Đã báo khách
+            </span>
+          )}
           <button
             className="queue-btn queue-btn-detail w-100"
             style={{ padding: "3px 10px", fontSize: "0.62rem" }}
@@ -840,6 +959,17 @@ export const AdminQueue = () => {
 
   return (
     <div className="container-fluid py-2 text-start d-flex flex-column h-100">
+      {/* Hidden input chọn ảnh xe rửa xong */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        multiple
+        style={{ display: "none" }}
+        onChange={handlePhotosSelected}
+      />
+
       {/* Page Header */}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Auto_Wash.DTOs.Booking;
@@ -458,6 +459,21 @@ namespace Auto_Wash.Services
             var priceStr = model.FinalPrice.ToString("#,##0");
 
             var subject = "[AutoWash Pro] Xe của bạn đã hoàn tất dịch vụ";
+
+            // Section ảnh xe (nhúng inline qua CID) — chỉ hiện khi staff đã chụp ảnh
+            var photoSection = "";
+            if (model.Photos != null && model.Photos.Count > 0)
+            {
+                var imgTags = string.Join("\n", model.Photos.Select((_, i) =>
+                    $@"      <img src=""cid:carphoto{i}"" alt=""Ảnh xe đã rửa"" style=""width: 100%; max-width: 552px; border-radius: 8px; margin: 8px 0; display: block;"" />"));
+                photoSection = $@"
+    <div style=""margin: 20px 0;"">
+      <h3 style=""color: #1e293b; font-size: 16px; margin: 0 0 8px 0;"">Hình ảnh xe sau khi hoàn tất dịch vụ</h3>
+{imgTags}
+    </div>
+";
+            }
+
             var body = $@"
 <div style=""font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);"">
   <div style=""background-color: #0f172a; padding: 24px; text-align: center;"">
@@ -489,6 +505,7 @@ namespace Auto_Wash.Services
       </table>
     </div>
 
+{photoSection}
     <p style=""font-size: 14px; color: #334155;"">Vui lòng đến cửa hàng để:</p>
     <ul style=""list-style: none; padding: 0; margin: 12px 0;"">
       <li style=""padding: 4px 0; font-size: 14px; color: #10b981;"">✓ Nhận xe</li>
@@ -508,22 +525,17 @@ namespace Auto_Wash.Services
   </div>
 </div>
 ";
-            await _otpService.SendEmailAsync(model.Email, subject, body);
-        }
-
-        public void SendWaitingCheckoutEmailInBackground(BookingEmailModel model)
-        {
-            _ = Task.Run(async () =>
+            if (model.Photos != null && model.Photos.Count > 0)
             {
-                try
-                {
-                    await SendWaitingCheckoutEmailAsync(model);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send waiting-checkout email for BookingId BK-{BookingId} to {Email}", model.BookingId, model.Email);
-                }
-            });
+                var inlineImages = model.Photos
+                    .Select((p, i) => ($"carphoto{i}", p.FileName, p.ContentType, p.Data))
+                    .ToList();
+                await _otpService.SendEmailAsync(model.Email, subject, body, inlineImages);
+            }
+            else
+            {
+                await _otpService.SendEmailAsync(model.Email, subject, body);
+            }
         }
     }
 }

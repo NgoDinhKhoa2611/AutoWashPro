@@ -1,24 +1,29 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Auto_Wash.Data;
 using Auto_Wash.Data.Entities;
 using Auto_Wash.Helpers;
 using Auto_Wash.DTOs;
+using Auto_Wash.DTOs.Booking;
 
 namespace Auto_Wash.Services
 {
     public class AdminQueueService
     {
         private readonly AutoWashDbContext _context;
+        private readonly BookingNotificationService _notificationService;
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, DateTime> _lastAdvanceTimes = new();
         private static readonly System.Threading.SemaphoreSlim _positionSemaphore = new(1, 1);
 
-        public AdminQueueService(AutoWashDbContext context)
+        public AdminQueueService(AutoWashDbContext context, BookingNotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         public async Task<GroupedQueueList> GetTodayQueueAsync()
@@ -147,6 +152,7 @@ namespace Auto_Wash.Services
                     Services = services,
                     QueuePriority = q.Tier?.QueuePriority ?? 0,
                     BookingStatus = q.Booking != null ? q.Booking.Status.ToString() : string.Empty
+                    ,CustomerNotified = q.Booking != null ? q.Booking.WaitingCheckoutEmailSent : (bool?)null
                 };
 
                 if (q.Status == QueueStatus.Archived || q.Status == QueueStatus.Completed)
@@ -706,6 +712,120 @@ namespace Auto_Wash.Services
             return (true, "Thanh toán & checkout thành công!", finalPrice, pointsEarned);
         }
 
+        /// <summary>
+        /// Staff/Admin chụp ảnh xe đã rửa xong và gửi email báo khách (ảnh nhúng inline,
+        /// không lưu DB/disk). Chỉ gửi 1 lần — dùng Booking.WaitingCheckoutEmailSent làm cờ.
+        /// </summary>
+        public async Task<(bool success, string message)> SendCompletionPhotosAsync(int queueId, IReadOnlyList<IFormFile> photos, string performedBy)
+        {
+            // 1. Validate ảnh
+            if (photos == null || photos.Count == 0)
+                return (false, "Vui lòng chụp/tải lên ít nhất 1 ảnh xe đã hoàn tất!");
+            if (photos.Count > 5)
+                return (false, "Chỉ được gửi tối đa 5 ảnh!");
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var allowedContentTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+            const long maxFileSize = 5 * 1024 * 1024; // 5MB
+
+            foreach (var photo in photos)
+            {
+                if (photo.Length == 0)
+                    return (false, $"Ảnh '{photo.FileName}' rỗng!");
+                if (photo.Length > maxFileSize)
+                    return (false, $"Ảnh '{photo.FileName}' vượt quá 5MB!");
+                var ext = Path.GetExtension(photo.FileName ?? "").ToLowerInvariant();
+                if (!allowedExtensions.Contains(ext) || !allowedContentTypes.Contains(photo.ContentType))
+                    return (false, $"Ảnh '{photo.FileName}' không đúng định dạng (chỉ chấp nhận JPG, PNG, WEBP)!");
+            }
+
+            // 2. Load queue + booking + customer
+            var q = await _context.Queues
+                .Include(x => x.Booking)
+                    .ThenInclude(b => b!.Customer)
+                        .ThenInclude(c => c!.Account)
+                .FirstOrDefaultAsync(x => x.QueueId == queueId);
+
+            if (q == null)
+                return (false, "Không tìm thấy xe trong hàng đợi!");
+            if (q.Status != QueueStatus.Completed && q.Status != QueueStatus.Archived)
+                return (false, "Xe chưa hoàn tất dịch vụ, chưa thể gửi ảnh báo khách!");
+            if (q.Booking == null)
+                return (false, "Xe vãng lai không có booking/email khách hàng để gửi!");
+            if (q.Booking.WaitingCheckoutEmailSent)
+                return (false, "Đã gửi email báo khách trước đó!");
+
+            var email = q.Booking.Customer?.Account?.Email ?? "";
+            if (string.IsNullOrWhiteSpace(email))
+                return (false, "Khách hàng không có địa chỉ email!");
+
+            // 3. Đọc ảnh vào memory (không ghi disk/DB)
+            var inlinePhotos = new List<EmailInlinePhoto>();
+            for (int i = 0; i < photos.Count; i++)
+            {
+                var photo = photos[i];
+                byte[] data;
+                try
+                {
+                    using var src = photo.OpenReadStream();
+                    data = await ImageCompressionHelper.CompressToJpegAsync(src);
+                }
+                catch
+                {
+                    return (false, $"Ảnh '{photo.FileName}' bị lỗi hoặc không phải ảnh hợp lệ!");
+                }
+
+                inlinePhotos.Add(new EmailInlinePhoto
+                {
+                    FileName = $"car-photo-{i + 1}.jpg",
+                    ContentType = "image/jpeg",
+                    Data = data
+                });
+            }
+
+            var mainService = await _context.BookingServices
+                .Include(bs => bs.Service)
+                .Where(bs => bs.BookingId == q.Booking.BookingId && !bs.Service.IsAddOn)
+                .Select(bs => bs.Service.ServiceName)
+                .FirstOrDefaultAsync() ?? "Dịch vụ rửa xe";
+
+            var emailModel = new BookingEmailModel
+            {
+                BookingId = q.Booking.BookingId,
+                CustomerName = q.Booking.Customer?.Account?.FullName ?? "Khách hàng",
+                Email = email,
+                LicensePlate = q.LicensePlate ?? "",
+                ScheduledAt = q.Booking.ScheduledAt,
+                FinalPrice = q.Booking.FinalPrice,
+                ServiceName = mainService,
+                Photos = inlinePhotos
+            };
+
+            // Gửi email trước, đợi kết quả — SMTP lỗi thì KHÔNG set cờ để staff gửi lại được
+            try
+            {
+                await _notificationService.SendWaitingCheckoutEmailAsync(emailModel);
+            }
+            catch
+            {
+                return (false, "Gửi email thất bại, vui lòng thử lại!");
+            }
+
+            // Gửi thành công mới set cờ chống gửi trùng + ghi audit log
+            q.Booking.WaitingCheckoutEmailSent = true;
+            _context.BookingAuditLogs.Add(new BookingAuditLog
+            {
+                BookingId = q.Booking.BookingId,
+                Action = "CustomerNotified",
+                Description = $"Đã gửi email kèm {inlinePhotos.Count} ảnh báo khách xe hoàn tất dịch vụ.",
+                PerformedBy = performedBy,
+                CreatedAt = DateTime.Now
+            });
+            await _context.SaveChangesAsync();
+
+            return (true, "Đã gửi email kèm ảnh báo khách thành công!");
+        }
+
         public async Task<(bool success, string message, int queueId, string customerName, string tierName, bool hasBooking, string bookingServices)> AddWalkInAsync(string licensePlate, string? customerName)
         {
             int? tierId = 1;
@@ -876,6 +996,10 @@ namespace Auto_Wash.Services
         public int Progress { get; set; } = 0;
         public int RemainingSeconds { get; set; } = 50;
         public BookingProgressDto ProgressTracking { get; set; } = new();
+
+        // null = walk-in không có booking/email; false = xe xong nhưng chưa gửi email
+        // báo khách (FE hiện nút "Chụp ảnh & báo khách"); true = đã gửi.
+        public bool? CustomerNotified { get; set; }
     }
 
     public class QueueServiceItem
