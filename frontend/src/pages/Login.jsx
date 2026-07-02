@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { authService } from "../services/authService";
+import { customerService } from "../services/customerService";
+import { Modal } from "../components/Modal";
 import "../styles/shared.css";
 import "../styles/login.css";
 
@@ -73,6 +75,17 @@ export const Login = () => {
   const [showCompletePassword, setShowCompletePassword] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
 
+  // Forgot password modal (step 1: email → OTP, step 2: OTP + new password)
+  const [fpOpen, setFpOpen] = useState(false);
+  const [fpStep, setFpStep] = useState(1);
+  const [fpEmail, setFpEmail] = useState("");
+  const [fpOtp, setFpOtp] = useState("");
+  const [fpNewPassword, setFpNewPassword] = useState("");
+  const [fpConfirm, setFpConfirm] = useState("");
+  const [fpLoading, setFpLoading] = useState(false);
+  const [showFpPassword, setShowFpPassword] = useState(false);
+  const [showFpConfirm, setShowFpConfirm] = useState(false);
+
   useEffect(() => {
     const isWaiting = loginLoading || regLoading;
     if (isWaiting) {
@@ -102,6 +115,93 @@ export const Login = () => {
       setRememberMe(true);
     }
   }, []);
+
+  const openForgotPassword = () => {
+    setFpStep(1);
+    setFpEmail(loginPhone.includes("@") ? loginPhone.trim() : "");
+    setFpOtp("");
+    setFpNewPassword("");
+    setFpConfirm("");
+    setFpOpen(true);
+  };
+
+  const handleFpSendOtp = async () => {
+    const email = fpEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (window.showToast)
+        window.showToast("Email không đúng định dạng!", "error");
+      return;
+    }
+
+    setFpLoading(true);
+    try {
+      const res = await customerService.sendEmailOtp(email);
+      if (res.success) {
+        if (window.showToast)
+          window.showToast(`Mã OTP đã được gửi đến ${email}!`, "success");
+        setFpStep(2);
+      } else {
+        if (window.showToast)
+          window.showToast(res.message || "Không thể gửi mã OTP!", "error");
+      }
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        "Không thể gửi mã OTP. Vui lòng thử lại sau!";
+      if (window.showToast) window.showToast(msg, "error");
+    } finally {
+      setFpLoading(false);
+    }
+  };
+
+  const handleFpResetPassword = async (e) => {
+    e.preventDefault();
+    if (fpOtp.trim().length !== 6) {
+      if (window.showToast)
+        window.showToast("Mã OTP phải gồm 6 chữ số!", "error");
+      return;
+    }
+    if (fpNewPassword.length < 6) {
+      if (window.showToast)
+        window.showToast("Mật khẩu phải có ít nhất 6 ký tự!", "error");
+      return;
+    }
+    if (fpNewPassword !== fpConfirm) {
+      if (window.showToast)
+        window.showToast("Xác nhận mật khẩu không khớp!", "error");
+      return;
+    }
+
+    setFpLoading(true);
+    try {
+      const res = await customerService.verifyEmailAndChangePassword(
+        fpEmail.trim(),
+        fpOtp.trim(),
+        fpNewPassword,
+      );
+      if (res.success) {
+        if (window.showToast)
+          window.showToast(
+            "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.",
+            "success",
+          );
+        setFpOpen(false);
+        setIsRegisterActive(false);
+        setLoginPhone(fpEmail.trim());
+        setLoginPassword("");
+      } else {
+        if (window.showToast)
+          window.showToast(res.message || "Đặt lại mật khẩu thất bại!", "error");
+      }
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        "Đặt lại mật khẩu thất bại. Vui lòng thử lại!";
+      if (window.showToast) window.showToast(msg, "error");
+    } finally {
+      setFpLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Google Sign-In button rendering inside the login panel
@@ -731,11 +831,7 @@ export const Login = () => {
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (window.showToast)
-                      window.showToast(
-                        "Vui lòng liên hệ quản trị viên hoặc sử dụng Đổi mật khẩu qua Email OTP trong Hồ sơ!",
-                        "info",
-                      );
+                    openForgotPassword();
                   }}
                   className="auth-link"
                 >
@@ -1145,6 +1241,178 @@ export const Login = () => {
           </form>
         </div>
       )}
+
+      {/* FORGOT PASSWORD MODAL (email OTP → new password) */}
+      <Modal
+        isOpen={fpOpen}
+        onClose={() => !fpLoading && setFpOpen(false)}
+        title="Quên mật khẩu"
+        maxWidth="440px"
+      >
+        {fpStep === 1 ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleFpSendOtp();
+            }}
+          >
+            <p className="text-secondary small mb-3">
+              Nhập địa chỉ email đã đăng ký tài khoản. Hệ thống sẽ gửi mã OTP
+              gồm 6 chữ số để xác thực việc đặt lại mật khẩu.
+            </p>
+            <div className="auth-input-group">
+              <label className="auth-label">ĐỊA CHỈ EMAIL</label>
+              <div className="auth-input-wrapper">
+                <span className="auth-input-icon">
+                  <i className="fas fa-envelope"></i>
+                </span>
+                <input
+                  type="email"
+                  className="auth-input-field"
+                  placeholder="Nhập email đã đăng ký"
+                  value={fpEmail}
+                  onChange={(e) => setFpEmail(e.target.value)}
+                  disabled={fpLoading}
+                  autoFocus
+                  required
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="auth-btn border-0 py-3 mt-2 w-100"
+              disabled={fpLoading}
+            >
+              {fpLoading ? (
+                <>
+                  <span className="btn-spinner"></span>
+                  Đang gửi mã...
+                </>
+              ) : (
+                <>
+                  GỬI MÃ OTP <i className="fas fa-paper-plane ms-1"></i>
+                </>
+              )}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleFpResetPassword}>
+            <p className="text-secondary small mb-3">
+              Mã OTP đã được gửi tới{" "}
+              <span className="text-cyan fw-bold">{fpEmail}</span>. Nhập mã và
+              mật khẩu mới bên dưới.
+            </p>
+            <div className="auth-input-group">
+              <label className="auth-label">MÃ OTP (6 CHỮ SỐ)</label>
+              <div className="auth-input-wrapper">
+                <span className="auth-input-icon">
+                  <i className="fas fa-key"></i>
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="6"
+                  className="auth-input-field"
+                  placeholder="Nhập mã OTP từ email"
+                  value={fpOtp}
+                  onChange={(e) =>
+                    setFpOtp(e.target.value.replace(/\D/g, ""))
+                  }
+                  disabled={fpLoading}
+                  autoFocus
+                  required
+                />
+              </div>
+            </div>
+            <div className="auth-input-group">
+              <label className="auth-label">MẬT KHẨU MỚI</label>
+              <div className="auth-input-wrapper">
+                <span className="auth-input-icon">
+                  <i className="fas fa-lock"></i>
+                </span>
+                <input
+                  type={showFpPassword ? "text" : "password"}
+                  className="auth-input-field"
+                  placeholder="Mật khẩu tối thiểu 6 ký tự"
+                  value={fpNewPassword}
+                  onChange={(e) => setFpNewPassword(e.target.value)}
+                  disabled={fpLoading}
+                  required
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle-btn"
+                  onClick={() => setShowFpPassword(!showFpPassword)}
+                >
+                  <i
+                    className={`far ${showFpPassword ? "fa-eye-slash" : "fa-eye"}`}
+                  ></i>
+                </button>
+              </div>
+            </div>
+            <div className="auth-input-group">
+              <label className="auth-label">XÁC NHẬN MẬT KHẨU MỚI</label>
+              <div className="auth-input-wrapper">
+                <span className="auth-input-icon">
+                  <i className="fas fa-shield-alt"></i>
+                </span>
+                <input
+                  type={showFpConfirm ? "text" : "password"}
+                  className="auth-input-field"
+                  placeholder="Nhập lại mật khẩu mới"
+                  value={fpConfirm}
+                  onChange={(e) => setFpConfirm(e.target.value)}
+                  disabled={fpLoading}
+                  required
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle-btn"
+                  onClick={() => setShowFpConfirm(!showFpConfirm)}
+                >
+                  <i
+                    className={`far ${showFpConfirm ? "fa-eye-slash" : "fa-eye"}`}
+                  ></i>
+                </button>
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="auth-btn border-0 py-3 mt-2 w-100"
+              disabled={fpLoading}
+            >
+              {fpLoading ? (
+                <>
+                  <span className="btn-spinner"></span>
+                  Đang xử lý...
+                </>
+              ) : (
+                <>
+                  ĐẶT LẠI MẬT KHẨU <i className="fas fa-check-circle ms-1"></i>
+                </>
+              )}
+            </button>
+            <div className="d-flex justify-content-between mt-3">
+              <button
+                type="button"
+                className="btn btn-link text-secondary text-decoration-none small p-0"
+                onClick={() => setFpStep(1)}
+                disabled={fpLoading}
+              >
+                <i className="fas fa-arrow-left me-1"></i>Đổi email khác
+              </button>
+              <button
+                type="button"
+                className="btn btn-link text-cyan text-decoration-none small fw-bold p-0"
+                onClick={handleFpSendOtp}
+                disabled={fpLoading}
+              >
+                Gửi lại mã OTP
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 };

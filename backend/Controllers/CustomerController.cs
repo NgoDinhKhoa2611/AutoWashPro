@@ -64,6 +64,13 @@ namespace Auto_Wash.Controllers
                 return BadRequest(new { success = false, message = "Email không hợp lệ!" });
             }
 
+            // Reject unknown emails up front so the forgot-password flow on the
+            // login page can tell the user immediately instead of after the OTP step.
+            if (!await _customerService.EmailExistsAsync(request.Email))
+            {
+                return BadRequest(new { success = false, message = "Email này chưa được đăng ký tài khoản AutoWash!" });
+            }
+
             try
             {
                 string code = await _otpService.GenerateAndSaveOtpAsync(request.Email, "ForgotPassword");
