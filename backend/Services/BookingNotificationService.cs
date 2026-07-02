@@ -537,20 +537,5 @@ namespace Auto_Wash.Services
                 await _otpService.SendEmailAsync(model.Email, subject, body);
             }
         }
-
-        public void SendWaitingCheckoutEmailInBackground(BookingEmailModel model)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await SendWaitingCheckoutEmailAsync(model);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send waiting-checkout email for BookingId BK-{BookingId} to {Email}", model.BookingId, model.Email);
-                }
-            });
-        }
     }
 }

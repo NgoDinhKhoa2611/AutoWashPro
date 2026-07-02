@@ -758,20 +758,6 @@ namespace Auto_Wash.Services
                 });
             }
 
-            // 4. Set cờ idempotency + audit log, lưu DB rồi mới gửi email nền
-            q.Booking.WaitingCheckoutEmailSent = true;
-
-            _context.BookingAuditLogs.Add(new BookingAuditLog
-            {
-                BookingId = q.Booking.BookingId,
-                Action = "CustomerNotified",
-                Description = $"Đã gửi email kèm {inlinePhotos.Count} ảnh báo khách xe hoàn tất dịch vụ.",
-                PerformedBy = performedBy,
-                CreatedAt = DateTime.Now
-            });
-
-            await _context.SaveChangesAsync();
-
             var mainService = await _context.BookingServices
                 .Include(bs => bs.Service)
                 .Where(bs => bs.BookingId == q.Booking.BookingId && !bs.Service.IsAddOn)
@@ -790,7 +776,27 @@ namespace Auto_Wash.Services
                 Photos = inlinePhotos
             };
 
-            _notificationService.SendWaitingCheckoutEmailInBackground(emailModel);
+            // Gửi email trước, đợi kết quả — SMTP lỗi thì KHÔNG set cờ để staff gửi lại được
+            try
+            {
+                await _notificationService.SendWaitingCheckoutEmailAsync(emailModel);
+            }
+            catch
+            {
+                return (false, "Gửi email thất bại, vui lòng thử lại!");
+            }
+
+            // Gửi thành công mới set cờ chống gửi trùng + ghi audit log
+            q.Booking.WaitingCheckoutEmailSent = true;
+            _context.BookingAuditLogs.Add(new BookingAuditLog
+            {
+                BookingId = q.Booking.BookingId,
+                Action = "CustomerNotified",
+                Description = $"Đã gửi email kèm {inlinePhotos.Count} ảnh báo khách xe hoàn tất dịch vụ.",
+                PerformedBy = performedBy,
+                CreatedAt = DateTime.Now
+            });
+            await _context.SaveChangesAsync();
 
             return (true, "Đã gửi email kèm ảnh báo khách thành công!");
         }
