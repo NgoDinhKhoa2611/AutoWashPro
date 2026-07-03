@@ -85,11 +85,72 @@ echo -e "\033[1;32m[✓] Frontend started in background with PID: $FRONTEND_PID\
 # Return to root
 cd - > /dev/null || exit 1
 
+# Try to refresh an already-open frontend tab (Chrome/Edge) instead of opening a new one.
+# Only detects the tab if it is the currently active tab in its window (Windows UI
+# Automation cannot read background tab URLs without enabling remote debugging).
+refresh_frontend_tab() {
+  local port=$1
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "
+    Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms
+    Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public class Win32Refresh {
+    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+    [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+    [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr hWnd);
+    [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+    [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+}
+'@
+    \$targetPort = '$port'
+    \$found = \$false
+    \$callback = {
+      param(\$hWnd, \$lParam)
+      if (-not [Win32Refresh]::IsWindowVisible(\$hWnd)) { return \$true }
+      \$procId = 0
+      [Win32Refresh]::GetWindowThreadProcessId(\$hWnd, [ref]\$procId) | Out-Null
+      try { \$proc = Get-Process -Id \$procId -ErrorAction Stop } catch { return \$true }
+      if (\$proc.ProcessName -notin @('chrome','msedge')) { return \$true }
+      try {
+        \$el = [System.Windows.Automation.AutomationElement]::FromHandle(\$hWnd)
+        \$editCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)
+        \$edits = \$el.FindAll([System.Windows.Automation.TreeScope]::Descendants, \$editCond)
+        foreach (\$edit in \$edits) {
+          \$valPattern = \$null
+          if (\$edit.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]\$valPattern)) {
+            \$text = \$valPattern.Current.Value
+            if (\$text -like \"*:\$targetPort*\") {
+              [Win32Refresh]::ShowWindow(\$hWnd, 9) | Out-Null
+              [Win32Refresh]::SetForegroundWindow(\$hWnd) | Out-Null
+              Start-Sleep -Milliseconds 200
+              [System.Windows.Forms.SendKeys]::SendWait('{F5}')
+              \$script:found = \$true
+              return \$false
+            }
+          }
+        }
+      } catch {}
+      return \$true
+    }
+    [Win32Refresh]::EnumWindows(\$callback, [IntPtr]::Zero) | Out-Null
+    if (\$found) { Write-Output 'REFRESHED' } else { Write-Output 'NOTFOUND' }
+  " 2>/dev/null | tr -d '\r'
+}
+
 # Open browser to frontend port in the background after a brief delay
 (
   sleep 1.5
-  echo -e "\033[1;36m[*] Opening browser to http://localhost:$FRONTEND_PORT...\033[0m"
-  start "http://localhost:$FRONTEND_PORT" 2>/dev/null || cmd.exe /c start "http://localhost:$FRONTEND_PORT" 2>/dev/null || explorer "http://localhost:$FRONTEND_PORT" 2>/dev/null
+  echo -e "\033[1;36m[*] Looking for an existing frontend tab to refresh...\033[0m"
+  RESULT=$(refresh_frontend_tab $FRONTEND_PORT)
+  if [ "$RESULT" = "REFRESHED" ]; then
+    echo -e "\033[1;32m[✓] Refreshed existing tab on http://localhost:$FRONTEND_PORT\033[0m"
+  else
+    echo -e "\033[1;36m[*] No existing tab found. Opening browser to http://localhost:$FRONTEND_PORT...\033[0m"
+    start "http://localhost:$FRONTEND_PORT" 2>/dev/null || cmd.exe /c start "http://localhost:$FRONTEND_PORT" 2>/dev/null || explorer "http://localhost:$FRONTEND_PORT" 2>/dev/null
+  fi
 ) &
 
 echo -e "\033[1;35m==================================================\033[0m"
